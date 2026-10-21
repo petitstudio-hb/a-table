@@ -11,6 +11,9 @@
 
 * { box-sizing: border-box; }
 
+/* Un élément masqué reste masqué, même s'il a un display: flex ou grid. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
