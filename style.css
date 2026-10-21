@@ -149,6 +149,15 @@ main {
 }
 .bouton-secondaire:hover { border-color: var(--discret); }
 
+.choix-modele {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--discret);
+}
+.choix-modele select { font-size: 0.85rem; padding: 4px 8px; }
+
 .encart {
   background: #fdf1e7;
   border: 1px solid #f3d2b8;

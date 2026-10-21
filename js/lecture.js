@@ -7,9 +7,9 @@ const CLE_MODELE = "atable.modele";
 
 // Coût indicatif d'une photo : environ 4 000 jetons envoyés (image + consignes) et 1 500 reçus.
 const MODELES = [
-  { id: "claude-opus-5-5", nom: "Claude Opus 5.5 : le plus précis", cout: "environ 4 centimes par photo" },
-  { id: "claude-sonnet-5-5", nom: "Claude Sonnet 5.5 : précis et 2 fois moins cher", cout: "environ 2 centimes par photo" },
-  { id: "claude-haiku-5-5", nom: "Claude Haiku 5.5 : le plus économique", cout: "environ 0,1 centime par photo" },
+  { id: "claude-opus-5-5", nom: "Claude Opus 5.5 : le plus précis", court: "Opus : le plus précis (≈ 4 cts)", cout: "environ 4 centimes par photo" },
+  { id: "claude-sonnet-5-5", nom: "Claude Sonnet 5.5 : précis et 2 fois moins cher", court: "Sonnet : équilibré (≈ 2 cts)", cout: "environ 2 centimes par photo" },
+  { id: "claude-haiku-5-5", nom: "Claude Haiku 5.5 : le plus économique", court: "Haiku : économique (≈ 0,1 ct)", cout: "environ 0,1 centime par photo" },
 ];
 const TAILLE_MAX = 1568; // côté le plus long, en pixels : au-delà, l'IA réduit l'image elle-même
 
@@ -27,6 +27,10 @@ function afficherReglages() {
   const choix = document.querySelector("#modele");
   choix.innerHTML = MODELES.map((m) => `<option value="${m.id}">${m.nom} (${m.cout})</option>`).join("");
   choix.value = modele();
+  // Même choix, en version courte, sur l'écran Photo.
+  const rapide = document.querySelector("#photo-modele");
+  rapide.innerHTML = MODELES.map((m) => `<option value="${m.id}">${m.court}</option>`).join("");
+  rapide.value = modele();
   document.querySelector("#cle-api").value = cleApi();
   document.querySelector("#photo-sans-cle").hidden = Boolean(cleApi());
 }
@@ -393,7 +397,12 @@ function demarrerLecture() {
   });
   document.querySelector("#modele").addEventListener("change", (e) => {
     ecrire(CLE_MODELE, e.target.value);
+    document.querySelector("#photo-modele").value = e.target.value;
     messageCle("Modèle enregistré.", "ok");
+  });
+  document.querySelector("#photo-modele").addEventListener("change", (e) => {
+    ecrire(CLE_MODELE, e.target.value);
+    document.querySelector("#modele").value = e.target.value;
   });
   document.querySelector("#cle-effacer").addEventListener("click", () => {
     try { localStorage.removeItem(CLE_API); } catch (e) {}
