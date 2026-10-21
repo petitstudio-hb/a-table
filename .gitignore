@@ -1,0 +1,9 @@
+# Seuls les fichiers du site sont publiés sur GitHub (décision D14).
+# Tout le reste (contexte, carnet, données, tickets) reste sur le PC.
+*
+!.gitignore
+!index.html
+!style.css
+!js/
+!js/*.js
+!README.md

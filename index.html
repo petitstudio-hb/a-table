@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A table</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header>
+      <h1>A table</h1>
+      <p>Où faire mes courses au meilleur prix ?</p>
+    </header>
+
+    <main>
+      <section class="resume">
+        <div class="resume-tete">
+          <h2>Combien j'économise ?</h2>
+          <label>Par rapport à <select id="reference"></select></label>
+        </div>
+        <div id="economies" class="cartes"></div>
+      </section>
+
+      <section>
+        <h2>Ma course</h2>
+        <p class="aide">Coche les produits dont tu as besoin cette fois-ci. En vert : le prix le plus bas quand au moins deux magasins sont connus.</p>
+        <div class="actions">
+          <span id="nb-coches"></span>
+          <button type="button" id="tout">Tout cocher</button>
+          <button type="button" id="rien">Tout décocher</button>
+        </div>
+        <div class="tableau">
+          <table id="panier">
+            <thead><tr><th>Produit</th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><th scope="row">Total des produits cochés</th></tr></tfoot>
+          </table>
+        </div>
+        <p class="aide">Clique sur un prix ou sur « + prix » pour le saisir. Un point orange signale un prix saisi sur le site. Les totaux ne sont pas comparables tant que des prix manquent : l'économie, en haut, ne compare que les produits connus dans les deux magasins.</p>
+      </section>
+
+      <section>
+        <h2>Saisir un prix</h2>
+        <p class="aide">Depuis un ticket, une étiquette en rayon ou le site du magasin. Le prix saisi remplace l'ancien.</p>
+        <form id="saisie" class="formulaire">
+          <label class="large">Produit
+            <select id="saisie-produit"></select>
+          </label>
+          <label>Magasin
+            <select id="saisie-magasin"></select>
+          </label>
+          <label>Prix (€)
+            <input id="saisie-prix" type="text" inputmode="decimal" placeholder="ex. 1,29" autocomplete="off">
+          </label>
+          <label>Date
+            <input id="saisie-date" type="date">
+          </label>
+          <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
+          <button type="submit" class="principal">Enregistrer</button>
+          <p id="saisie-message" class="message" role="status"></p>
+        </form>
+
+        <h3 class="sous-titre">Mes relevés (<span id="nb-releves">0</span>)</h3>
+        <ul id="liste-releves" class="releves"></ul>
+        <button type="button" id="exporter">Télécharger mes relevés</button>
+        <p class="aide">Les relevés sont gardés dans ce navigateur. Télécharge-les de temps en temps et donne le fichier à Claude pour les ajouter définitivement au projet.</p>
+      </section>
+    </main>
+
+    <script src="js/donnees.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
