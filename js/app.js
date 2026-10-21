@@ -1,10 +1,18 @@
-// Affiche le panier, permet de cocher les produits de la course,
-// de saisir des prix, et calcule l'économie par magasin.
+// Cœur de l'application : données, navigation, « Ma course », saisie manuelle,
+// « Mes relevés », export et import. La lecture des photos est dans lecture.js.
 
 const euros = (n) => n.toFixed(2).replace(".", ",") + " €";
-const CLE_COCHES = "atable.coches";
-const CLE_REFERENCE = "atable.reference";
-const CLE_RELEVES = "atable.releves";
+const aujourdhui = () => new Date().toISOString().slice(0, 10);
+const dateFr = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
+const echapper = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const CLE = {
+  coches: "atable.coches",
+  reference: "atable.reference",
+  releves: "atable.releves",
+  produits: "atable.produits", // produits ajoutés depuis les photos
+  magasins: "atable.magasins", // magasins ajoutés depuis les photos
+};
 
 function lire(cle, defaut) {
   try {
@@ -16,65 +24,122 @@ function ecrire(cle, valeur) {
   try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) {}
 }
 
-// État de la page, mémorisé dans le navigateur.
-let coches = new Set(lire(CLE_COCHES, PANIER.map((_, i) => i)));
-let reference = lire(CLE_REFERENCE, "intermarche");
-// Relevés saisis sur le site : { produit, magasin, prix, date, promo }.
-let releves = lire(CLE_RELEVES, []);
+// ---------- État ----------
+
+// Les produits et magasins de donnees.js, complétés par ceux ajoutés sur le site.
+const NB_PRODUITS_BASE = PANIER.length;
+const NB_MAGASINS_BASE = MAGASINS.length;
+PANIER.push(...lire(CLE.produits, []));
+MAGASINS.push(...lire(CLE.magasins, []));
+
+let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
+let reference = lire(CLE.reference, "intermarche");
+// Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
+let releves = lire(CLE.releves, []);
 
 function sauvegarder() {
-  ecrire(CLE_COCHES, [...coches]);
-  ecrire(CLE_REFERENCE, reference);
-  ecrire(CLE_RELEVES, releves);
+  ecrire(CLE.coches, [...coches]);
+  ecrire(CLE.reference, reference);
+  ecrire(CLE.releves, releves);
+  ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
+  ecrire(CLE.magasins, MAGASINS.slice(NB_MAGASINS_BASE));
 }
 
-// Prix à utiliser : le relevé saisi le plus récent, sinon celui de donnees.js.
+function ajouterProduit({ nom, format, rayon }) {
+  PANIER.push({ nom: nom || "Produit sans nom", format: format || "", rayon: rayon || "Ajoutés", prix: {} });
+  const i = PANIER.length - 1;
+  coches.add(i);
+  return i;
+}
+
+function ajouterMagasin(nom) {
+  const id = "m" + Date.now().toString(36);
+  MAGASINS.push({ id, nom: nom || "Nouveau magasin", adresse: "" });
+  return id;
+}
+
+const nomMagasin = (id) => MAGASINS.find((m) => m.id === id)?.nom || "Magasin inconnu";
+
+// Prix à utiliser : le relevé le plus récent, sinon celui de donnees.js.
 function prixDe(i, magasin) {
-  const saisis = releves.filter((r) => r.produit === i && r.magasin === magasin);
-  if (saisis.length) {
-    const dernier = saisis.reduce((a, b) => (b.date >= a.date ? b : a));
-    return { prix: dernier.prix, saisi: true };
+  let dernier = null;
+  for (const r of releves) {
+    if (r.produit === i && r.magasin === magasin && (!dernier || r.date >= dernier.date)) dernier = r;
   }
-  return { prix: PANIER[i].prix[magasin], saisi: false };
+  if (dernier) return { prix: dernier.prix, saisi: true };
+  return { prix: PANIER[i].prix[magasin] ?? null, saisi: false };
 }
 
-const nomMagasin = (id) => MAGASINS.find((m) => m.id === id).nom;
-
-// Dernier code-barres connu pour ce produit dans ce magasin.
+// Dernier code-barres connu pour ce produit dans ce magasin (utile pour Open Prices).
 function dernierCode(i, magasin) {
   const avecCode = releves.filter((r) => r.produit === i && r.magasin === magasin && r.code);
   return avecCode.length ? avecCode[avecCode.length - 1].code : null;
 }
 
-function construireStructure() {
-  const tete = document.querySelector("#panier thead tr");
-  const pied = document.querySelector("#panier tfoot tr");
-  for (const m of MAGASINS) {
-    tete.insertAdjacentHTML("beforeend", `<th>${m.nom}<span>${m.adresse}</span></th>`);
-    pied.insertAdjacentHTML("beforeend", `<td data-total="${m.id}"></td>`);
+// Petit message temporaire en bas de l'écran.
+function notifier(texte) {
+  let bulle = document.querySelector("#bulle");
+  if (!bulle) {
+    bulle = document.createElement("div");
+    bulle.id = "bulle";
+    bulle.setAttribute("role", "status");
+    document.body.append(bulle);
   }
-
-  const choixRef = document.querySelector("#reference");
-  const choixMag = document.querySelector("#saisie-magasin");
-  for (const m of MAGASINS) {
-    choixRef.insertAdjacentHTML("beforeend", `<option value="${m.id}" ${m.id === reference ? "selected" : ""}>${m.nom}</option>`);
-    choixMag.insertAdjacentHTML("beforeend", `<option value="${m.id}">${m.nom}</option>`);
-  }
-  choixMag.value = "aldi";
-
-  const choixProd = document.querySelector("#saisie-produit");
-  PANIER.forEach((p, i) => choixProd.insertAdjacentHTML("beforeend", `<option value="${i}">${p.nom} (${p.format})</option>`));
-
-  document.querySelector("#saisie-date").value = new Date().toISOString().slice(0, 10);
+  bulle.textContent = texte;
+  bulle.classList.add("visible");
+  clearTimeout(notifier.minuteur);
+  notifier.minuteur = setTimeout(() => bulle.classList.remove("visible"), 3500);
 }
 
-function afficherLignes() {
-  const corps = document.querySelector("#panier tbody");
+// ---------- Navigation ----------
+
+const VUES = ["photo", "verif", "course", "releves", "reglages"];
+
+function montrer(vue) {
+  if (!VUES.includes(vue)) vue = "photo";
+  if (vue === "verif" && !window.verificationEnCours) vue = "photo";
+  for (const v of VUES) document.querySelector(`#vue-${v}`).hidden = v !== vue;
+  document.querySelectorAll(".onglets a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", () => montrer(location.hash.slice(1)));
+
+// ---------- Ma course ----------
+
+function remplirListes() {
+  const options = MAGASINS.map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
+  const ref = document.querySelector("#reference");
+  ref.innerHTML = options;
+  if (!MAGASINS.some((m) => m.id === reference)) reference = MAGASINS[0].id;
+  ref.value = reference;
+
+  const mag = document.querySelector("#saisie-magasin");
+  const magChoisi = mag.value;
+  mag.innerHTML = options;
+  mag.value = MAGASINS.some((m) => m.id === magChoisi) ? magChoisi : "aldi";
+
+  const prod = document.querySelector("#saisie-produit");
+  const prodChoisi = prod.value;
+  prod.innerHTML = PANIER.map((p, i) => `<option value="${i}">${echapper(p.nom)}${p.format ? ` (${echapper(p.format)})` : ""}</option>`).join("");
+  if (prodChoisi) prod.value = prodChoisi;
+}
+
+function afficherTableau() {
+  document.querySelector("#panier thead tr").innerHTML =
+    `<th>Produit</th>` + MAGASINS.map((m) => `<th>${echapper(m.nom)}<span>${echapper(m.adresse)}</span></th>`).join("");
+  document.querySelector("#panier tfoot tr").innerHTML =
+    `<th scope="row">Total des produits cochés</th>` + MAGASINS.map((m) => `<td data-total="${m.id}"></td>`).join("");
+
+  // Produits regroupés par rayon, dans l'ordre où chaque rayon apparaît.
+  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
+  const ordre = rayons.flatMap((r) => PANIER.map((p, i) => ({ p, i })).filter(({ p }) => p.rayon === r));
+
   let html = "";
   let rayonPrecedent = "";
-  PANIER.forEach((produit, i) => {
+  ordre.forEach(({ p: produit, i }) => {
     if (produit.rayon !== rayonPrecedent) {
-      html += `<tr class="rayon"><td colspan="${MAGASINS.length + 1}">${produit.rayon}</td></tr>`;
+      html += `<tr class="rayon"><td colspan="${MAGASINS.length + 1}">${echapper(produit.rayon)}</td></tr>`;
       rayonPrecedent = produit.rayon;
     }
     const prix = MAGASINS.map((m) => prixDe(i, m.id));
@@ -83,7 +148,7 @@ function afficherLignes() {
 
     const cellules = MAGASINS.map((m, k) => {
       const { prix: p, saisi } = prix[k];
-      const titre = `Saisir le prix chez ${m.nom}`;
+      const titre = `Saisir le prix chez ${echapper(m.nom)}`;
       if (p === null) return `<td class="manquant"><button class="cellule" data-produit="${i}" data-magasin="${m.id}" title="${titre}">+ prix</button></td>`;
       const classes = [p === meilleur ? "meilleur" : "", saisi ? "saisi" : ""].join(" ");
       return `<td class="${classes}"><button class="cellule" data-produit="${i}" data-magasin="${m.id}" title="${titre}">${euros(p)}</button></td>`;
@@ -93,11 +158,11 @@ function afficherLignes() {
       <tr data-produit="${i}" class="${coches.has(i) ? "" : "decoche"}">
         <th scope="row">
           <label><input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
-          <span class="nom">${produit.nom}<span>${produit.format}</span></span></label>
+          <span class="nom">${echapper(produit.nom)}<span>${echapper(produit.format)}</span></span></label>
         </th>${cellules}
       </tr>`;
   });
-  corps.innerHTML = html;
+  document.querySelector("#panier tbody").innerHTML = html;
 }
 
 function calculer() {
@@ -116,7 +181,7 @@ function calculer() {
   const cartes = MAGASINS.filter((m) => m.id !== ref).map((m) => {
     const communs = indices.filter((i) => prixDe(i, m.id).prix !== null && prixDe(i, ref).prix !== null);
     if (communs.length === 0) {
-      return `<div class="carte vide"><h3>${m.nom}</h3><p class="chiffre">—</p><p>Aucun produit coché comparable avec ${nomMagasin(ref)}.</p></div>`;
+      return `<div class="carte vide"><h3>${echapper(m.nom)}</h3><p class="chiffre">—</p><p>Aucun produit coché comparable avec ${echapper(nomMagasin(ref))}.</p></div>`;
     }
     const totalRef = communs.reduce((a, i) => a + prixDe(i, ref).prix, 0);
     const totalMag = communs.reduce((a, i) => a + prixDe(i, m.id).prix, 0);
@@ -127,9 +192,9 @@ function calculer() {
     const n = communs.length;
     return `
       <div class="carte ${sens}">
-        <h3>${m.nom}</h3>
+        <h3>${echapper(m.nom)}</h3>
         <p class="chiffre">${sens === "egal" ? "=" : (sens === "gain" ? "−" : "+") + euros(Math.abs(ecart))}</p>
-        <p>${texte} par rapport à ${nomMagasin(ref)}</p>
+        <p>${texte} par rapport à ${echapper(nomMagasin(ref))}</p>
         <p class="detail">Calculé sur ${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} au prix connu dans les deux magasins : ${euros(totalMag)} contre ${euros(totalRef)}.</p>
       </div>`;
   });
@@ -138,46 +203,123 @@ function calculer() {
   document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${PANIER.length}`;
 }
 
+// ---------- Mes relevés ----------
+
+let enModification = null; // indice du relevé en cours de modification
+
 function afficherReleves() {
   const liste = document.querySelector("#liste-releves");
   document.querySelector("#nb-releves").textContent = releves.length;
-  document.querySelector("#exporter").disabled = releves.length === 0;
   if (!releves.length) {
-    liste.innerHTML = `<li class="vide">Aucun prix saisi pour l'instant.</li>`;
+    liste.innerHTML = `<li class="vide">Aucun prix enregistré pour l'instant. Prends une photo, ou saisis un prix dans « Ma course ».</li>`;
     return;
   }
   liste.innerHTML = releves
     .map((r, k) => ({ r, k }))
-    .sort((a, b) => b.r.date.localeCompare(a.r.date))
-    .map(({ r, k }) => `
-      <li>
-        <span><strong>${PANIER[r.produit].nom}</strong> chez ${nomMagasin(r.magasin)} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}${r.envoye ? ` <em class="envoye">envoyé à Open Prices</em>` : ""}
-        <span class="date">${r.date.split("-").reverse().join("/")}${r.code ? ` · code ${r.code}` : ""}</span></span>
-        <button type="button" data-supprimer="${k}" title="Supprimer ce relevé">Supprimer</button>
-      </li>`)
+    .sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k)
+    .map(({ r, k }) => {
+      const p = PANIER[r.produit];
+      const source = r.source === "ticket" ? "ticket" : r.source === "etiquette" ? "étiquette" : "saisie";
+      if (k === enModification) {
+        return `
+          <li class="modif" data-k="${k}">
+            <strong>${echapper(p.nom)}</strong>
+            <div class="formulaire">
+              <label>Prix (€)<input type="text" inputmode="decimal" data-champ="prix" value="${r.prix.toFixed(2).replace(".", ",")}"></label>
+              <label>Date<input type="date" data-champ="date" value="${r.date}"></label>
+              <label>Magasin<select data-champ="magasin">${MAGASINS.map((m) => `<option value="${m.id}" ${m.id === r.magasin ? "selected" : ""}>${echapper(m.nom)}</option>`).join("")}</select></label>
+              <label class="case"><input type="checkbox" data-champ="promo" ${r.promo ? "checked" : ""}> En promo</label>
+            </div>
+            <div class="actions"><button type="button" data-annuler>Annuler</button><button type="button" class="principal" data-enregistrer="${k}">Enregistrer</button></div>
+          </li>`;
+      }
+      return `
+        <li>
+          <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}
+          <span class="date">${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
+          <span class="boutons"><button type="button" data-modifier="${k}">Modifier</button><button type="button" data-supprimer="${k}" aria-label="Supprimer">✕</button></span>
+        </li>`;
+    })
     .join("");
 }
 
 function toutAfficher() {
-  afficherLignes();
+  remplirListes();
+  afficherTableau();
   calculer();
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
 }
+
+// ---------- Saisie manuelle ----------
 
 function ouvrirSaisie(produit, magasin) {
   document.querySelector("#saisie-produit").value = produit;
   document.querySelector("#saisie-magasin").value = magasin;
   const actuel = prixDe(Number(produit), magasin).prix;
   const champ = document.querySelector("#saisie-prix");
-  champ.value = actuel === null ? "" : actuel.toFixed(2);
+  champ.value = actuel === null ? "" : actuel.toFixed(2).replace(".", ",");
   document.querySelector("#saisie-code").value = dernierCode(Number(produit), magasin) || "";
   document.querySelector("#saisie").scrollIntoView({ behavior: "smooth", block: "center" });
   champ.focus();
 }
 
+const lirePrix = (texte) => parseFloat(String(texte).replace(",", ".").replace(/[^\d.]/g, ""));
+
+// ---------- Export / import ----------
+
+function exporter() {
+  const contenu = {
+    application: "A table",
+    version: 2,
+    date: new Date().toISOString(),
+    releves,
+    produitsAjoutes: PANIER.slice(NB_PRODUITS_BASE),
+    magasinsAjoutes: MAGASINS.slice(NB_MAGASINS_BASE),
+    coches: [...coches],
+    reference,
+  };
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(new Blob([JSON.stringify(contenu, null, 2)], { type: "application/json" }));
+  lien.download = `atable-${aujourdhui()}.json`;
+  lien.click();
+  URL.revokeObjectURL(lien.href);
+}
+
+async function importer(fichier) {
+  const message = document.querySelector("#sauvegarde-message");
+  try {
+    const donnees = JSON.parse(await fichier.text());
+    if (Array.isArray(donnees)) {
+      // Ancien format (séance 3) : une simple liste de relevés, ajoutée aux relevés actuels.
+      const valides = donnees.filter((r) => Number.isInteger(r.produit) && r.produit < PANIER.length && typeof r.prix === "number");
+      releves.push(...valides.map((r) => ({ ...r, envoye: Boolean(r.envoye) })));
+      message.textContent = `${valides.length} relevé${valides.length > 1 ? "s" : ""} ajouté${valides.length > 1 ? "s" : ""}.`;
+    } else if (donnees.application === "A table" && Array.isArray(donnees.releves)) {
+      if (!confirm("Remplacer toutes les données de cet appareil par celles du fichier ?")) return;
+      PANIER.splice(NB_PRODUITS_BASE, Infinity, ...(donnees.produitsAjoutes || []));
+      MAGASINS.splice(NB_MAGASINS_BASE, Infinity, ...(donnees.magasinsAjoutes || []));
+      releves = donnees.releves.filter((r) => r.produit < PANIER.length);
+      coches = new Set(donnees.coches || PANIER.map((_, i) => i));
+      reference = donnees.reference || reference;
+      message.textContent = `Import terminé : ${releves.length} relevés.`;
+    } else {
+      throw new Error("format inconnu");
+    }
+    message.className = "message ok";
+    sauvegarder();
+    toutAfficher();
+  } catch (e) {
+    message.textContent = `Ce fichier ne peut pas être importé (${e.message}).`;
+    message.className = "message erreur";
+  }
+}
+
+// ---------- Événements ----------
+
 function brancherEvenements() {
-  document.querySelector("#panier").addEventListener("change", (e) => {
+  const panier = document.querySelector("#panier");
+  panier.addEventListener("change", (e) => {
     if (!e.target.matches("input[type=checkbox]")) return;
     const i = Number(e.target.dataset.index);
     e.target.checked ? coches.add(i) : coches.delete(i);
@@ -185,8 +327,7 @@ function brancherEvenements() {
     sauvegarder();
     calculer();
   });
-
-  document.querySelector("#panier").addEventListener("click", (e) => {
+  panier.addEventListener("click", (e) => {
     const b = e.target.closest("button.cellule");
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
   });
@@ -207,7 +348,7 @@ function brancherEvenements() {
 
   document.querySelector("#saisie").addEventListener("submit", (e) => {
     e.preventDefault();
-    const prix = parseFloat(document.querySelector("#saisie-prix").value.replace(",", "."));
+    const prix = lirePrix(document.querySelector("#saisie-prix").value);
     const message = document.querySelector("#saisie-message");
     if (!(prix > 0)) {
       message.textContent = "Indique un prix supérieur à 0.";
@@ -218,8 +359,11 @@ function brancherEvenements() {
       produit: Number(document.querySelector("#saisie-produit").value),
       magasin: document.querySelector("#saisie-magasin").value,
       prix: Math.round(prix * 100) / 100,
-      date: document.querySelector("#saisie-date").value || new Date().toISOString().slice(0, 10),
+      date: document.querySelector("#saisie-date").value || aujourdhui(),
       promo: document.querySelector("#saisie-promo").checked,
+      quantite: 1,
+      libelle: null,
+      source: "manuel",
       code: document.querySelector("#saisie-code").value.replace(/\D/g, "") || null,
       envoye: false,
     };
@@ -234,25 +378,41 @@ function brancherEvenements() {
   });
 
   document.querySelector("#liste-releves").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-supprimer]");
-    if (!b) return;
-    releves.splice(Number(b.dataset.supprimer), 1);
-    document.querySelector("#saisie-message").textContent = "";
-    sauvegarder();
-    toutAfficher();
+    const sup = e.target.closest("[data-supprimer]");
+    if (sup) {
+      releves.splice(Number(sup.dataset.supprimer), 1);
+      enModification = null;
+      sauvegarder();
+      toutAfficher();
+      return;
+    }
+    const mod = e.target.closest("[data-modifier]");
+    if (mod) { enModification = Number(mod.dataset.modifier); afficherReleves(); return; }
+    if (e.target.closest("[data-annuler]")) { enModification = null; afficherReleves(); return; }
+    const enr = e.target.closest("[data-enregistrer]");
+    if (enr) {
+      const li = enr.closest("li");
+      const r = releves[Number(enr.dataset.enregistrer)];
+      const prix = lirePrix(li.querySelector('[data-champ="prix"]').value);
+      if (prix > 0) r.prix = Math.round(prix * 100) / 100;
+      r.date = li.querySelector('[data-champ="date"]').value || r.date;
+      r.magasin = li.querySelector('[data-champ="magasin"]').value;
+      r.promo = li.querySelector('[data-champ="promo"]').checked;
+      r.envoye = false;
+      enModification = null;
+      sauvegarder();
+      toutAfficher();
+    }
   });
 
-  // Télécharge les relevés en fichier, pour les intégrer ensuite dans donnees/.
-  document.querySelector("#exporter").addEventListener("click", () => {
-    const contenu = releves.map((r) => ({ ...r, produit_nom: PANIER[r.produit].nom, format: PANIER[r.produit].format }));
-    const lien = document.createElement("a");
-    lien.href = URL.createObjectURL(new Blob([JSON.stringify(contenu, null, 2)], { type: "application/json" }));
-    lien.download = `releves-${new Date().toISOString().slice(0, 10)}.json`;
-    lien.click();
-    URL.revokeObjectURL(lien.href);
+  document.querySelector("#exporter").addEventListener("click", exporter);
+  document.querySelector("#importer").addEventListener("change", (e) => {
+    if (e.target.files[0]) importer(e.target.files[0]);
+    e.target.value = "";
   });
 }
 
-construireStructure();
+document.querySelector("#saisie-date").value = aujourdhui();
 brancherEvenements();
 toutAfficher();
+montrer(location.hash.slice(1) || "photo");

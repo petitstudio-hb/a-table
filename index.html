@@ -2,124 +2,216 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>A table</title>
+    <meta name="description" content="Où faire mes courses au meilleur prix ?">
+    <meta name="theme-color" content="#c8553d">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icones/icone-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icones/icone-180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="A table">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <header>
+    <header class="barre">
       <h1>A table</h1>
-      <p>Où faire mes courses au meilleur prix ?</p>
+      <a href="#reglages" class="bouton-icone" aria-label="Réglages" title="Réglages">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.4-2.5a7.6 7.6 0 0 0 0-2l2-1.6a.5.5 0 0 0 .1-.6l-1.9-3.3a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-3.8a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.7 1l-2.4-1a.5.5 0 0 0-.6.2L2.5 8.8a.5.5 0 0 0 .1.6l2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6a.5.5 0 0 0-.1.6l1.9 3.3a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.7 1l.4 2.6a.5.5 0 0 0 .5.4h3.8a.5.5 0 0 0 .5-.4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1a.5.5 0 0 0 .6-.2l1.9-3.3a.5.5 0 0 0-.1-.6l-2-1.6Z"/></svg>
+      </a>
     </header>
 
     <main>
-      <section class="resume">
-        <div class="resume-tete">
-          <h2>Combien j'économise ?</h2>
-          <label>Par rapport à <select id="reference"></select></label>
-        </div>
-        <div id="economies" class="cartes"></div>
-      </section>
+      <!-- ========== PHOTO (accueil) ========== -->
+      <section id="vue-photo" class="vue">
+        <p class="accroche">Prends en photo un ticket ou une étiquette : A table lit les prix pour toi.</p>
 
-      <section>
-        <h2>Ma course</h2>
-        <p class="aide">Coche les produits dont tu as besoin cette fois-ci. En vert : le prix le plus bas quand au moins deux magasins sont connus.</p>
-        <div class="actions">
-          <span id="nb-coches"></span>
-          <button type="button" id="tout">Tout cocher</button>
-          <button type="button" id="rien">Tout décocher</button>
-        </div>
-        <div class="tableau">
-          <table id="panier">
-            <thead><tr><th>Produit</th></tr></thead>
-            <tbody></tbody>
-            <tfoot><tr><th scope="row">Total des produits cochés</th></tr></tfoot>
-          </table>
-        </div>
-        <p class="aide">Clique sur un prix ou sur « + prix » pour le saisir. Un point orange signale un prix saisi sur le site. Les totaux ne sont pas comparables tant que des prix manquent : l'économie, en haut, ne compare que les produits connus dans les deux magasins.</p>
-      </section>
-
-      <section>
-        <h2>Saisir un prix</h2>
-        <p class="aide">Depuis un ticket, une étiquette en rayon ou le site du magasin. Le prix saisi remplace l'ancien.</p>
-        <form id="saisie" class="formulaire">
-          <label class="large">Produit
-            <select id="saisie-produit"></select>
-          </label>
-          <label>Magasin
-            <select id="saisie-magasin"></select>
-          </label>
-          <label>Prix (€)
-            <input id="saisie-prix" type="text" inputmode="decimal" placeholder="ex. 1,29" autocomplete="off">
-          </label>
-          <label>Date
-            <input id="saisie-date" type="date">
-          </label>
-          <label>Code-barres (facultatif)
-            <input id="saisie-code" type="text" inputmode="numeric" placeholder="13 chiffres sous le code-barres" autocomplete="off">
-          </label>
-          <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
-          <button type="submit" class="principal">Enregistrer</button>
-          <p id="saisie-message" class="message" role="status"></p>
-        </form>
-
-        <h3 class="sous-titre">Mes relevés (<span id="nb-releves">0</span>)</h3>
-        <ul id="liste-releves" class="releves"></ul>
-        <button type="button" id="exporter">Télécharger mes relevés</button>
-        <p class="aide">Les relevés sont gardés dans ce navigateur. Télécharge-les de temps en temps et donne le fichier à Claude pour les ajouter définitivement au projet.</p>
-      </section>
-
-      <section>
-        <h2>Open Prices</h2>
-        <p class="aide">La base de prix libre et participative d'Open Food Facts. Les prix envoyés sont publics, avec ton pseudo.</p>
-
-        <h3 class="sous-titre">Ce qu'Open Prices connaît de mes magasins</h3>
-        <div id="op-magasins"></div>
-
-        <h3 class="sous-titre">Envoyer mes relevés</h3>
-        <form id="op-connexion" class="formulaire">
-          <p class="aide large-texte">Connecte-toi avec ton compte Open Food Facts. Le mot de passe est envoyé directement à Open Food Facts : il n'est jamais enregistré ici.</p>
-          <label>Identifiant Open Food Facts
-            <input id="op-identifiant" type="text" autocomplete="username" autocapitalize="none">
-          </label>
-          <label>Mot de passe
-            <input id="op-mdp" type="password" autocomplete="current-password">
-          </label>
-          <button type="submit" class="principal">Se connecter</button>
-          <p id="op-connexion-message" class="message" role="status"></p>
-        </form>
-
-        <div id="op-connecte" class="connecte" hidden>
-          Connecté en tant que <strong id="op-pseudo"></strong>
-          <button type="button" id="op-deconnexion">Se déconnecter</button>
+        <div class="segment" role="radiogroup" aria-label="Type de photo">
+          <label><input type="radio" name="type-photo" value="ticket" checked><span>Ticket de caisse</span></label>
+          <label><input type="radio" name="type-photo" value="etiquette"><span>Prix en rayon</span></label>
         </div>
 
-        <form id="op-envoi" class="formulaire" hidden>
-          <label>Magasin
-            <select id="op-magasin"></select>
-          </label>
-          <label>Date des relevés
-            <input id="op-date" type="date">
-          </label>
-          <label>Preuve
-            <select id="op-type">
-              <option value="RECEIPT">Ticket de caisse</option>
-              <option value="PRICE_TAG">Étiquette en rayon</option>
-            </select>
-          </label>
-          <label>Photo
-            <input id="op-photo" type="file" accept="image/*" capture="environment">
-          </label>
-          <ul id="op-liste" class="releves large"></ul>
-          <button type="submit" id="op-envoyer" class="principal">Envoyer à Open Prices</button>
-          <p id="op-envoi-message" class="message" role="status"></p>
-          <p class="aide large-texte">Les fruits et légumes partent au prix au kilo. Pour les autres produits, il faut le code-barres, à saisir avec le prix.</p>
-        </form>
+        <label class="gros-bouton" for="photo-camera" aria-label="Prendre une photo">
+          <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true"><path fill="currentColor" d="M9.4 4h5.2l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.9l1.5-2ZM12 17.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
+        </label>
+        <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
+
+        <label class="bouton-secondaire" for="photo-galerie">Choisir dans mes photos</label>
+        <input id="photo-galerie" type="file" accept="image/*" multiple hidden>
+
+        <p id="photo-etat" class="message" role="status"></p>
+        <p id="photo-sans-cle" class="encart" hidden>Pour lire les photos, ajoute d'abord ta clé d'API Claude dans les <a href="#reglages">Réglages</a>.</p>
       </section>
+
+      <!-- ========== VÉRIFICATION ========== -->
+      <section id="vue-verif" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2 id="verif-titre">Vérifier</h2>
+          <p class="aide">Corrige ce qui doit l'être, supprime les lignes inutiles, puis valide.</p>
+          <img id="verif-image" class="miniature" alt="Photo analysée">
+          <div class="formulaire">
+            <label>Magasin
+              <select id="verif-magasin"></select>
+            </label>
+            <label id="verif-nouveau-magasin" hidden>Nom du nouveau magasin
+              <input id="verif-magasin-nom" type="text">
+            </label>
+            <label>Date
+              <input id="verif-date" type="date">
+            </label>
+          </div>
+          <p id="verif-remarque" class="encart" hidden></p>
+          <div id="verif-lignes"></div>
+          <button type="button" id="verif-ajouter" class="bouton-secondaire">+ Ajouter une ligne</button>
+          <div class="actions-bas">
+            <button type="button" id="verif-annuler">Annuler</button>
+            <button type="button" id="verif-valider" class="principal">Valider</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MA COURSE ========== -->
+      <section id="vue-course" class="vue" hidden>
+        <div class="carte-blanche resume">
+          <div class="resume-tete">
+            <h2>Combien j'économise ?</h2>
+            <label>Par rapport à <select id="reference"></select></label>
+          </div>
+          <div id="economies" class="cartes"></div>
+        </div>
+
+        <div class="carte-blanche">
+          <h2>Ma course</h2>
+          <p class="aide">Coche les produits dont tu as besoin. En vert : le prix le plus bas quand au moins deux magasins sont connus. Touche un prix pour le modifier.</p>
+          <div class="actions">
+            <span id="nb-coches"></span>
+            <button type="button" id="tout">Tout cocher</button>
+            <button type="button" id="rien">Tout décocher</button>
+          </div>
+          <div class="tableau">
+            <table id="panier">
+              <thead><tr></tr></thead>
+              <tbody></tbody>
+              <tfoot><tr></tr></tfoot>
+            </table>
+          </div>
+          <p class="aide">Un point orange signale un prix relevé par toi. L'économie ne compare que les produits connus dans les deux magasins.</p>
+        </div>
+
+        <div class="carte-blanche">
+          <h2>Saisir un prix à la main</h2>
+          <form id="saisie" class="formulaire">
+            <label class="large">Produit
+              <select id="saisie-produit"></select>
+            </label>
+            <label>Magasin
+              <select id="saisie-magasin"></select>
+            </label>
+            <label>Prix (€)
+              <input id="saisie-prix" type="text" inputmode="decimal" placeholder="ex. 1,29" autocomplete="off">
+            </label>
+            <label>Date
+              <input id="saisie-date" type="date">
+            </label>
+            <label hidden>Code-barres (facultatif)
+              <input id="saisie-code" type="text" inputmode="numeric" autocomplete="off">
+            </label>
+            <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
+            <button type="submit" class="principal">Enregistrer</button>
+            <p id="saisie-message" class="message" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- ========== MES RELEVÉS ========== -->
+      <section id="vue-releves" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>Mes relevés (<span id="nb-releves">0</span>)</h2>
+          <p class="aide">Tous les prix enregistrés, du plus récent au plus ancien.</p>
+          <ul id="liste-releves" class="releves"></ul>
+        </div>
+        <div class="carte-blanche">
+          <h2>Sauvegarde</h2>
+          <p class="aide">Tes données sont gardées dans ce navigateur, sur cet appareil. Pour les passer sur un autre appareil : télécharge le fichier ici, puis importe-le là-bas.</p>
+          <div class="actions">
+            <button type="button" id="exporter">Télécharger mes données</button>
+            <label class="bouton-secondaire" for="importer">Importer un fichier</label>
+            <input id="importer" type="file" accept="application/json,.json" hidden>
+          </div>
+          <p id="sauvegarde-message" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <!-- ========== RÉGLAGES ========== -->
+      <section id="vue-reglages" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>Lecture automatique des photos</h2>
+          <p class="aide">A table utilise l'IA Claude pour lire tes photos. Il faut ta propre clé d'API, gardée uniquement dans ce navigateur. Elle n'est jamais publiée ni envoyée ailleurs que chez Anthropic.</p>
+          <form id="form-cle" class="formulaire">
+            <label class="large">Clé d'API Claude
+              <input id="cle-api" type="password" autocomplete="off" placeholder="sk-ant-…">
+            </label>
+            <label class="large">Modèle
+              <select id="modele"></select>
+            </label>
+            <button type="submit" class="principal">Enregistrer</button>
+            <button type="button" id="cle-tester">Tester la clé</button>
+            <button type="button" id="cle-effacer">Effacer la clé</button>
+            <p id="cle-message" class="message" role="status"></p>
+          </form>
+          <details class="explication">
+            <summary>Comment obtenir une clé ?</summary>
+            <ol>
+              <li>Va sur <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> et crée un compte.</li>
+              <li>Dans <strong>Billing</strong>, ajoute un moyen de paiement et quelques euros de crédit (5 € suffisent pour des centaines de photos).</li>
+              <li>Dans <strong>API Keys</strong>, clique sur <strong>Create Key</strong>, copie la clé (elle commence par <code>sk-ant-</code>) et colle-la ici.</li>
+              <li>Conseil : dans <strong>Limits</strong>, fixe une limite de dépense mensuelle.</li>
+            </ol>
+          </details>
+        </div>
+      </section>
+
+      <!-- Open Prices : masqué pour l'instant (séance 6). Le code reste dans js/openprices.js. -->
+      <template id="open-prices-masque">
+        <section>
+          <h2>Open Prices</h2>
+          <div id="op-magasins"></div>
+          <form id="op-connexion" class="formulaire">
+            <input id="op-identifiant" type="text"><input id="op-mdp" type="password">
+            <p id="op-connexion-message" class="message"></p>
+          </form>
+          <div id="op-connecte" hidden><strong id="op-pseudo"></strong><button type="button" id="op-deconnexion">Se déconnecter</button></div>
+          <form id="op-envoi" class="formulaire" hidden>
+            <select id="op-magasin"></select><input id="op-date" type="date">
+            <select id="op-type"><option value="RECEIPT">Ticket de caisse</option><option value="PRICE_TAG">Étiquette en rayon</option></select>
+            <input id="op-photo" type="file" accept="image/*">
+            <ul id="op-liste" class="releves"></ul>
+            <button type="submit" id="op-envoyer">Envoyer à Open Prices</button>
+            <p id="op-envoi-message" class="message"></p>
+          </form>
+        </section>
+      </template>
     </main>
+
+    <nav class="onglets" aria-label="Navigation">
+      <a href="#photo" data-vue="photo">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M9.4 4h5.2l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.9l1.5-2ZM12 17.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"/></svg>
+        <span>Photo</span>
+      </a>
+      <a href="#course" data-vue="course">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5.2 4l.4 2H21l-2 8H7.3l.4 2H19v2H6.1L3.6 4H1V2h3.8l.4 2Z"/></svg>
+        <span>Ma course</span>
+      </a>
+      <a href="#releves" data-vue="releves">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12v2h10v-2H7Zm0 4v2h7v-2H7Z"/></svg>
+        <span>Mes relevés</span>
+      </a>
+    </nav>
 
     <script src="js/donnees.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/openprices.js"></script>
+    <script src="js/lecture.js"></script>
+    <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>
 </html>
