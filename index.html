@@ -55,6 +55,9 @@
           <label>Date
             <input id="saisie-date" type="date">
           </label>
+          <label>Code-barres (facultatif)
+            <input id="saisie-code" type="text" inputmode="numeric" placeholder="13 chiffres sous le code-barres" autocomplete="off">
+          </label>
           <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
           <button type="submit" class="principal">Enregistrer</button>
           <p id="saisie-message" class="message" role="status"></p>
@@ -65,9 +68,58 @@
         <button type="button" id="exporter">Télécharger mes relevés</button>
         <p class="aide">Les relevés sont gardés dans ce navigateur. Télécharge-les de temps en temps et donne le fichier à Claude pour les ajouter définitivement au projet.</p>
       </section>
+
+      <section>
+        <h2>Open Prices</h2>
+        <p class="aide">La base de prix libre et participative d'Open Food Facts. Les prix envoyés sont publics, avec ton pseudo.</p>
+
+        <h3 class="sous-titre">Ce qu'Open Prices connaît de mes magasins</h3>
+        <div id="op-magasins"></div>
+
+        <h3 class="sous-titre">Envoyer mes relevés</h3>
+        <form id="op-connexion" class="formulaire">
+          <p class="aide large-texte">Connecte-toi avec ton compte Open Food Facts. Le mot de passe est envoyé directement à Open Food Facts : il n'est jamais enregistré ici.</p>
+          <label>Identifiant Open Food Facts
+            <input id="op-identifiant" type="text" autocomplete="username" autocapitalize="none">
+          </label>
+          <label>Mot de passe
+            <input id="op-mdp" type="password" autocomplete="current-password">
+          </label>
+          <button type="submit" class="principal">Se connecter</button>
+          <p id="op-connexion-message" class="message" role="status"></p>
+        </form>
+
+        <div id="op-connecte" class="connecte" hidden>
+          Connecté en tant que <strong id="op-pseudo"></strong>
+          <button type="button" id="op-deconnexion">Se déconnecter</button>
+        </div>
+
+        <form id="op-envoi" class="formulaire" hidden>
+          <label>Magasin
+            <select id="op-magasin"></select>
+          </label>
+          <label>Date des relevés
+            <input id="op-date" type="date">
+          </label>
+          <label>Preuve
+            <select id="op-type">
+              <option value="RECEIPT">Ticket de caisse</option>
+              <option value="PRICE_TAG">Étiquette en rayon</option>
+            </select>
+          </label>
+          <label>Photo
+            <input id="op-photo" type="file" accept="image/*" capture="environment">
+          </label>
+          <ul id="op-liste" class="releves large"></ul>
+          <button type="submit" id="op-envoyer" class="principal">Envoyer à Open Prices</button>
+          <p id="op-envoi-message" class="message" role="status"></p>
+          <p class="aide large-texte">Les fruits et légumes partent au prix au kilo. Pour les autres produits, il faut le code-barres, à saisir avec le prix.</p>
+        </form>
+      </section>
     </main>
 
     <script src="js/donnees.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/openprices.js"></script>
   </body>
 </html>

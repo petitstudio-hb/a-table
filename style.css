@@ -229,6 +229,38 @@ button.principal:hover { filter: brightness(1.08); }
 .releves em { color: #e0902f; font-style: normal; font-size: 0.8rem; }
 button:disabled { opacity: 0.5; cursor: default; }
 
+.formulaire .large, .formulaire .large-texte { grid-column: 1 / -1; margin: 0; }
+.formulaire input[type=password], .formulaire input[type=file] {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--ligne);
+  border-radius: 8px;
+  background: var(--fond);
+  color: var(--texte);
+}
+.connecte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+.connecte button { margin-left: auto; }
+.releves em.envoye { color: var(--vert); }
+
+.op-magasin {
+  border: 1px solid var(--ligne);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: var(--fond);
+}
+.op-magasin summary { cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.op-magasin summary span { color: var(--discret); font-size: 0.9rem; }
+.op-magasin ul { margin-top: 8px; }
+.op-magasin a { font-size: 0.85rem; color: var(--accent); }
+
 tfoot th, tfoot td {
   border-bottom: none;
   border-top: 2px solid var(--texte);

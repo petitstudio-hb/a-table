@@ -40,6 +40,12 @@ function prixDe(i, magasin) {
 
 const nomMagasin = (id) => MAGASINS.find((m) => m.id === id).nom;
 
+// Dernier code-barres connu pour ce produit dans ce magasin.
+function dernierCode(i, magasin) {
+  const avecCode = releves.filter((r) => r.produit === i && r.magasin === magasin && r.code);
+  return avecCode.length ? avecCode[avecCode.length - 1].code : null;
+}
+
 function construireStructure() {
   const tete = document.querySelector("#panier thead tr");
   const pied = document.querySelector("#panier tfoot tr");
@@ -145,8 +151,8 @@ function afficherReleves() {
     .sort((a, b) => b.r.date.localeCompare(a.r.date))
     .map(({ r, k }) => `
       <li>
-        <span><strong>${PANIER[r.produit].nom}</strong> chez ${nomMagasin(r.magasin)} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}
-        <span class="date">${r.date.split("-").reverse().join("/")}</span></span>
+        <span><strong>${PANIER[r.produit].nom}</strong> chez ${nomMagasin(r.magasin)} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}${r.envoye ? ` <em class="envoye">envoyé à Open Prices</em>` : ""}
+        <span class="date">${r.date.split("-").reverse().join("/")}${r.code ? ` · code ${r.code}` : ""}</span></span>
         <button type="button" data-supprimer="${k}" title="Supprimer ce relevé">Supprimer</button>
       </li>`)
     .join("");
@@ -156,6 +162,7 @@ function toutAfficher() {
   afficherLignes();
   calculer();
   afficherReleves();
+  if (typeof afficherEnvoi === "function") afficherEnvoi();
 }
 
 function ouvrirSaisie(produit, magasin) {
@@ -164,6 +171,7 @@ function ouvrirSaisie(produit, magasin) {
   const actuel = prixDe(Number(produit), magasin).prix;
   const champ = document.querySelector("#saisie-prix");
   champ.value = actuel === null ? "" : actuel.toFixed(2);
+  document.querySelector("#saisie-code").value = dernierCode(Number(produit), magasin) || "";
   document.querySelector("#saisie").scrollIntoView({ behavior: "smooth", block: "center" });
   champ.focus();
 }
@@ -212,6 +220,8 @@ function brancherEvenements() {
       prix: Math.round(prix * 100) / 100,
       date: document.querySelector("#saisie-date").value || new Date().toISOString().slice(0, 10),
       promo: document.querySelector("#saisie-promo").checked,
+      code: document.querySelector("#saisie-code").value.replace(/\D/g, "") || null,
+      envoye: false,
     };
     releves.push(releve);
     sauvegarder();
@@ -219,6 +229,7 @@ function brancherEvenements() {
     message.textContent = `Enregistré : ${PANIER[releve.produit].nom} chez ${nomMagasin(releve.magasin)}, ${euros(releve.prix)}.`;
     message.className = "message ok";
     document.querySelector("#saisie-prix").value = "";
+    document.querySelector("#saisie-code").value = "";
     document.querySelector("#saisie-promo").checked = false;
   });
 
