@@ -93,6 +93,7 @@
             <button type="button" id="tout">Tout cocher</button>
             <button type="button" id="rien">Tout décocher</button>
           </div>
+          <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
           <div class="tableau">
             <table id="panier">
               <thead><tr></tr></thead>
@@ -125,6 +126,16 @@
             <button type="submit" class="principal">Enregistrer</button>
             <p id="saisie-message" class="message" role="status"></p>
           </form>
+        </div>
+      </section>
+
+      <!-- ========== MAGASINS ========== -->
+      <section id="vue-magasins" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>Mes supermarchés</h2>
+          <p class="aide">Les magasins que tu compares. Désactive « Affiché » pour masquer un magasin dans « Ma course » sans le supprimer.</p>
+          <ul id="liste-magasins" class="releves"></ul>
+          <button type="button" id="ajouter-magasin" class="bouton-secondaire">+ Ajouter un magasin</button>
         </div>
       </section>
 
@@ -206,6 +217,10 @@
       <a href="#course" data-vue="course">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5.2 4l.4 2H21l-2 8H7.3l.4 2H19v2H6.1L3.6 4H1V2h3.8l.4 2Z"/></svg>
         <span>Ma course</span>
+      </a>
+      <a href="#magasins" data-vue="magasins">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M4 4h16l1 5a3 3 0 0 1-2 2.8V20H5v-8.2A3 3 0 0 1 3 9l1-5Zm3 9v5h4v-4h2v4h4v-5a4 4 0 0 1-4-1.2A4 4 0 0 1 7 13Z"/></svg>
+        <span>Magasins</span>
       </a>
       <a href="#releves" data-vue="releves">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12v2h10v-2H7Zm0 4v2h7v-2H7Z"/></svg>

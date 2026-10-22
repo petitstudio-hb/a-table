@@ -11,7 +11,8 @@ const CLE = {
   reference: "atable.reference",
   releves: "atable.releves",
   produits: "atable.produits", // produits ajoutés depuis les photos
-  magasins: "atable.magasins", // magasins ajoutés depuis les photos
+  magasins: "atable.magasins", // ancien format (séances 6 et avant) : magasins ajoutés depuis les photos
+  magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
 };
 
 function lire(cle, defaut) {
@@ -28,9 +29,15 @@ function ecrire(cle, valeur) {
 
 // Les produits et magasins de donnees.js, complétés par ceux ajoutés sur le site.
 const NB_PRODUITS_BASE = PANIER.length;
-const NB_MAGASINS_BASE = MAGASINS.length;
 PANIER.push(...lire(CLE.produits, []));
-MAGASINS.push(...lire(CLE.magasins, []));
+
+// Les magasins : la liste enregistrée sur l'appareil, sinon celle de donnees.js
+// complétée par les anciens magasins ajoutés depuis les photos.
+{
+  const enregistres = lire(CLE.magasins2, null);
+  if (enregistres) MAGASINS.splice(0, Infinity, ...enregistres);
+  else MAGASINS.push(...lire(CLE.magasins, []));
+}
 
 let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
 let reference = lire(CLE.reference, "intermarche");
@@ -42,7 +49,7 @@ function sauvegarder() {
   ecrire(CLE.reference, reference);
   ecrire(CLE.releves, releves);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
-  ecrire(CLE.magasins, MAGASINS.slice(NB_MAGASINS_BASE));
+  ecrire(CLE.magasins2, MAGASINS);
 }
 
 function ajouterProduit({ nom, format, rayon }) {
@@ -52,11 +59,14 @@ function ajouterProduit({ nom, format, rayon }) {
   return i;
 }
 
-function ajouterMagasin(nom) {
+function ajouterMagasin(nom, adresse = "") {
   const id = "m" + Date.now().toString(36);
-  MAGASINS.push({ id, nom: nom || "Nouveau magasin", adresse: "" });
+  MAGASINS.push({ id, nom: nom || "Nouveau magasin", adresse });
   return id;
 }
+
+// Les magasins affichés dans « Ma course » (tous, sauf ceux que Hugo a masqués).
+const visibles = () => MAGASINS.filter((m) => m.affiche !== false);
 
 const nomMagasin = (id) => MAGASINS.find((m) => m.id === id)?.nom || "Magasin inconnu";
 
@@ -93,7 +103,7 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "releves", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "releves", "reglages"];
 
 function montrer(vue) {
   if (!VUES.includes(vue)) vue = "photo";
@@ -110,14 +120,14 @@ window.addEventListener("hashchange", () => montrer(location.hash.slice(1)));
 function remplirListes() {
   const options = MAGASINS.map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
   const ref = document.querySelector("#reference");
-  ref.innerHTML = options;
-  if (!MAGASINS.some((m) => m.id === reference)) reference = MAGASINS[0].id;
+  ref.innerHTML = visibles().map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
+  if (!visibles().some((m) => m.id === reference)) reference = (visibles()[0] || MAGASINS[0] || {}).id;
   ref.value = reference;
 
   const mag = document.querySelector("#saisie-magasin");
   const magChoisi = mag.value;
   mag.innerHTML = options;
-  mag.value = MAGASINS.some((m) => m.id === magChoisi) ? magChoisi : "aldi";
+  mag.value = MAGASINS.some((m) => m.id === magChoisi) ? magChoisi : MAGASINS[0]?.id;
 
   const prod = document.querySelector("#saisie-produit");
   const prodChoisi = prod.value;
@@ -126,10 +136,12 @@ function remplirListes() {
 }
 
 function afficherTableau() {
+  const mags = visibles();
+  document.querySelector("#panier-vide").hidden = mags.length > 0;
   document.querySelector("#panier thead tr").innerHTML =
-    `<th>Produit</th>` + MAGASINS.map((m) => `<th>${echapper(m.nom)}<span>${echapper(m.adresse)}</span></th>`).join("");
+    `<th>Produit</th>` + mags.map((m) => `<th>${echapper(m.nom)}<span>${echapper(m.adresse)}</span></th>`).join("");
   document.querySelector("#panier tfoot tr").innerHTML =
-    `<th scope="row">Total des produits cochés</th>` + MAGASINS.map((m) => `<td data-total="${m.id}"></td>`).join("");
+    `<th scope="row">Total des produits cochés</th>` + mags.map((m) => `<td data-total="${m.id}"></td>`).join("");
 
   // Produits regroupés par rayon, dans l'ordre où chaque rayon apparaît.
   const rayons = [...new Set(PANIER.map((p) => p.rayon))];
@@ -139,14 +151,14 @@ function afficherTableau() {
   let rayonPrecedent = "";
   ordre.forEach(({ p: produit, i }) => {
     if (produit.rayon !== rayonPrecedent) {
-      html += `<tr class="rayon"><td colspan="${MAGASINS.length + 1}">${echapper(produit.rayon)}</td></tr>`;
+      html += `<tr class="rayon"><td colspan="${mags.length + 1}">${echapper(produit.rayon)}</td></tr>`;
       rayonPrecedent = produit.rayon;
     }
-    const prix = MAGASINS.map((m) => prixDe(i, m.id));
+    const prix = mags.map((m) => prixDe(i, m.id));
     const connus = prix.map((p) => p.prix).filter((p) => p !== null);
     const meilleur = connus.length > 1 ? Math.min(...connus) : null;
 
-    const cellules = MAGASINS.map((m, k) => {
+    const cellules = mags.map((m, k) => {
       const { prix: p, saisi } = prix[k];
       const titre = `Saisir le prix chez ${echapper(m.nom)}`;
       if (p === null) return `<td class="manquant"><button class="cellule" data-produit="${i}" data-magasin="${m.id}" title="${titre}">+ prix</button></td>`;
@@ -166,9 +178,10 @@ function afficherTableau() {
 }
 
 function calculer() {
+  const mags = visibles();
   const indices = PANIER.map((_, i) => i).filter((i) => coches.has(i));
 
-  for (const m of MAGASINS) {
+  for (const m of mags) {
     const prix = indices.map((i) => prixDe(i, m.id).prix).filter((p) => p !== null);
     const total = prix.reduce((a, b) => a + b, 0);
     document.querySelector(`[data-total="${m.id}"]`).innerHTML =
@@ -178,7 +191,7 @@ function calculer() {
   // Économie par rapport au magasin de référence, calculée seulement sur les
   // produits cochés dont le prix est connu dans les deux magasins (décision D13).
   const ref = reference;
-  const cartes = MAGASINS.filter((m) => m.id !== ref).map((m) => {
+  const cartes = mags.filter((m) => m.id !== ref).map((m) => {
     const communs = indices.filter((i) => prixDe(i, m.id).prix !== null && prixDe(i, ref).prix !== null);
     if (communs.length === 0) {
       return `<div class="carte vide"><h3>${echapper(m.nom)}</h3><p class="chiffre">—</p><p>Aucun produit coché comparable avec ${echapper(nomMagasin(ref))}.</p></div>`;
@@ -201,6 +214,40 @@ function calculer() {
   document.querySelector("#economies").innerHTML = cartes.join("");
   const n = indices.length;
   document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${PANIER.length}`;
+}
+
+// ---------- Magasins ----------
+
+let magasinEnModification = null; // identifiant du magasin en cours de modification ("__nouveau" pour un ajout)
+
+function afficherMagasins() {
+  const liste = document.querySelector("#liste-magasins");
+  const formulaire = (m) => `
+    <li class="modif" data-id="${m.id}">
+      <div class="formulaire">
+        <label>Nom<input type="text" data-champ="nom" value="${echapper(m.nom)}" placeholder="ex. Aldi"></label>
+        <label>Rue<input type="text" data-champ="adresse" value="${echapper(m.adresse)}" placeholder="ex. 12 rue de Clignancourt"></label>
+      </div>
+      <div class="actions"><button type="button" data-annuler-magasin>Annuler</button><button type="button" class="principal" data-enregistrer-magasin="${m.id}">Enregistrer</button></div>
+    </li>`;
+  let html = MAGASINS.map((m) => {
+    if (m.id === magasinEnModification) return formulaire(m);
+    const n = releves.filter((r) => r.magasin === m.id).length;
+    return `
+      <li data-id="${m.id}">
+        <span><strong>${echapper(m.nom)}</strong>
+          <span class="date">${echapper(m.adresse) || "Rue non renseignée"} · ${n} relevé${n > 1 ? "s" : ""}</span></span>
+        <span class="boutons">
+          <label class="interrupteur" title="Afficher dans Ma course"><input type="checkbox" data-afficher="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>Affiché</span></label>
+          <button type="button" data-modifier-magasin="${m.id}">Modifier</button>
+          <button type="button" data-supprimer-magasin="${m.id}" aria-label="Supprimer ${echapper(m.nom)}">✕</button>
+        </span>
+      </li>`;
+  }).join("");
+  if (magasinEnModification === "__nouveau") html += formulaire({ id: "__nouveau", nom: "", adresse: "" });
+  if (!html) html = `<li class="vide">Aucun magasin. Ajoute-en un avec le bouton ci-dessous.</li>`;
+  liste.innerHTML = html;
+  document.querySelector("#ajouter-magasin").hidden = magasinEnModification === "__nouveau";
 }
 
 // ---------- Mes relevés ----------
@@ -247,6 +294,7 @@ function toutAfficher() {
   remplirListes();
   afficherTableau();
   calculer();
+  afficherMagasins();
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
 }
@@ -271,11 +319,11 @@ const lirePrix = (texte) => parseFloat(String(texte).replace(",", ".").replace(/
 function exporter() {
   const contenu = {
     application: "A table",
-    version: 2,
+    version: 3,
     date: new Date().toISOString(),
     releves,
     produitsAjoutes: PANIER.slice(NB_PRODUITS_BASE),
-    magasinsAjoutes: MAGASINS.slice(NB_MAGASINS_BASE),
+    magasins: MAGASINS,
     coches: [...coches],
     reference,
   };
@@ -298,7 +346,8 @@ async function importer(fichier) {
     } else if (donnees.application === "A table" && Array.isArray(donnees.releves)) {
       if (!confirm("Remplacer toutes les données de cet appareil par celles du fichier ?")) return;
       PANIER.splice(NB_PRODUITS_BASE, Infinity, ...(donnees.produitsAjoutes || []));
-      MAGASINS.splice(NB_MAGASINS_BASE, Infinity, ...(donnees.magasinsAjoutes || []));
+      if (Array.isArray(donnees.magasins)) MAGASINS.splice(0, Infinity, ...donnees.magasins);
+      else MAGASINS.push(...(donnees.magasinsAjoutes || []).filter((m) => !MAGASINS.some((x) => x.id === m.id)));
       releves = donnees.releves.filter((r) => r.produit < PANIER.length);
       coches = new Set(donnees.coches || PANIER.map((_, i) => i));
       reference = donnees.reference || reference;
@@ -403,6 +452,50 @@ function brancherEvenements() {
       sauvegarder();
       toutAfficher();
     }
+  });
+
+  const listeMagasins = document.querySelector("#liste-magasins");
+  listeMagasins.addEventListener("change", (e) => {
+    if (!e.target.matches("[data-afficher]")) return;
+    MAGASINS.find((m) => m.id === e.target.dataset.afficher).affiche = e.target.checked;
+    sauvegarder();
+    toutAfficher();
+  });
+  listeMagasins.addEventListener("click", (e) => {
+    const mod = e.target.closest("[data-modifier-magasin]");
+    if (mod) { magasinEnModification = mod.dataset.modifierMagasin; afficherMagasins(); return; }
+    if (e.target.closest("[data-annuler-magasin]")) { magasinEnModification = null; afficherMagasins(); return; }
+    const enr = e.target.closest("[data-enregistrer-magasin]");
+    if (enr) {
+      const li = enr.closest("li");
+      const nom = li.querySelector('[data-champ="nom"]').value.trim();
+      const adresse = li.querySelector('[data-champ="adresse"]').value.trim();
+      if (!nom) { notifier("Donne un nom au magasin."); return; }
+      if (enr.dataset.enregistrerMagasin === "__nouveau") ajouterMagasin(nom, adresse);
+      else Object.assign(MAGASINS.find((m) => m.id === enr.dataset.enregistrerMagasin), { nom, adresse });
+      magasinEnModification = null;
+      sauvegarder();
+      toutAfficher();
+      return;
+    }
+    const sup = e.target.closest("[data-supprimer-magasin]");
+    if (sup) {
+      const m = MAGASINS.find((x) => x.id === sup.dataset.supprimerMagasin);
+      const n = releves.filter((r) => r.magasin === m.id).length;
+      const question = n
+        ? `Supprimer ${m.nom} ? Ses ${n} relevé${n > 1 ? "s" : ""} seront supprimé${n > 1 ? "s" : ""} aussi.`
+        : `Supprimer ${m.nom} ?`;
+      if (!confirm(question)) return;
+      MAGASINS.splice(MAGASINS.indexOf(m), 1);
+      releves = releves.filter((r) => r.magasin !== m.id);
+      sauvegarder();
+      toutAfficher();
+    }
+  });
+  document.querySelector("#ajouter-magasin").addEventListener("click", () => {
+    magasinEnModification = "__nouveau";
+    afficherMagasins();
+    listeMagasins.querySelector('[data-champ="nom"]')?.focus();
   });
 
   document.querySelector("#exporter").addEventListener("click", exporter);

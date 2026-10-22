@@ -463,3 +463,11 @@ tfoot th, tfoot td {
   border-top: 2px solid var(--texte);
   padding-top: 12px;
 }
+
+/* ---------- Magasins ---------- */
+.releves .boutons { flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.interrupteur { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; }
+.interrupteur input { width: 18px; height: 18px; accent-color: var(--accent); }
+.interrupteur span { display: inline; font-size: 0.85rem; color: inherit; }
+#ajouter-magasin { display: inline-block; }
+#ajouter-magasin[hidden] { display: none; }
