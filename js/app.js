@@ -295,6 +295,7 @@ function toutAfficher() {
   afficherTableau();
   calculer();
   afficherMagasins();
+  if (typeof afficherTrouves === "function") afficherTrouves(); // met à jour « Déjà ajouté »
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
 }

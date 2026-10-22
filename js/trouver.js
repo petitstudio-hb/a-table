@@ -45,7 +45,7 @@ async function chercherMagasins(centre, rayon) {
   let donnees = null;
   for (const serveur of OVERPASS) {
     try {
-      const rep = await fetch(serveur, { method: "POST", body: "data=" + encodeURIComponent(requete), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+      const rep = await fetch(serveur, { method: "POST", body: "data=" + encodeURIComponent(requete), headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: AbortSignal.timeout(20000) });
       if (rep.ok) { donnees = await rep.json(); break; }
     } catch (e) { /* serveur suivant */ }
   }
@@ -125,6 +125,5 @@ document.querySelector("#trouver-liste").addEventListener("click", (e) => {
   MAGASINS.find((x) => x.id === id).osm = m.osm;
   sauvegarder();
   toutAfficher();
-  afficherTrouves();
   notifier(`${m.nom} ajouté.`);
 });
