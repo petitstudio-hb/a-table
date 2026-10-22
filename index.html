@@ -137,6 +137,35 @@
           <ul id="liste-magasins" class="releves"></ul>
           <button type="button" id="ajouter-magasin" class="bouton-secondaire">+ Ajouter un magasin</button>
         </div>
+
+        <div id="trouver" class="carte-blanche">
+          <h2>Trouver des magasins</h2>
+          <p class="aide">Cherche les supermarchés autour de toi (données OpenStreetMap). Ta position sert seulement à la recherche : elle n'est pas enregistrée.</p>
+          <div class="formulaire">
+            <label>Rayon
+              <select id="trouver-rayon">
+                <option value="500">500 m</option>
+                <option value="1000" selected>1 km</option>
+                <option value="2000">2 km</option>
+                <option value="5000">5 km</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" id="trouver-gps" class="principal">Ma position</button>
+          </div>
+          <form id="trouver-form" class="formulaire">
+            <label class="large">Ou une adresse
+              <input id="trouver-adresse" type="text" placeholder="ex. 10 rue Lepic, Paris" autocomplete="off">
+            </label>
+            <button type="submit">Chercher</button>
+          </form>
+          <p id="trouver-etat" class="message" role="status"></p>
+          <div id="trouver-resultats" hidden>
+            <ul id="trouver-liste" class="releves"></ul>
+            <button type="button" id="trouver-plus" class="bouton-secondaire" hidden>Afficher plus</button>
+          </div>
+        </div>
       </section>
 
       <!-- ========== MES RELEVÉS ========== -->
@@ -231,6 +260,7 @@
     <script src="js/donnees.js"></script>
     <script src="js/app.js"></script>
     <script src="js/lecture.js"></script>
+    <script src="js/trouver.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>
 </html>
