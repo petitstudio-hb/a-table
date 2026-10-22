@@ -13,6 +13,8 @@ const CLE = {
   produits: "atable.produits", // produits ajoutés depuis les photos
   magasins: "atable.magasins", // ancien format (séances 6 et avant) : magasins ajoutés depuis les photos
   magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
+  vu: "atable.magasinVu", // magasin affiché dans Ma course (séance 9)
+  replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
 };
 
 function lire(cle, defaut) {
@@ -41,12 +43,16 @@ PANIER.push(...lire(CLE.produits, []));
 
 let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
 let reference = lire(CLE.reference, "intermarche");
+let magasinVu = lire(CLE.vu, null);
+let rayonsReplies = new Set(lire(CLE.replies, []));
 // Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
 let releves = lire(CLE.releves, []);
 
 function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.reference, reference);
+  ecrire(CLE.vu, magasinVu);
+  ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.releves, releves);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
   ecrire(CLE.magasins2, MAGASINS);
@@ -135,6 +141,84 @@ function remplirListes() {
   if (prodChoisi) prod.value = prodChoisi;
 }
 
+// Nom court d'un magasin pour les petites lignes : « Intermarché Express » devient « Intermarché ».
+const nomCourt = (m) => m.nom.split(" ")[0].slice(0, 12);
+
+// Un produit n'a de prix « utile » que s'il est connu ; les totaux ne comptent que les produits cochés.
+function totalDe(m) {
+  const indices = PANIER.map((_, i) => i).filter((i) => coches.has(i));
+  const prix = indices.map((i) => prixDe(i, m.id).prix).filter((p) => p !== null);
+  return { total: prix.reduce((a, b) => a + b, 0), connus: prix.length, coches: indices.length };
+}
+
+// Magasin le moins cher : seulement parmi ceux qui connaissent au moins 80 % des prix cochés,
+// sinon un magasin aux prix manquants paraîtrait faussement moins cher (décision D13).
+function moinsCher() {
+  const candidats = visibles().map((m) => ({ m, ...totalDe(m) })).filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches);
+  if (candidats.length < 2) return null;
+  return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
+}
+
+// Onglets des magasins (avec leur total) et liste des produits du magasin choisi.
+function afficherCourse() {
+  const mags = visibles();
+  if (!mags.some((m) => m.id === magasinVu)) magasinVu = mags[0]?.id ?? null;
+  const vu = mags.find((m) => m.id === magasinVu);
+  document.querySelector("#course-onglets").hidden = mags.length === 0;
+  const gagnant = moinsCher();
+  document.querySelector("#course-onglets").innerHTML = mags
+    .map((m) => {
+      const t = totalDe(m);
+      return `<button type="button" role="tab" aria-selected="${m.id === magasinVu}" class="onglet-mag ${m.id === magasinVu ? "actif" : ""}" data-mag="${m.id}">
+        <strong>${echapper(nomCourt(m))}${m.id === gagnant ? ` <i class="pastille" title="Le moins cher"></i>` : ""}</strong>
+        <span>${t.connus ? euros(t.total) : "—"}</span></button>`;
+    })
+    .join("");
+
+  const liste = document.querySelector("#liste-course");
+  if (!vu) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
+
+  const autres = mags.filter((m) => m.id !== vu.id);
+  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
+  liste.innerHTML = rayons
+    .map((rayon) => {
+      const replie = rayonsReplies.has(rayon);
+      const produits = PANIER.map((p, i) => ({ p, i })).filter(({ p }) => p.rayon === rayon);
+      const lignes = replie ? "" : produits.map(({ p, i }) => {
+        const { prix, saisi } = prixDe(i, vu.id);
+        const refPrix = prixDe(i, reference).prix;
+        let ecart = "";
+        if (prix !== null && refPrix !== null && vu.id !== reference) {
+          const d = Math.round((prix - refPrix) * 100) / 100;
+          if (Math.abs(d) >= 0.005) ecart = `<span class="ecart ${d < 0 ? "moins" : "plus"}">${d < 0 ? "−" : "+"}${euros(Math.abs(d))}</span>`;
+        }
+        const ailleurs = autres.map((m) => {
+          const q = prixDe(i, m.id).prix;
+          return `${echapper(nomCourt(m))} ${q === null ? "—" : euros(q)}`;
+        }).join(" · ");
+        return `
+          <div class="ligne-course ${coches.has(i) ? "" : "decoche"}">
+            <label>
+              <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
+              <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
+                <span class="lc-format">${echapper(p.format)}</span>
+                ${ailleurs ? `<span class="lc-autres">${ailleurs}</span>` : ""}</span>
+            </label>
+            <button type="button" class="cellule lc-prix ${prix === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${vu.id}" title="Saisir le prix chez ${echapper(vu.nom)}">
+              ${prix === null ? "+ prix" : euros(prix)}${ecart}</button>
+          </div>`;
+      }).join("");
+      return `<div class="rayon-course">
+        <button type="button" class="rayon-titre" data-rayon="${echapper(rayon)}" aria-expanded="${!replie}">
+          <span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button>${lignes}</div>`;
+    })
+    .join("");
+
+  const t = totalDe(vu);
+  document.querySelector("#course-total").innerHTML =
+    `<span>Total ${echapper(vu.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
+}
+
 function afficherTableau() {
   const mags = visibles();
   document.querySelector("#panier-vide").hidden = mags.length > 0;
@@ -179,6 +263,7 @@ function afficherTableau() {
 
 function calculer() {
   const mags = visibles();
+  if (!mags.some((m) => m.id === magasinVu)) magasinVu = mags[0]?.id ?? null;
   const indices = PANIER.map((_, i) => i).filter((i) => coches.has(i));
 
   for (const m of mags) {
@@ -191,7 +276,10 @@ function calculer() {
   // Économie par rapport au magasin de référence, calculée seulement sur les
   // produits cochés dont le prix est connu dans les deux magasins (décision D13).
   const ref = reference;
-  const cartes = mags.filter((m) => m.id !== ref).map((m) => {
+  const vus = mags.filter((m) => m.id === magasinVu);
+  const cartes = vus.length && vus[0].id === ref
+    ? [`<div class="carte vide"><h3>${echapper(vus[0].nom)}</h3><p>C'est ton magasin de référence. Choisis un autre magasin en haut pour voir l'économie.</p></div>`]
+    : vus.map((m) => {
     const communs = indices.filter((i) => prixDe(i, m.id).prix !== null && prixDe(i, ref).prix !== null);
     if (communs.length === 0) {
       return `<div class="carte vide"><h3>${echapper(m.nom)}</h3><p class="chiffre">—</p><p>Aucun produit coché comparable avec ${echapper(nomMagasin(ref))}.</p></div>`;
@@ -214,6 +302,7 @@ function calculer() {
   document.querySelector("#economies").innerHTML = cartes.join("");
   const n = indices.length;
   document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${PANIER.length}`;
+  afficherCourse();
 }
 
 // ---------- Magasins ----------
@@ -380,6 +469,41 @@ function brancherEvenements() {
   panier.addEventListener("click", (e) => {
     const b = e.target.closest("button.cellule");
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
+  });
+
+  document.querySelector("#course-onglets").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mag]");
+    if (!b) return;
+    magasinVu = b.dataset.mag;
+    sauvegarder();
+    calculer();
+  });
+  const listeCourse = document.querySelector("#liste-course");
+  listeCourse.addEventListener("change", (e) => {
+    if (!e.target.matches("input[type=checkbox]")) return;
+    const i = Number(e.target.dataset.index);
+    e.target.checked ? coches.add(i) : coches.delete(i);
+    sauvegarder();
+    afficherTableau();
+    calculer();
+  });
+  listeCourse.addEventListener("click", (e) => {
+    const rayon = e.target.closest("[data-rayon]");
+    if (rayon) {
+      const nom = rayon.dataset.rayon;
+      rayonsReplies.has(nom) ? rayonsReplies.delete(nom) : rayonsReplies.add(nom);
+      sauvegarder();
+      afficherCourse();
+      return;
+    }
+    const b = e.target.closest("button.cellule");
+    if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
+  });
+  document.querySelector("#tout-comparer-bouton").addEventListener("click", (e) => {
+    const bloc = document.querySelector("#tout-comparer");
+    bloc.hidden = !bloc.hidden;
+    e.target.textContent = bloc.hidden ? "Tout comparer" : "Masquer le tableau complet";
+    if (!bloc.hidden) bloc.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   document.querySelector("#reference").addEventListener("change", (e) => {

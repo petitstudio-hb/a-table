@@ -77,6 +77,8 @@
 
       <!-- ========== MA COURSE ========== -->
       <section id="vue-course" class="vue" hidden>
+        <div id="course-onglets" class="course-onglets" role="tablist" aria-label="Magasin affiché"></div>
+
         <div class="carte-blanche resume">
           <div class="resume-tete">
             <h2>Combien j'économise ?</h2>
@@ -87,13 +89,22 @@
 
         <div class="carte-blanche">
           <h2>Ma course</h2>
-          <p class="aide">Coche les produits dont tu as besoin. En vert : le prix le plus bas quand au moins deux magasins sont connus. Touche un prix pour le modifier.</p>
+          <p class="aide">Coche les produits dont tu as besoin. Touche un prix pour le modifier.</p>
           <div class="actions">
             <span id="nb-coches"></span>
             <button type="button" id="tout">Tout cocher</button>
             <button type="button" id="rien">Tout décocher</button>
           </div>
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
+          <div id="liste-course"></div>
+          <p id="course-total" class="course-total"></p>
+          <p class="aide">Un point orange signale un prix relevé par toi. L'économie ne compare que les produits connus dans les deux magasins.</p>
+          <button type="button" id="tout-comparer-bouton" class="bouton-secondaire">Tout comparer</button>
+        </div>
+
+        <div id="tout-comparer" class="carte-blanche" hidden>
+          <h2>Tous les magasins</h2>
+          <p class="aide">Le tableau complet. En vert : le prix le plus bas quand au moins deux magasins sont connus.</p>
           <div class="tableau">
             <table id="panier">
               <thead><tr></tr></thead>
@@ -101,7 +112,6 @@
               <tfoot><tr></tr></tfoot>
             </table>
           </div>
-          <p class="aide">Un point orange signale un prix relevé par toi. L'économie ne compare que les produits connus dans les deux magasins.</p>
         </div>
 
         <div class="carte-blanche">
