@@ -79,10 +79,11 @@ async function preparerImage(fichier) {
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["magasin_id", "magasin_nom", "date", "lignes", "remarque"],
+  required: ["magasin_id", "magasin_nom", "magasin_adresse", "date", "lignes", "remarque"],
   properties: {
     magasin_id: { type: "string", description: "Identifiant d'un magasin connu, ou chaîne vide si aucun ne correspond." },
-    magasin_nom: { type: "string", description: "Nom du magasin lu sur la photo (enseigne et ville ou adresse si visibles), ou chaîne vide." },
+    magasin_nom: { type: "string", description: "Enseigne du magasin lue sur la photo (ex. « Aldi », « Intermarché Express »), sans l'adresse, ou chaîne vide." },
+    magasin_adresse: { type: "string", description: "Numéro et rue du magasin lus sur la photo (ex. « 12 rue de Clignancourt »), sans le code postal ni la ville, ou chaîne vide si absents." },
     date: { type: "string", description: "Date d'achat au format AAAA-MM-JJ, ou chaîne vide si absente." },
     remarque: { type: "string", description: "Problème de lecture éventuel à signaler (photo floue, ligne illisible), sinon chaîne vide." },
     lignes: {
@@ -128,7 +129,7 @@ Associer une ligne à un produit du panier :
 - prix_reference est le prix que coûterait le format du produit associé. Si le format est identique, c'est le prix unitaire. Si le prix au kilo est connu et que le format est un poids, calcule : prix au kilo × poids du format (ex. oignons à 1,99 €/kg pour un format de 500 g : 1,00). Pour un format différent sans prix au kilo, ramène au prorata de la contenance. Arrondis au centime.
 - Pour un produit non associé, propose un nom clair, un poids et un rayon.
 
-Si un magasin connu correspond (enseigne et adresse cohérentes), donne son identifiant ; sinon magasin_id vide et le nom lu dans magasin_nom.
+Si un magasin connu correspond (enseigne et adresse cohérentes), donne son identifiant. Si l'enseigne est connue mais que l'adresse lue est clairement différente, c'est un autre magasin : magasin_id vide. Sinon magasin_id vide aussi. Dans les deux cas, renseigne magasin_nom (enseigne) et magasin_adresse (numéro et rue) tels qu'imprimés sur la photo, en gardant leur écriture normale (pas tout en majuscules).
 Réponds uniquement à partir de ce qui est visible. N'invente pas de ligne.`;
 
   if (type === "etiquette") {
@@ -232,8 +233,9 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   const magasinConnu = MAGASINS.some((m) => m.id === resultat.magasin_id);
   brouillon = {
     type,
-    magasin: magasinConnu ? resultat.magasin_id : (resultat.magasin_nom ? "__nouveau" : "aldi"),
+    magasin: magasinConnu ? resultat.magasin_id : (resultat.magasin_nom ? "__nouveau" : MAGASINS[0]?.id ?? "__nouveau"),
     magasinNom: resultat.magasin_nom || "",
+    magasinAdresse: resultat.magasin_adresse || "",
     date: /^\d{4}-\d{2}-\d{2}$/.test(resultat.date) ? resultat.date : aujourdhui(),
     lignes: resultat.lignes.map((l) => ({
       libelle: l.libelle,
@@ -265,6 +267,7 @@ function afficherVerification() {
   choixMag.value = brouillon.magasin;
   document.querySelector("#verif-nouveau-magasin").hidden = brouillon.magasin !== "__nouveau";
   document.querySelector("#verif-magasin-nom").value = brouillon.magasinNom;
+  document.querySelector("#verif-magasin-adresse").value = brouillon.magasinAdresse;
   document.querySelector("#verif-date").value = brouillon.date;
 
   const options = (choisi) => `<option value="-1" ${choisi === -1 ? "selected" : ""}>Nouveau produit (ajouté à ma liste)</option>`
@@ -325,7 +328,14 @@ function valider() {
     return;
   }
   let magasin = document.querySelector("#verif-magasin").value;
-  if (magasin === "__nouveau") magasin = ajouterMagasin(document.querySelector("#verif-magasin-nom").value.trim());
+  if (magasin === "__nouveau") {
+    const nom = document.querySelector("#verif-magasin-nom").value.trim();
+    if (!nom) {
+      alert("Donne un nom au nouveau magasin.");
+      return;
+    }
+    magasin = ajouterMagasin(nom, document.querySelector("#verif-magasin-adresse").value.trim());
+  }
   const date = document.querySelector("#verif-date").value || aujourdhui();
 
   for (const l of lignes) {
@@ -380,6 +390,7 @@ function demarrerLecture() {
     document.querySelector("#verif-nouveau-magasin").hidden = e.target.value !== "__nouveau";
   });
   document.querySelector("#verif-magasin-nom").addEventListener("input", (e) => { brouillon.magasinNom = e.target.value; });
+  document.querySelector("#verif-magasin-adresse").addEventListener("input", (e) => { brouillon.magasinAdresse = e.target.value; });
   document.querySelector("#verif-date").addEventListener("change", (e) => { brouillon.date = e.target.value; });
   document.querySelector("#verif-valider").addEventListener("click", valider);
   document.querySelector("#verif-annuler").addEventListener("click", () => {

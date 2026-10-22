@@ -58,9 +58,17 @@
             <label>Magasin
               <select id="verif-magasin"></select>
             </label>
-            <label id="verif-nouveau-magasin" hidden>Nom du nouveau magasin
-              <input id="verif-magasin-nom" type="text">
-            </label>
+            <div id="verif-nouveau-magasin" class="large nouveau-magasin" hidden>
+              <p class="aide">Ce magasin n'est pas dans ta liste. Vérifie son nom et sa rue : il sera ajouté quand tu valideras.</p>
+              <div class="formulaire">
+                <label>Nom du nouveau magasin
+                  <input id="verif-magasin-nom" type="text" placeholder="ex. Lidl">
+                </label>
+                <label>Rue
+                  <input id="verif-magasin-adresse" type="text" placeholder="ex. 12 rue de Clignancourt" autocomplete="off">
+                </label>
+              </div>
+            </div>
             <label>Date
               <input id="verif-date" type="date">
             </label>
