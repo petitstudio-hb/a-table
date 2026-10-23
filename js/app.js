@@ -181,6 +181,7 @@ function montrer(vue) {
   document.querySelector("#profil-bouton").classList.toggle("actif", VUES_PROFIL.includes(vue));
   fermerProfil();
   if (vue !== "paniers" && typeof fermerPanier === "function") fermerPanier();
+  if (vue === "liste" && typeof afficherListe === "function") afficherListe();
   window.scrollTo(0, 0);
 }
 

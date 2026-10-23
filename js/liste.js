@@ -133,3 +133,5 @@ function brancherListe() {
 }
 
 brancherListe();
+
+afficherListe(); // liste.js se charge après le premier affichage de app.js : on dessine la liste dès maintenant
