@@ -1,12 +1,21 @@
+/* Polices hébergées avec le site (licence OFL) : Bricolage Grotesque pour le texte, Courier Prime pour les prix. */
+@font-face { font-family: "Bricolage Grotesque"; src: url("polices/bricolage.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("polices/courierprime-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("polices/courierprime-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+/* Palette « ticket de caisse » (séance 22) : kraft, papier, vert profond, jaune étiquette. */
 :root {
-  --fond: #faf7f2;
-  --carte: #ffffff;
-  --texte: #2b2620;
-  --discret: #7a7065;
-  --accent: #c8553d;
-  --vert: #2f7d4f;
-  --vert-fond: #e3f2e8;
-  --ligne: #e8e1d7;
+  --fond: #ece6d5;
+  --carte: #fbf9f1;
+  --texte: #13392a;
+  --discret: #4b5f54;
+  --accent: #0e4d2f;
+  --vert: #1d7a3f;
+  --vert-fond: #dcefd9;
+  --ligne: #cfc8b2;
+  --jaune: #f2c230;
+  --rouge: #8a2d1b;
+  --mono: "Courier Prime", ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -16,7 +25,7 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--fond);
   color: var(--texte);
 }
@@ -39,6 +48,8 @@ body {
 .barre h1 {
   margin: 0;
   font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -132,9 +143,9 @@ main {
   width: min(55vw, 220px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #e0785f, var(--accent));
+  background: var(--accent);
   color: #fff;
-  box-shadow: 0 10px 30px rgba(200, 85, 61, 0.35), inset 0 0 0 8px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 6px var(--ligne), inset 0 0 0 5px var(--jaune);
   cursor: pointer;
   transition: transform 0.12s;
 }
@@ -659,3 +670,57 @@ input, select, textarea { font-size: 16px !important; }
 
 /* Logo : le cabas de Cabasito dans l'en-tête */
 .barre h1 .logo { width: 1.35em; height: 1.35em; flex: none; }
+
+/* ---------- Séance 22 : identité « ticket de caisse » (maquette B3) ---------- */
+.carte-blanche, .carte { border-radius: 3px; box-shadow: none; border: 1px solid var(--ligne); }
+.bouton-secondaire, .actions button { border-radius: 4px; }
+.mono, .etiquette, .course-total strong, .onglet-mag span { font-family: var(--mono); }
+
+/* Magasins en haut de Ma course : cases rectangulaires, le magasin affiché est plein. */
+.onglet-mag { border-radius: 2px; border: 1.5px solid var(--accent); background: var(--carte); gap: 1px; }
+.onglet-mag strong { font-weight: 800; color: var(--accent); }
+.onglet-mag span { font-size: 1rem; font-weight: 700; color: var(--texte); }
+.onglet-mag.actif { background: var(--accent); box-shadow: none; }
+.onglet-mag.actif strong, .onglet-mag.actif span { color: var(--carte); }
+.pastille { background: var(--jaune); outline: 1.5px solid var(--accent); }
+
+/* Rayons : bandeau vert plein. */
+.rayon-titre { margin-top: 14px; padding: 6px 10px; background: var(--accent); color: var(--carte); font-weight: 800; letter-spacing: 0.08em; font-size: 0.82rem; }
+
+/* Lignes : prix en étiquette jaune à pointe, comparaison en une phrase dessous. */
+.ligne-course { flex-wrap: wrap; border-top: 1px dashed #a9b3a6; padding: 11px 4px; }
+.etiquette { display: inline-block; background: var(--jaune); color: #1b2a22; font-weight: 700; font-size: 1.12rem; padding: 4px 10px 4px 15px; clip-path: polygon(9px 0, 100% 0, 100% 100%, 9px 100%, 0 50%); }
+.lc-prix { min-width: 0; padding: 2px 0; }
+.lc-prix.manquant { color: var(--accent); font-weight: 700; border: 1.5px dashed var(--accent); padding: 5px 11px; font-size: 0.95rem; }
+.lc-prix.saisi { box-shadow: none; }
+.vs { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin: -2px 0 0 34px; font-size: 0.86rem; line-height: 1.25; }
+.vs-ko { color: var(--rouge); font-weight: 500; }
+.vs-egal { color: var(--discret); }
+.tampon { border: 2px solid var(--vert); color: var(--vert); font-family: var(--mono); font-weight: 700; font-size: 0.74rem; padding: 0 6px; transform: rotate(-3deg); }
+.voir-autres { margin-left: auto; padding: 4px 0 4px 8px; border: none; background: none; color: var(--accent); text-decoration: underline; font-size: 0.8rem; min-height: 32px; }
+.pastilles { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0 34px; }
+.pastille-prix { font-size: 0.82rem; padding: 3px 8px; border: 1.5px solid; line-height: 1.2; }
+.pastille-prix b { font-family: var(--mono); font-size: 0.9rem; }
+.pastille-prix.mieux { border-color: var(--vert); background: var(--vert-fond); color: #0b4a22; }
+.pastille-prix.plus { border-color: var(--ligne); color: var(--discret); }
+.pastille-prix.aucun { border-style: dashed; border-color: var(--ligne); color: var(--discret); }
+
+/* Total : ligne de ticket. */
+.course-total { border-top: 2px solid var(--accent); }
+.course-total strong { font-size: 1.6rem; }
+
+/* Bilan en haut : bandeau jaune. */
+.cartes .carte { background: var(--jaune); border-color: var(--jaune); color: #1b2a22; }
+.cartes .carte .chiffre, .cartes .carte.gain .chiffre, .cartes .carte.perte .chiffre { color: #1b2a22; font-family: var(--mono); }
+.cartes .carte .detail { color: #3b4a3f; }
+
+/* Barre du bas. */
+.onglets { border-top: 1.5px solid var(--accent); background: var(--carte); }
+.onglets a.actif { color: var(--accent); font-weight: 800; }
+
+/* Bilan plus compact pour que la liste soit visible plus vite. */
+.resume { padding-top: 12px; padding-bottom: 12px; }
+.resume h2 { font-size: 1rem; margin: 0; }
+.resume .carte { padding: 10px 12px; margin-top: 8px; }
+.resume .carte .chiffre { font-size: 1.35rem; margin: 2px 0; }
+.resume .carte .detail { margin-top: 4px; }

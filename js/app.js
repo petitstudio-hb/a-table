@@ -61,6 +61,7 @@ let reference = lire(CLE.reference, "intermarche");
 let magasinVu = lire(CLE.vu, null);
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
+let detailsOuverts = new Set(); // produits dont « voir les autres » est ouvert dans Ma course (non mémorisé)
 // Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
 let releves = lire(CLE.releves, []);
 
@@ -269,26 +270,39 @@ function afficherCourse() {
       const produits = produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
         const { prix, saisi, variante } = prixDe(i, vu.id);
-        const refPrix = prixDe(i, reference).prix;
-        let ecart = "";
-        if (prix !== null && refPrix !== null && vu.id !== reference) {
-          const d = Math.round((prix - refPrix) * 100) / 100;
-          if (Math.abs(d) >= 0.005) ecart = `<span class="ecart ${d < 0 ? "moins" : "plus"}">${d < 0 ? "−" : "+"}${euros(Math.abs(d))}</span>`;
+        // Comparaison en une phrase (séance 22) : où c'est le moins cher, et de combien ; détail au toucher.
+        const autresPrix = autres.map((m) => ({ m, prix: prixDe(i, m.id).prix }));
+        const connus = autresPrix.filter((a) => a.prix !== null);
+        let compare = "";
+        if (prix !== null && connus.length) {
+          const meilleur = connus.reduce((a, b) => (b.prix < a.prix ? b : a));
+          const d = Math.round((prix - meilleur.prix) * 100) / 100;
+          const phrase = d > 0.004
+            ? `<span class="vs-ko">▼ Moins cher à ${echapper(nomCourt(meilleur.m))} : ${euros(meilleur.prix)} (−${euros(d)})</span>`
+            : d < -0.004 ? `<span class="tampon">LE MOINS CHER</span>`
+            : `<span class="vs-egal">Même prix à ${echapper(nomCourt(meilleur.m))}</span>`;
+          compare = `<div class="vs">${phrase}<button type="button" class="voir-autres" data-voir="${i}" aria-expanded="${detailsOuverts.has(i)}">${detailsOuverts.has(i) ? "masquer" : "voir les autres"}</button></div>`;
+          if (detailsOuverts.has(i)) {
+            compare += `<div class="pastilles">${autresPrix.map(({ m, prix: q }) => {
+              if (q === null) return `<span class="pastille-prix aucun">${echapper(nomCourt(m))} : pas de prix</span>`;
+              const e = Math.round((q - prix) * 100) / 100;
+              return `<span class="pastille-prix ${e < -0.004 ? "mieux" : "plus"}">${echapper(nomCourt(m))} <b>${euros(q)}</b> ${e < -0.004 ? "▼ " + euros(-e) : e > 0.004 ? "▲ " + euros(e) : "="}</span>`;
+            }).join("")}</div>`;
+          }
+        } else if (prix !== null && autres.length) {
+          compare = `<div class="vs"><span class="vs-egal">Aucun prix ailleurs pour comparer</span></div>`;
         }
-        const ailleurs = autres.map((m) => {
-          const q = prixDe(i, m.id).prix;
-          return `${echapper(nomCourt(m))} ${q === null ? "—" : euros(q)}`;
-        }).join(" · ");
+        const kg = prixAuKilo(p.format, prix);
         return `
           <div class="ligne-course ${coches.has(i) ? "" : "decoche"}">
             <label>
               <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
-                <span class="lc-format">${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${prixAuKilo(p.format, prix) ? ` · ${prixAuKilo(p.format, prix)}` : ""}</span>
-                ${ailleurs ? `<span class="lc-autres">${ailleurs}</span>` : ""}</span>
+                <span class="lc-format">${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
             </label>
             <button type="button" class="cellule lc-prix ${prix === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${vu.id}" title="Saisir le prix chez ${echapper(vu.nom)}">
-              ${prix === null ? "+ prix" : euros(prix)}${ecart}</button>
+              ${prix === null ? "+ prix" : `<span class="etiquette">${euros(prix)}</span>`}</button>
+            ${compare}
           </div>`;
       }).join("");
       return `<div class="rayon-course">
@@ -603,6 +617,13 @@ function brancherEvenements() {
       const nom = rayon.dataset.rayon;
       rayonsReplies.has(nom) ? rayonsReplies.delete(nom) : rayonsReplies.add(nom);
       sauvegarder();
+      afficherCourse();
+      return;
+    }
+    const voir = e.target.closest("[data-voir]");
+    if (voir) {
+      const i = Number(voir.dataset.voir);
+      detailsOuverts.has(i) ? detailsOuverts.delete(i) : detailsOuverts.add(i);
       afficherCourse();
       return;
     }

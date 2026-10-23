@@ -10,4 +10,6 @@
 !icones/
 !icones/*.png
 !icones/*.svg
+!polices/
+!polices/*.woff2
 !README.md
