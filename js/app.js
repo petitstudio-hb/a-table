@@ -15,6 +15,7 @@ const CLE = {
   magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
   vu: "atable.magasinVu", // magasin affiché dans Ma course (séance 9)
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
+  relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
 };
 
 function lire(cle, defaut) {
@@ -45,6 +46,7 @@ let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
 let reference = lire(CLE.reference, "intermarche");
 let magasinVu = lire(CLE.vu, null);
 let rayonsReplies = new Set(lire(CLE.replies, []));
+let relevesReplies = new Set(lire(CLE.relevesReplies, []));
 // Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
 let releves = lire(CLE.releves, []);
 
@@ -53,6 +55,7 @@ function sauvegarder() {
   ecrire(CLE.reference, reference);
   ecrire(CLE.vu, magasinVu);
   ecrire(CLE.replies, [...rayonsReplies]);
+  ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
   ecrire(CLE.magasins2, MAGASINS);
@@ -109,14 +112,31 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "magasins", "releves", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "releves", "sauvegarde", "apropos", "reglages"];
+// Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
+const VUES_PROFIL = ["releves", "sauvegarde", "apropos", "reglages"];
 
 function montrer(vue) {
   if (!VUES.includes(vue)) vue = "photo";
   if (vue === "verif" && !window.verificationEnCours) vue = "photo";
   for (const v of VUES) document.querySelector(`#vue-${v}`).hidden = v !== vue;
   document.querySelectorAll(".onglets a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
+  document.querySelector("#profil-bouton").classList.toggle("actif", VUES_PROFIL.includes(vue));
+  fermerProfil();
   window.scrollTo(0, 0);
+}
+
+// ---------- Menu « Mon profil » ----------
+
+function fermerProfil() {
+  document.querySelector("#profil-menu").hidden = true;
+  document.querySelector("#profil-bouton").setAttribute("aria-expanded", "false");
+}
+
+function basculerProfil() {
+  const menu = document.querySelector("#profil-menu");
+  menu.hidden = !menu.hidden;
+  document.querySelector("#profil-bouton").setAttribute("aria-expanded", String(!menu.hidden));
 }
 
 window.addEventListener("hashchange", () => montrer(location.hash.slice(1)));
@@ -350,9 +370,22 @@ function afficherReleves() {
     liste.innerHTML = `<li class="vide">Aucun prix enregistré pour l'instant. Prends une photo, ou saisis un prix dans « Ma course ».</li>`;
     return;
   }
-  liste.innerHTML = releves
+  const lignes = releves
     .map((r, k) => ({ r, k }))
-    .sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k)
+    .sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k);
+  // Regroupés par rayon, dans l'ordre des rayons de la liste ; chaque rayon se replie.
+  const rayons = [...new Set(PANIER.map((p) => p.rayon))].filter((rayon) => lignes.some(({ r }) => PANIER[r.produit].rayon === rayon));
+  liste.innerHTML = rayons.map((rayon) => {
+    const groupe = lignes.filter(({ r }) => PANIER[r.produit].rayon === rayon);
+    const replie = relevesReplies.has(rayon);
+    return `<li class="rayon-releve"><button type="button" class="rayon-titre" data-rayon-releve="${echapper(rayon)}" aria-expanded="${!replie}">
+      <span>${echapper(rayon)} · ${groupe.length}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`
+      + (replie ? "" : ligneReleves(groupe));
+  }).join("");
+}
+
+function ligneReleves(groupe) {
+  return groupe
     .map(({ r, k }) => {
       const p = PANIER[r.produit];
       const source = r.source === "ticket" ? "ticket" : r.source === "etiquette" ? "étiquette" : "saisie";
@@ -552,6 +585,14 @@ function brancherEvenements() {
   });
 
   document.querySelector("#liste-releves").addEventListener("click", (e) => {
+    const rayon = e.target.closest("[data-rayon-releve]");
+    if (rayon) {
+      const nom = rayon.dataset.rayonReleve;
+      relevesReplies.has(nom) ? relevesReplies.delete(nom) : relevesReplies.add(nom);
+      sauvegarder();
+      afficherReleves();
+      return;
+    }
     const sup = e.target.closest("[data-supprimer]");
     if (sup) {
       releves.splice(Number(sup.dataset.supprimer), 1);
@@ -621,6 +662,22 @@ function brancherEvenements() {
     magasinEnModification = "__nouveau";
     afficherMagasins();
     listeMagasins.querySelector('[data-champ="nom"]')?.focus();
+  });
+
+  // Tout replier / tout déplier, dans Mes relevés et dans Ma course.
+  const rayonsDe = () => [...new Set(PANIER.map((p) => p.rayon))];
+  document.querySelector("#releves-replier").addEventListener("click", () => { relevesReplies = new Set(rayonsDe()); sauvegarder(); afficherReleves(); });
+  document.querySelector("#releves-deplier").addEventListener("click", () => { relevesReplies = new Set(); sauvegarder(); afficherReleves(); });
+  document.querySelector("#course-replier").addEventListener("click", () => { rayonsReplies = new Set(rayonsDe()); sauvegarder(); afficherCourse(); });
+  document.querySelector("#course-deplier").addEventListener("click", () => { rayonsReplies = new Set(); sauvegarder(); afficherCourse(); });
+
+  // Menu « Mon profil » : s'ouvre au toucher, se ferme ailleurs ou avec Échap.
+  document.querySelector("#profil-bouton").addEventListener("click", (e) => { e.stopPropagation(); basculerProfil(); });
+  document.addEventListener("click", (e) => { if (!e.target.closest("#profil-menu")) fermerProfil(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") fermerProfil(); });
+  document.querySelector("#profil-menu").addEventListener("click", (e) => {
+    if (e.target.closest("[data-bientot]")) { notifier("Bientôt disponible."); return; }
+    if (e.target.closest("a")) fermerProfil();
   });
 
   document.querySelector("#exporter").addEventListener("click", exporter);

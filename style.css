@@ -563,3 +563,41 @@ tfoot th, tfoot td {
 .course-total span { flex: 1; color: var(--discret); }
 .course-total strong { font-size: 1.4rem; }
 .course-total small { flex-basis: 100%; text-align: right; color: var(--discret); }
+
+/* ---------- Séance 11 : pas de zoom automatique, menu Mon profil, rayons repliables ---------- */
+/* Sur iPhone, Safari zoome sur tout champ dont le texte fait moins de 16 px. */
+input, select, textarea { font-size: 16px !important; }
+
+.profil { position: relative; }
+.bouton-icone { border: none; background: none; padding: 0; cursor: pointer; }
+.bouton-icone.actif { color: var(--accent); background: var(--ligne); }
+.profil-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  padding: 6px;
+  background: var(--carte);
+  border: 1px solid var(--ligne);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.profil-menu a, .profil-menu .bientot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--texte);
+  text-decoration: none;
+  font-size: 1rem;
+}
+.profil-menu a:hover, .profil-menu a:focus-visible { background: var(--fond); }
+.profil-menu .bientot { color: var(--discret); cursor: default; }
+.profil-menu .bientot small { padding: 2px 8px; border-radius: 999px; background: var(--ligne); font-size: 0.72rem; white-space: nowrap; }
+.profil-menu hr { border: none; border-top: 1px solid var(--ligne); margin: 6px 4px; }
+
+.releves li.rayon-releve { display: block; padding: 0; border: none; }

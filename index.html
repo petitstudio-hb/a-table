@@ -17,9 +17,23 @@
   <body>
     <header class="barre">
       <h1>A table</h1>
-      <a href="#reglages" class="bouton-icone" aria-label="Réglages" title="Réglages">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.4-2.5a7.6 7.6 0 0 0 0-2l2-1.6a.5.5 0 0 0 .1-.6l-1.9-3.3a.5.5 0 0 0-.6-.2l-2.4 1a7 7 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-3.8a.5.5 0 0 0-.5.4l-.4 2.6a7 7 0 0 0-1.7 1l-2.4-1a.5.5 0 0 0-.6.2L2.5 8.8a.5.5 0 0 0 .1.6l2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6a.5.5 0 0 0-.1.6l1.9 3.3a.5.5 0 0 0 .6.2l2.4-1c.5.4 1.1.7 1.7 1l.4 2.6a.5.5 0 0 0 .5.4h3.8a.5.5 0 0 0 .5-.4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1a.5.5 0 0 0 .6-.2l1.9-3.3a.5.5 0 0 0-.1-.6l-2-1.6Z"/></svg>
-      </a>
+      <div class="profil">
+        <button type="button" id="profil-bouton" class="bouton-icone" aria-label="Mon profil" title="Mon profil" aria-haspopup="true" aria-expanded="false" aria-controls="profil-menu">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Z"/></svg>
+        </button>
+        <nav id="profil-menu" class="profil-menu" aria-label="Mon profil" hidden>
+          <a href="#releves">Mes relevés</a>
+          <a href="#sauvegarde">Sauvegarde et restauration</a>
+          <a href="#reglages">Réglages</a>
+          <hr>
+          <span class="bientot" aria-disabled="true" data-bientot>Apparence <small>Bientôt</small></span>
+          <span class="bientot" aria-disabled="true" data-bientot>Notifications <small>Bientôt</small></span>
+          <span class="bientot" aria-disabled="true" data-bientot>Mes contributions Open Prices <small>Bientôt</small></span>
+          <span class="bientot" aria-disabled="true" data-bientot>Mon compte <small>Bientôt</small></span>
+          <hr>
+          <a href="#apropos">À propos et aide</a>
+        </nav>
+      </div>
     </header>
 
     <main>
@@ -102,6 +116,8 @@
             <span id="nb-coches"></span>
             <button type="button" id="tout">Tout cocher</button>
             <button type="button" id="rien">Tout décocher</button>
+            <button type="button" id="course-replier">Tout replier</button>
+            <button type="button" id="course-deplier">Tout déplier</button>
           </div>
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
           <div id="liste-course"></div>
@@ -190,18 +206,46 @@
       <section id="vue-releves" class="vue" hidden>
         <div class="carte-blanche">
           <h2>Mes relevés (<span id="nb-releves">0</span>)</h2>
-          <p class="aide">Tous les prix enregistrés, du plus récent au plus ancien.</p>
+          <p class="aide">Tous les prix enregistrés, classés par rayon, du plus récent au plus ancien.</p>
+          <div class="actions">
+            <button type="button" id="releves-replier">Tout replier</button>
+            <button type="button" id="releves-deplier">Tout déplier</button>
+          </div>
           <ul id="liste-releves" class="releves"></ul>
         </div>
+      </section>
+
+      <!-- ========== SAUVEGARDE ========== -->
+      <section id="vue-sauvegarde" class="vue" hidden>
         <div class="carte-blanche">
-          <h2>Sauvegarde</h2>
-          <p class="aide">Tes données sont gardées dans ce navigateur, sur cet appareil. Pour les passer sur un autre appareil : télécharge le fichier ici, puis importe-le là-bas.</p>
+          <h2>Sauvegarde et restauration</h2>
+          <p class="aide">Tes données sont gardées dans ce navigateur, sur cet appareil. Télécharge-les de temps en temps : si tu vides les données du navigateur ou si tu changes de téléphone, ce fichier te permet de tout retrouver.</p>
           <div class="actions">
             <button type="button" id="exporter">Télécharger mes données</button>
             <label class="bouton-secondaire" for="importer">Importer un fichier</label>
             <input id="importer" type="file" accept="application/json,.json" hidden>
           </div>
           <p id="sauvegarde-message" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <!-- ========== À PROPOS ========== -->
+      <section id="vue-apropos" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>À propos et aide</h2>
+          <p class="aide">A table compare les prix de tes courses entre les supermarchés. Version du 23 octobre 2026.</p>
+          <details class="explication" open>
+            <summary>Lire un ticket ou une étiquette</summary>
+            <ol>
+              <li>Va dans l'onglet <strong>Photo</strong> et choisis « Ticket de caisse » ou « Prix en rayon ».</li>
+              <li>Prends la photo, puis vérifie les lignes lues par l'IA et corrige si besoin.</li>
+              <li>Valide : les prix arrivent dans <strong>Ma course</strong> et dans <strong>Mes relevés</strong>.</li>
+            </ol>
+          </details>
+          <details class="explication">
+            <summary>Où sont mes données ?</summary>
+            <p class="aide">Uniquement dans ce navigateur, sur cet appareil. Rien n'est envoyé à un serveur d'A table. Pense à les télécharger depuis « Sauvegarde et restauration ».</p>
+          </details>
         </div>
       </section>
 
@@ -268,10 +312,6 @@
       <a href="#magasins" data-vue="magasins">
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M4 4h16l1 5a3 3 0 0 1-2 2.8V20H5v-8.2A3 3 0 0 1 3 9l1-5Zm3 9v5h4v-4h2v4h4v-5a4 4 0 0 1-4-1.2A4 4 0 0 1 7 13Z"/></svg>
         <span>Magasins</span>
-      </a>
-      <a href="#releves" data-vue="releves">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5ZM7 12v2h10v-2H7Zm0 4v2h7v-2H7Z"/></svg>
-        <span>Mes relevés</span>
       </a>
     </nav>
 
