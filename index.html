@@ -108,16 +108,14 @@
           <select id="choix-panier"></select>
         </label>
 
-        <div id="course-onglets" class="course-onglets" role="tablist" aria-label="Magasin affiché"></div>
-
-        <div class="carte-blanche resume">
-          <div class="resume-tete">
-            <h2>Combien j'économise ?</h2>
-            <label>Par rapport à <select id="reference"></select></label>
-          </div>
-          <div id="economies" class="cartes"></div>
+        <div id="course-comparaison" class="carte-blanche comparaison">
+          <p class="etiq">OÙ CE PANIER COÛTE LE MOINS ?</p>
+          <div id="classement"></div>
+          <p class="aide">Touchez un magasin pour le comparer : le plus ancien des deux comparés sort.</p>
+          <p class="etiq">LE DUEL</p>
+          <div id="duel"></div>
+          <p id="duel-bilan" class="bilan"></p>
         </div>
-
         <div class="carte-blanche">
           <h2>Ma course</h2>
           <p class="aide">Coche les produits dont tu as besoin. Touche un prix pour le modifier.</p>
@@ -131,7 +129,7 @@
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
           <div id="liste-course"></div>
           <p id="course-total" class="course-total"></p>
-          <p class="aide">Un point orange signale un prix relevé par toi. L'économie ne compare que les produits connus dans les deux magasins.</p>
+          <p class="aide">Un trait orange signale un prix relevé par toi. Les totaux du duel ne comptent que les produits connus dans les deux magasins.</p>
           <button type="button" id="tout-comparer-bouton" class="bouton-secondaire">Tout comparer</button>
         </div>
 

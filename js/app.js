@@ -209,10 +209,6 @@ function remplirListes() {
   const choixPanier = document.querySelector("#choix-panier");
   choixPanier.innerHTML = paniers.map((p) => `<option value="${p.id}">${echapper(p.nom)} (${p.produits.length})</option>`).join("");
   choixPanier.value = panierCourse;
-  const ref = document.querySelector("#reference");
-  ref.innerHTML = visibles().map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
-  if (!visibles().some((m) => m.id === reference)) reference = (visibles()[0] || MAGASINS[0] || {}).id;
-  ref.value = reference;
 
   const mag = document.querySelector("#saisie-magasin");
   const magChoisi = mag.value;
@@ -243,78 +239,104 @@ function moinsCher() {
   return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
 }
 
-// Onglets des magasins (avec leur total) et liste des produits du magasin choisi.
-function afficherCourse() {
+// Les deux magasins comparés (séance 23) : A est le magasin affiché (magasinVu), B celui auquel on le compare (reference).
+function garantirDuel() {
   const mags = visibles();
-  if (!mags.some((m) => m.id === magasinVu)) magasinVu = mags[0]?.id ?? null;
-  const vu = mags.find((m) => m.id === magasinVu);
-  document.querySelector("#course-onglets").hidden = mags.length === 0;
-  const gagnant = moinsCher();
-  document.querySelector("#course-onglets").innerHTML = mags
-    .map((m) => {
-      const t = totalDe(m);
-      return `<button type="button" role="tab" aria-selected="${m.id === magasinVu}" class="onglet-mag ${m.id === magasinVu ? "actif" : ""}" data-mag="${m.id}">
-        <strong>${echapper(nomCourt(m))}${m.id === gagnant ? ` <i class="pastille" title="Le moins cher"></i>` : ""}</strong>
-        <span>${t.connus ? euros(t.total) : "—"}</span></button>`;
-    })
-    .join("");
+  // Par défaut, le duel oppose les deux magasins les moins chers (ceux qui connaissent assez de prix passent d'abord).
+  const infos = mags.map((m) => ({ m, ...totalDe(m) }));
+  const classes = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const ordre = [...classes, ...infos.filter((x) => !classes.includes(x)).sort((a, b) => b.connus - a.connus)].map((x) => x.m);
+  if (!mags.some((m) => m.id === magasinVu)) magasinVu = ordre[0]?.id ?? null;
+  if (!mags.some((m) => m.id === reference) || reference === magasinVu) reference = ordre.find((m) => m.id !== magasinVu)?.id ?? null;
+  return { mags, A: mags.find((m) => m.id === magasinVu) || null, B: mags.find((m) => m.id === reference) || null };
+}
 
+// Classement des magasins pour le panier, duel entre les deux magasins choisis, puis la liste en deux colonnes.
+function afficherCourse() {
+  const { mags, A, B } = garantirDuel();
+  const classement = document.querySelector("#classement");
+  const duel = document.querySelector("#duel");
+  const bilan = document.querySelector("#duel-bilan");
   const liste = document.querySelector("#liste-course");
-  if (!vu) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
+  document.querySelector("#course-comparaison").hidden = mags.length === 0;
 
-  const autres = mags.filter((m) => m.id !== vu.id);
+  // 1. Le classement : seulement les magasins qui connaissent au moins 80 % des prix cochés sont classés (décision D13).
+  const infos = mags.map((m) => ({ m, ...totalDe(m) }));
+  const classes = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const autres = infos.filter((x) => !classes.includes(x));
+  classement.innerHTML = [...classes, ...autres].map((x) => {
+    const pos = classes.indexOf(x);
+    const repere = x.m.id === magasinVu ? "A" : x.m.id === reference ? "B" : "";
+    const sous = pos === 0 ? (classes.length > 1 ? "LE MOINS CHER" : "") : pos > 0 ? `+${euros(x.total - classes[0].total)} que ${echapper(nomCourt(classes[0].m))}` : "pas assez de prix";
+    return `<button type="button" class="rang ${repere ? "choisi" : ""}" data-duel="${x.m.id}" aria-pressed="${Boolean(repere)}">
+      <span class="num ${pos < 0 ? "off" : ""}">${pos < 0 ? "–" : pos + 1}</span>
+      <span class="rang-nom">${echapper(x.m.nom)}<small>${x.connus} prix sur ${x.coches}</small></span>
+      <span class="rang-prix">${pos < 0 ? "—" : euros(x.total)}<small>${sous}</small></span>
+      <span class="repere ${repere ? "" : "vide"}">${repere}</span></button>`;
+  }).join("");
+
+  if (!A) { duel.innerHTML = ""; bilan.textContent = ""; liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
+
+  // 2. Le duel : les totaux ne portent que sur les produits cochés connus dans les deux magasins (décision D13).
+  const colonnes = B ? [A, B] : [A];
+  const cochesPanier = produitsCourse().filter((i) => coches.has(i));
+  if (B) {
+    const communs = cochesPanier.filter((i) => prixDe(i, A.id).prix !== null && prixDe(i, B.id).prix !== null);
+    const tA = communs.reduce((s, i) => s + prixDe(i, A.id).prix, 0);
+    const tB = communs.reduce((s, i) => s + prixDe(i, B.id).prix, 0);
+    const gagneA = communs.length && tA < tB - 0.004;
+    const gagneB = communs.length && tB < tA - 0.004;
+    const n = communs.length;
+    const carte = (m, t, gagne) => `<div class="duel-mag ${gagne ? "gagne" : ""}"><b>${echapper(m.nom)}</b><span class="mono">${n ? euros(t) : "—"}</span><small>${n} produit${n > 1 ? "s" : ""} commun${n > 1 ? "s" : ""}</small></div>`;
+    duel.innerHTML = `<div class="duel-tete">${carte(A, tA, gagneA)}<span class="duel-vs">VS</span>${carte(B, tB, gagneB)}</div>`;
+    const ecart = Math.abs(tA - tB);
+    bilan.innerHTML = !n ? `Aucun produit coché n'a de prix dans les deux magasins : ajoutez des prix pour comparer.`
+      : ecart < 0.005 ? `Même total chez ${echapper(A.nom)} et ${echapper(B.nom)}.`
+      : `<b>${echapper((gagneA ? A : B).nom)}</b> coûte <b class="mono">${euros(ecart)} de moins</b> que ${echapper((gagneA ? B : A).nom)} sur ${n > 1 ? `ces ${n} produits` : "ce produit"}.`;
+    bilan.hidden = false;
+  } else {
+    duel.innerHTML = `<p class="aide">Un seul magasin est affiché. Activez-en un autre dans l'onglet <a href="#magasins">Magasins</a> pour comparer.</p>`;
+    bilan.hidden = true;
+  }
+
+  // 3. La liste : une colonne de prix par magasin comparé, le moins cher de la ligne en étiquette jaune.
   const rayons = [...new Set(produitsCourse().map((i) => PANIER[i].rayon))];
-  liste.innerHTML = rayons
+  const tete = `<div class="liste-tete" style="--cols:${colonnes.length}"><span>${echapper(paniers.find((p) => p.id === panierCourse)?.nom || "")}</span>${colonnes.map((m) => `<span>${echapper(nomCourt(m)).toUpperCase()}</span>`).join("")}</div>`;
+  liste.innerHTML = rayons.length ? tete + rayons
     .map((rayon) => {
       const replie = rayonsReplies.has(rayon);
       const produits = produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
-        const { prix, saisi, variante } = prixDe(i, vu.id);
-        // Comparaison en une phrase (séance 22) : où c'est le moins cher, et de combien ; détail au toucher.
-        const autresPrix = autres.map((m) => ({ m, prix: prixDe(i, m.id).prix }));
-        const connus = autresPrix.filter((a) => a.prix !== null);
-        let compare = "";
-        if (prix !== null && connus.length) {
-          const meilleur = connus.reduce((a, b) => (b.prix < a.prix ? b : a));
-          const d = Math.round((prix - meilleur.prix) * 100) / 100;
-          const phrase = d > 0.004
-            ? `<span class="vs-ko">▼ Moins cher à ${echapper(nomCourt(meilleur.m))} : ${euros(meilleur.prix)} (−${euros(d)})</span>`
-            : d < -0.004 ? `<span class="tampon">LE MOINS CHER</span>`
-            : `<span class="vs-egal">Même prix à ${echapper(nomCourt(meilleur.m))}</span>`;
-          compare = `<div class="vs">${phrase}<button type="button" class="voir-autres" data-voir="${i}" aria-expanded="${detailsOuverts.has(i)}">${detailsOuverts.has(i) ? "masquer" : "voir les autres"}</button></div>`;
-          if (detailsOuverts.has(i)) {
-            compare += `<div class="pastilles">${autresPrix.map(({ m, prix: q }) => {
-              if (q === null) return `<span class="pastille-prix aucun">${echapper(nomCourt(m))} : pas de prix</span>`;
-              const e = Math.round((q - prix) * 100) / 100;
-              return `<span class="pastille-prix ${e < -0.004 ? "mieux" : "plus"}">${echapper(nomCourt(m))} <b>${euros(q)}</b> ${e < -0.004 ? "▼ " + euros(-e) : e > 0.004 ? "▲ " + euros(e) : "="}</span>`;
-            }).join("")}</div>`;
-          }
-        } else if (prix !== null && autres.length) {
-          compare = `<div class="vs"><span class="vs-egal">Aucun prix ailleurs pour comparer</span></div>`;
-        }
-        const kg = prixAuKilo(p.format, prix);
+        const prix = colonnes.map((m) => prixDe(i, m.id));
+        const connus = prix.filter((x) => x.prix !== null);
+        const mini = connus.length === colonnes.length && colonnes.length > 1 ? Math.min(...prix.map((x) => x.prix)) : null;
+        const unique = mini !== null && prix.filter((x) => Math.abs(x.prix - mini) < 0.005).length === 1;
+        const variante = prix.find((x) => x.variante)?.variante || "";
+        const kg = connus.length ? prixAuKilo(p.format, connus[0].prix) : "";
+        const cellules = colonnes.map((m, k) => {
+          const { prix: q, saisi } = prix[k];
+          const meilleur = unique && Math.abs(q - mini) < 0.005;
+          return `<button type="button" class="cellule lc-prix ${q === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${m.id}" title="Saisir le prix chez ${echapper(m.nom)}">${q === null ? "+ prix" : `<span class="etiquette ${meilleur ? "" : "simple"}">${euros(q).replace(" €", "")}</span>`}</button>`;
+        }).join("");
         return `
-          <div class="ligne-course ${coches.has(i) ? "" : "decoche"}">
+          <div class="ligne-course ligne-duel ${coches.has(i) ? "" : "decoche"}" style="--cols:${colonnes.length}">
             <label>
               <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
                 <span class="lc-format">${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
-            </label>
-            <button type="button" class="cellule lc-prix ${prix === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${vu.id}" title="Saisir le prix chez ${echapper(vu.nom)}">
-              ${prix === null ? "+ prix" : `<span class="etiquette">${euros(prix)}</span>`}</button>
-            ${compare}
+            </label>${cellules}
           </div>`;
       }).join("");
       return `<div class="rayon-course">
         <button type="button" class="rayon-titre" data-rayon="${echapper(rayon)}" aria-expanded="${!replie}">
           <span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button>${lignes}</div>`;
     })
-    .join("");
-  if (!rayons.length) liste.innerHTML = `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
+    .join("") : `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
 
-  const t = totalDe(vu);
-  document.querySelector("#course-total").innerHTML =
-    `<span>Total ${echapper(vu.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
+  document.querySelector("#course-total").innerHTML = colonnes.map((m) => {
+    const t = totalDe(m);
+    return `<span>Total ${echapper(m.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
+  }).join("");
 }
 
 function afficherTableau() {
@@ -361,7 +383,6 @@ function afficherTableau() {
 
 function calculer() {
   const mags = visibles();
-  if (!mags.some((m) => m.id === magasinVu)) magasinVu = mags[0]?.id ?? null;
   const indices = produitsCourse().filter((i) => coches.has(i));
 
   for (const m of mags) {
@@ -371,33 +392,6 @@ function calculer() {
       `<strong>${prix.length ? euros(total) : "—"}</strong><span>${prix.length}/${indices.length} prix connus</span>`;
   }
 
-  // Économie par rapport au magasin de référence, calculée seulement sur les
-  // produits cochés dont le prix est connu dans les deux magasins (décision D13).
-  const ref = reference;
-  const vus = mags.filter((m) => m.id === magasinVu);
-  const cartes = vus.length && vus[0].id === ref
-    ? [`<div class="carte vide"><h3>${echapper(vus[0].nom)}</h3><p>C'est ton magasin de référence. Choisis un autre magasin en haut pour voir l'économie.</p></div>`]
-    : vus.map((m) => {
-    const communs = indices.filter((i) => prixDe(i, m.id).prix !== null && prixDe(i, ref).prix !== null);
-    if (communs.length === 0) {
-      return `<div class="carte vide"><h3>${echapper(m.nom)}</h3><p class="chiffre">—</p><p>Aucun produit coché comparable avec ${echapper(nomMagasin(ref))}.</p></div>`;
-    }
-    const totalRef = communs.reduce((a, i) => a + prixDe(i, ref).prix, 0);
-    const totalMag = communs.reduce((a, i) => a + prixDe(i, m.id).prix, 0);
-    const ecart = totalRef - totalMag;
-    const pct = Math.round((Math.abs(ecart) / totalRef) * 100);
-    const sens = ecart > 0.005 ? "gain" : ecart < -0.005 ? "perte" : "egal";
-    const texte = sens === "gain" ? `d'économie (−${pct} %)` : sens === "perte" ? `de plus (+${pct} %)` : "pareil";
-    const n = communs.length;
-    return `
-      <div class="carte ${sens}">
-        <h3>${echapper(m.nom)}</h3>
-        <p class="chiffre">${sens === "egal" ? "=" : (sens === "gain" ? "−" : "+") + euros(Math.abs(ecart))}</p>
-        <p>${texte} par rapport à ${echapper(nomMagasin(ref))}</p>
-        <p class="detail">Calculé sur ${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} au prix connu dans les deux magasins : ${euros(totalMag)} contre ${euros(totalRef)}.</p>
-      </div>`;
-  });
-  document.querySelector("#economies").innerHTML = cartes.join("");
   const n = indices.length;
   document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${produitsCourse().length}`;
   afficherCourse();
@@ -595,10 +589,14 @@ function brancherEvenements() {
     sauvegarder();
     toutAfficher();
   });
-  document.querySelector("#course-onglets").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-mag]");
+  // Un magasin touché dans le classement rejoint le duel ; le plus ancien des deux en sort.
+  document.querySelector("#classement").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-duel]");
     if (!b) return;
-    magasinVu = b.dataset.mag;
+    const id = b.dataset.duel;
+    if (id === magasinVu || id === reference) return;
+    magasinVu = reference;
+    reference = id;
     sauvegarder();
     calculer();
   });
@@ -637,11 +635,6 @@ function brancherEvenements() {
     if (!bloc.hidden) bloc.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  document.querySelector("#reference").addEventListener("change", (e) => {
-    reference = e.target.value;
-    sauvegarder();
-    calculer();
-  });
 
   const toutCocher = (valeur) => {
     const siens = produitsCourse(); // tout cocher ou décocher ne touche que le panier affiché
