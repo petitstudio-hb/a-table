@@ -642,3 +642,7 @@ input, select, textarea { font-size: 16px !important; }
 .rayon-titre-liste { margin: 14px 0 4px; font-size: 15px; color: var(--accent); }
 #liste-gestion .releves li { flex-wrap: wrap; }
 #liste-gestion .boutons { flex-wrap: wrap; }
+
+/* Séance 19 : sur iPhone, la barre du bas pouvait s'afficher au milieu de l'écran en remontant.
+   On la place sur sa propre couche d'affichage pour que Safari la redessine correctement. */
+.onglets { transform: translateZ(0); -webkit-transform: translateZ(0); will-change: transform; }
