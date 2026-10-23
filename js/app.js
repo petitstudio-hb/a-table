@@ -101,8 +101,36 @@ function prixDe(i, magasin) {
   for (const r of releves) {
     if (r.produit === i && r.magasin === magasin && (!dernier || r.date >= dernier.date)) dernier = r;
   }
-  if (dernier) return { prix: dernier.prix, saisi: true };
-  return { prix: PANIER[i].prix[magasin] ?? null, saisi: false };
+  if (dernier) return { prix: dernier.prix, saisi: true, variante: dernier.variante || "" };
+  return { prix: PANIER[i].prix[magasin] ?? null, saisi: false, variante: "" };
+}
+
+// ---------- Formats et prix au kilo (séances 16 et 17) ----------
+
+// « 500 g », « 1 L », « 6 × 25 cl » → { qte, type } en grammes ou en millilitres, ou null si illisible.
+function contenance(texte) {
+  const t = String(texte || "").toLowerCase().replace(",", ".").replace(/×/g, "x");
+  const m = t.match(/(?:(\d+)\s*x\s*)?(\d+(?:\.\d+)?)\s*(kg|g|cl|ml|l)\b/);
+  if (!m) return null;
+  const facteur = { kg: 1000, g: 1, l: 1000, cl: 10, ml: 1 }[m[3]];
+  return { qte: (m[1] ? Number(m[1]) : 1) * Number(m[2]) * facteur, type: m[3] === "kg" || m[3] === "g" ? "g" : "ml" };
+}
+
+// Deux formats sont « proches » s'ils sont de même nature et à moins de 25 % d'écart. Si l'un est illisible, on ne conclut pas.
+function formatsProches(a, b) {
+  const ca = contenance(a);
+  const cb = contenance(b);
+  if (!ca || !cb) return true;
+  if (ca.type !== cb.type) return false;
+  const rapport = ca.qte / cb.qte;
+  return rapport >= 0.8 && rapport <= 1.25;
+}
+
+// Prix au kilo ou au litre d'un produit, d'après son format ; chaîne vide si le format n'est pas un poids ou un volume.
+function prixAuKilo(texteFormat, prix) {
+  const c = contenance(texteFormat);
+  if (!c || prix === null || prix === undefined) return "";
+  return `${euros((prix / c.qte) * 1000)}/${c.type === "g" ? "kg" : "L"}`;
 }
 
 // Dernier code-barres connu pour ce produit dans ce magasin (utile pour Open Prices).
@@ -226,7 +254,7 @@ function afficherCourse() {
       const replie = rayonsReplies.has(rayon);
       const produits = produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
-        const { prix, saisi } = prixDe(i, vu.id);
+        const { prix, saisi, variante } = prixDe(i, vu.id);
         const refPrix = prixDe(i, reference).prix;
         let ecart = "";
         if (prix !== null && refPrix !== null && vu.id !== reference) {
@@ -242,7 +270,7 @@ function afficherCourse() {
             <label>
               <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
-                <span class="lc-format">${echapper(p.format)}</span>
+                <span class="lc-format">${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${prixAuKilo(p.format, prix) ? ` · ${prixAuKilo(p.format, prix)}` : ""}</span>
                 ${ailleurs ? `<span class="lc-autres">${ailleurs}</span>` : ""}</span>
             </label>
             <button type="button" class="cellule lc-prix ${prix === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${vu.id}" title="Saisir le prix chez ${echapper(vu.nom)}">
@@ -427,7 +455,7 @@ function ligneReleves(groupe) {
       return `
         <li>
           <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}
-          <span class="date">${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
+          <span class="date">${r.variante ? `variante : ${echapper(r.variante)} · ` : ""}${prixAuKilo(p.format, r.prix) ? `${prixAuKilo(p.format, r.prix)} · ` : ""}${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
           <span class="boutons"><button type="button" data-modifier="${k}">Modifier</button><button type="button" data-supprimer="${k}" aria-label="Supprimer">✕</button></span>
         </li>`;
     })

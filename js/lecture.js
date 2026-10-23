@@ -91,7 +91,7 @@ const SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["libelle", "nom", "quantite", "prix_unitaire", "prix_total", "prix_kg", "poids", "promo", "produit_index", "prix_reference", "rayon"],
+        required: ["libelle", "nom", "quantite", "prix_unitaire", "prix_total", "prix_kg", "poids", "promo", "association", "produit_index", "prix_reference", "rayon"],
         properties: {
           libelle: { type: "string", description: "Texte exact de la ligne." },
           nom: { type: "string", description: "Nom lisible en français, sans abréviation (ex. « Purée de tomates »)." },
@@ -101,6 +101,7 @@ const SCHEMA = {
           prix_kg: { type: "number", description: "Prix au kilo ou au litre s'il est indiqué, sinon 0." },
           poids: { type: "string", description: "Contenance de l'article (ex. « 500 g », « 1 L », « x12 »), ou chaîne vide." },
           promo: { type: "boolean", description: "Vrai si une remise ou une promotion s'applique." },
+          association: { type: "string", enum: ["meme", "variante", "aucune"], description: "« meme » : exactement le même produit que celui du panier (même nature, même format). « variante » : même type de produit mais marque, saveur ou variété différente, format proche. « aucune » : rien ne correspond, ou format très différent (pack contre unité, 75 cl contre 6 × 25 cl)." },
           produit_index: { type: "integer", description: "Indice du produit correspondant dans le panier de référence, ou -1 si aucun ne correspond." },
           prix_reference: { type: "number", description: "Prix ramené au format du produit associé (voir les consignes). Si produit_index vaut -1 : le prix unitaire." },
           rayon: { type: "string", description: "Rayon du produit, en reprenant si possible un rayon existant." },
@@ -125,7 +126,7 @@ ${panier}
 Rayons existants : ${rayons}
 
 Associer une ligne à un produit du panier :
-- Associe (produit_index) seulement si c'est le même type de produit, même de marque ou de variante différente : « PENNE 500 G » correspond à « Pâtes (500 g) », « HACHE MOELLEUX VRAC 500G » à « Viande hachée (500 g) ». Sinon, mets -1.
+- Sois prudent : n'associe pas en force. Choisis association « meme » si c'est le même produit, « variante » si c'est le même type de produit avec une marque ou une variété différente (« PENNE 500 G » pour « Pâtes (500 g) »), et « aucune » avec produit_index -1 dans le doute ou si le format est très différent (une bière à l'unité de 75 cl n'est pas un pack de 6 × 25 cl). Mieux vaut un nouveau produit qu'une association fausse.
 - prix_reference est le prix que coûterait le format du produit associé. Si le format est identique, c'est le prix unitaire. Si le prix au kilo est connu et que le format est un poids, calcule : prix au kilo × poids du format (ex. oignons à 1,99 €/kg pour un format de 500 g : 1,00). Pour un format différent sans prix au kilo, ramène au prorata de la contenance. Arrondis au centime.
 - Pour un produit non associé, propose un nom clair, un poids et un rayon.
 
@@ -229,6 +230,40 @@ async function photoSuivante() {
 
 // ---------- Vérification ----------
 
+// Une ligne lue par l'IA. Association prudente (séance 16) : si le format lu est très différent
+// de celui du produit proposé, on ne force pas le rapprochement et on le signale.
+function ligneBrouillon(l) {
+  let produit = Number.isInteger(l.produit_index) && l.produit_index >= 0 && l.produit_index < PANIER.length ? l.produit_index : -1;
+  let lien = l.association === "variante" ? "variante" : "meme";
+  let avertissement = "";
+  let suggestion = -1;
+  if (produit >= 0 && !formatsProches(l.poids, PANIER[produit].format)) {
+    avertissement = `Format différent : ${l.poids} lu sur la photo, contre ${PANIER[produit].format} pour « ${PANIER[produit].nom} ». Je n'ai pas associé. Choisis le produit si tu veux quand même.`;
+    suggestion = produit;
+    produit = -1;
+  } else if (produit >= 0 && l.association === "aucune") {
+    avertissement = `Je ne suis pas sûr que ce soit « ${PANIER[produit].nom} ». Je n'ai pas associé.`;
+    suggestion = produit;
+    produit = -1;
+  }
+  return {
+    libelle: l.libelle,
+    nom: l.nom,
+    quantite: l.quantite,
+    prixUnitaire: l.prix_unitaire,
+    prixKg: l.prix_kg,
+    poids: l.poids,
+    promo: l.promo,
+    produit,
+    lien,
+    variante: lien === "variante" ? l.nom : "",
+    avertissement,
+    suggestion,
+    prix: Math.round((produit >= 0 ? l.prix_reference : l.prix_unitaire) * 100) / 100,
+    rayon: l.rayon,
+  };
+}
+
 function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   const magasinConnu = MAGASINS.some((m) => m.id === resultat.magasin_id);
   brouillon = {
@@ -237,18 +272,7 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
     magasinNom: resultat.magasin_nom || "",
     magasinAdresse: resultat.magasin_adresse || "",
     date: /^\d{4}-\d{2}-\d{2}$/.test(resultat.date) ? resultat.date : aujourdhui(),
-    lignes: resultat.lignes.map((l) => ({
-      libelle: l.libelle,
-      nom: l.nom,
-      quantite: l.quantite,
-      prixUnitaire: l.prix_unitaire,
-      prixKg: l.prix_kg,
-      poids: l.poids,
-      promo: l.promo,
-      produit: Number.isInteger(l.produit_index) && l.produit_index >= 0 && l.produit_index < PANIER.length ? l.produit_index : -1,
-      prix: Math.round((l.produit_index >= 0 ? l.prix_reference : l.prix_unitaire) * 100) / 100,
-      rayon: l.rayon,
-    })),
+    lignes: resultat.lignes.map(ligneBrouillon),
   };
   document.querySelector("#verif-titre").textContent = `Vérifier ${type === "ticket" ? "le ticket" : "l'étiquette"}${suffixe}`;
   document.querySelector("#verif-image").src = dataUrl;
@@ -296,7 +320,17 @@ function afficherVerification() {
             <label class="large">Produit associé
               <select data-champ="produit">${options(l.produit)}</select>
             </label>
-            <label class="large" ${l.produit >= 0 ? "hidden" : ""}>Nom du nouveau produit
+            ${l.avertissement ? `<p class="avertissement">${echapper(l.avertissement)}</p>` : ""}
+            <label class="large" data-bloc="lien" ${l.produit >= 0 ? "" : "hidden"}>C'est…
+              <select data-champ="lien">
+                <option value="meme" ${l.lien === "meme" ? "selected" : ""}>Le même produit</option>
+                <option value="variante" ${l.lien === "variante" ? "selected" : ""}>Une variante (marque, saveur…)</option>
+              </select>
+            </label>
+            <label class="large" data-bloc="variante" ${l.produit >= 0 && l.lien === "variante" ? "" : "hidden"}>Précise la variante
+              <input type="text" data-champ="variante" value="${echapper(l.variante)}">
+            </label>
+            <label class="large" data-bloc="nom" ${l.produit >= 0 ? "hidden" : ""}>Nom du nouveau produit
               <input type="text" data-champ="nom" value="${echapper(l.nom)}">
             </label>
             <label>Prix retenu (€)
@@ -319,8 +353,18 @@ function majChamp(e) {
   const l = brouillon.lignes[Number(bloc.dataset.k)];
   if (champ === "produit") {
     l.produit = Number(e.target.value);
-    bloc.querySelector('[data-champ="nom"]').closest("label").hidden = l.produit >= 0;
-  } else if (champ === "nom") l.nom = e.target.value;
+    l.avertissement = "";
+    bloc.querySelector(".avertissement")?.remove();
+    bloc.querySelector('[data-bloc="nom"]').hidden = l.produit >= 0;
+    bloc.querySelector('[data-bloc="lien"]').hidden = l.produit < 0;
+    bloc.querySelector('[data-bloc="variante"]').hidden = l.produit < 0 || l.lien !== "variante";
+  } else if (champ === "lien") {
+    l.lien = e.target.value;
+    if (l.lien === "variante" && !l.variante) l.variante = l.nom;
+    bloc.querySelector('[data-bloc="variante"]').hidden = l.lien !== "variante";
+    bloc.querySelector('[data-champ="variante"]').value = l.variante;
+  } else if (champ === "variante") l.variante = e.target.value;
+  else if (champ === "nom") l.nom = e.target.value;
   else if (champ === "prix") l.prix = lirePrix(e.target.value);
   else if (champ === "quantite") l.quantite = lirePrix(e.target.value) || 1;
   else if (champ === "promo") l.promo = e.target.checked;
@@ -355,6 +399,7 @@ function valider() {
       promo: Boolean(l.promo),
       quantite: l.quantite ?? 1,
       libelle: l.libelle || null,
+      variante: l.produit >= 0 && l.lien === "variante" && l.variante.trim() ? l.variante.trim() : null,
       source: brouillon.type,
       code: null,
       envoye: false,
@@ -389,7 +434,7 @@ function demarrerLecture() {
     afficherVerification();
   });
   document.querySelector("#verif-ajouter").addEventListener("click", () => {
-    brouillon.lignes.push({ libelle: "", nom: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, prix: 0, rayon: "Ajoutés" });
+    brouillon.lignes.push({ libelle: "", nom: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, lien: "meme", variante: "", avertissement: "", suggestion: -1, prix: 0, rayon: "Ajoutés" });
     afficherVerification();
   });
   document.querySelector("#verif-magasin").addEventListener("change", (e) => {
