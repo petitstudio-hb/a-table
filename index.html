@@ -204,6 +204,7 @@
           </form>
           <p id="trouver-etat" class="message" role="status"></p>
           <div id="trouver-resultats" hidden>
+            <button type="button" id="trouver-fermer" class="bouton-secondaire">Fermer les résultats</button>
             <ul id="trouver-liste" class="releves"></ul>
             <button type="button" id="trouver-plus" class="bouton-secondaire" hidden>Afficher plus</button>
           </div>
@@ -268,7 +269,9 @@
         <div class="carte-blanche">
           <h2>Gérer ma liste</h2>
           <p class="aide">Renomme un produit, change son format ou son rayon, fusionne deux produits identiques ou supprime-en un. Les prix déjà relevés suivent.</p>
+          <input id="liste-recherche" class="recherche" type="search" placeholder="Rechercher un produit ou un rayon" autocomplete="off">
           <div id="liste-gestion"></div>
+          <div id="liste-masques"></div>
         </div>
       </section>
 

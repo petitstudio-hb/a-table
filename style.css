@@ -646,3 +646,10 @@ input, select, textarea { font-size: 16px !important; }
 /* Séance 19 : sur iPhone, la barre du bas pouvait s'afficher au milieu de l'écran en remontant.
    On la place sur sa propre couche d'affichage pour que Safari la redessine correctement. */
 .onglets { transform: translateZ(0); -webkit-transform: translateZ(0); will-change: transform; }
+
+/* Retours de test du 23/10/2026 : Gérer ma liste en colonne partout, champs qui ne débordent pas, recherche */
+#liste-gestion .releves li, #liste-masques .releves li { flex-direction: column; align-items: flex-start; gap: 8px; }
+#liste-gestion .releves li.modif { align-items: stretch; }
+#liste-gestion select, #liste-gestion input, #liste-masques select { max-width: 100%; min-width: 0; box-sizing: border-box; }
+#liste-recherche { width: 100%; box-sizing: border-box; margin: 4px 0 8px; }
+#trouver-fermer { margin: 4px 0 8px; }

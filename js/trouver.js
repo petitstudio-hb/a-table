@@ -44,6 +44,19 @@ async function positionAdresse(adresse) {
   return { lat: Number(r.lat), lon: Number(r.lon) };
 }
 
+// Écrit dans le champ l'adresse du point trouvé par « Ma position ». Elle n'est jamais enregistrée (D9).
+async function afficherAdresse(centre) {
+  try {
+    const rep = await fetch(`${NOMINATIM.replace("/search", "/reverse")}?format=json&zoom=18&addressdetails=1&lat=${centre.lat}&lon=${centre.lon}`);
+    if (!rep.ok) return;
+    const a = (await rep.json()).address || {};
+    const rue = [a.house_number, a.road].filter(Boolean).join(" ");
+    const ville = [a.postcode, a.city || a.town || a.village || a.municipality].filter(Boolean).join(" ");
+    const texte = [rue, ville].filter(Boolean).join(", ");
+    if (texte) document.querySelector("#trouver-adresse").value = texte;
+  } catch (e) { /* le champ reste vide */ }
+}
+
 async function chercherMagasins(centre, rayon) {
   const requete = `[out:json][timeout:25];nwr["shop"~"^(supermarket|convenience)$"](around:${rayon},${centre.lat},${centre.lon});out center tags;`;
   // Le serveur gratuit est parfois surchargé : on essaie le suivant en cas d'échec.
@@ -106,6 +119,7 @@ async function lancerRecherche(source) {
     patience = setTimeout(() => etatTrouver("Le serveur est lent en ce moment, ça peut prendre jusqu'à une minute…"), 8000);
     const adresse = document.querySelector("#trouver-adresse").value.trim();
     const centre = source === "adresse" ? await positionAdresse(adresse) : await positionGps();
+    if (source === "gps") afficherAdresse(centre); // sans attendre : l'adresse s'écrit dans le champ quand elle arrive
     const rayon = Number(document.querySelector("#trouver-rayon").value);
     trouves = await chercherMagasins(centre, rayon);
     nbAffiches = 30;
@@ -125,6 +139,11 @@ document.querySelector("#trouver-form").addEventListener("submit", (e) => {
   e.preventDefault();
   if (document.querySelector("#trouver-adresse").value.trim()) lancerRecherche("adresse");
   else etatTrouver("Tape une adresse, ou utilise « Ma position ».", true);
+});
+document.querySelector("#trouver-fermer").addEventListener("click", () => {
+  trouves = [];
+  afficherTrouves();
+  etatTrouver("");
 });
 document.querySelector("#trouver-plus").addEventListener("click", () => {
   nbAffiches += 30;

@@ -3,11 +3,14 @@
 // pour que les numéros des autres produits ne bougent pas.
 
 let produitEnEdition = null; // { i, mode: "modifier" | "fusionner" }
+// La fusion est masquée pour l'instant (retour de test du 23/10/2026) : le code reste, prêt à être réactivé avec une recherche.
+const FUSION_ACTIVE = false;
 
 function afficherListe() {
   const zone = document.querySelector("#liste-gestion");
   if (!zone) return;
-  const actifs = produitsActifs();
+  const requete = sansAccent(document.querySelector("#liste-recherche")?.value.trim() || "");
+  const actifs = produitsActifs().filter((i) => !requete || sansAccent(`${PANIER[i].nom} ${PANIER[i].rayon} ${PANIER[i].format}`).includes(requete));
   const rayons = [...new Set(actifs.map((i) => PANIER[i].rayon))];
   const nbReleves = (i) => releves.filter((r) => r.produit === i).length;
   const ligne = (i) => {
@@ -34,11 +37,33 @@ function afficherListe() {
     }
     return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${echapper(p.format)}</span>
       <span class="date">${nbReleves(i)} prix</span></span>
-      <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button><button type="button" data-fusion-liste="${i}">Fusionner</button><button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
+      <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button>${FUSION_ACTIVE ? `<button type="button" data-fusion-liste="${i}">Fusionner</button>` : ""}<button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
   };
   zone.innerHTML = `<datalist id="liste-rayons">${rayons.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>`
     + (actifs.length ? rayons.map((rayon) => `<div class="rayon-liste"><h3 class="rayon-titre-liste">${echapper(rayon)}</h3><ul class="releves">${actifs.filter((i) => PANIER[i].rayon === rayon).map(ligne).join("")}</ul></div>`).join("")
-      : `<p class="encart">Ta liste est vide.</p>`);
+      : `<p class="encart">${requete ? "Aucun produit ne correspond." : "Ta liste est vide."}</p>`);
+  afficherMasques();
+}
+
+// Les produits supprimés ou fusionnés, qu'on peut rétablir.
+function afficherMasques() {
+  const zone = document.querySelector("#liste-masques");
+  const masques = PANIER.map((p, i) => i).filter((i) => PANIER[i].masque);
+  zone.innerHTML = masques.length
+    ? `<h3 class="rayon-titre-liste">Supprimés ou fusionnés</h3><ul class="releves">${masques.map((i) => `<li><span><strong>${echapper(PANIER[i].nom)}</strong> <span class="lc-format">${echapper(PANIER[i].format)}</span></span><span class="boutons"><button type="button" data-retablir-liste="${i}">Rétablir</button></span></li>`).join("")}</ul>`
+    : "";
+}
+
+// Remet un produit dans la liste et dans le panier habituel. Si les prix avaient été fusionnés dessus
+// (ils portent alors son nom en variante), ils lui reviennent.
+function retablirProduit(i) {
+  PANIER[i].masque = false;
+  if (i < NB_PRODUITS_BASE && modifs[i]) { delete modifs[i].masque; if (!Object.keys(modifs[i]).length) delete modifs[i]; }
+  if (!panierHabituel().produits.includes(i)) panierHabituel().produits.push(i);
+  coches.add(i);
+  for (const r of releves) {
+    if (r.produit !== i && r.variante && r.variante === PANIER[i].nom) { r.produit = i; r.variante = null; }
+  }
 }
 
 function masquerProduit(i) {
@@ -75,12 +100,14 @@ function fusionnerProduits(source, cible) {
 }
 
 function brancherListe() {
-  const zone = document.querySelector("#liste-gestion");
-  zone.addEventListener("click", (e) => {
+  document.querySelector("#liste-recherche").addEventListener("input", afficherListe);
+  const zones = [document.querySelector("#liste-gestion"), document.querySelector("#liste-masques")];
+  const clic = (e) => {
     const b = e.target.closest("button");
     if (!b) return;
     const apres = () => { sauvegarder(); produitEnEdition = null; toutAfficher(); };
-    if (b.dataset.modifierListe !== undefined) { produitEnEdition = { i: Number(b.dataset.modifierListe), mode: "modifier" }; afficherListe(); }
+    if (b.dataset.retablirListe !== undefined) { retablirProduit(Number(b.dataset.retablirListe)); apres(); notifier("Produit rétabli."); }
+    else if (b.dataset.modifierListe !== undefined) { produitEnEdition = { i: Number(b.dataset.modifierListe), mode: "modifier" }; afficherListe(); }
     else if (b.dataset.fusionListe !== undefined) { produitEnEdition = { i: Number(b.dataset.fusionListe), mode: "fusionner" }; afficherListe(); }
     else if (b.hasAttribute("data-annuler-liste")) { produitEnEdition = null; afficherListe(); }
     else if (b.dataset.enregistrerListe !== undefined) {
@@ -101,7 +128,8 @@ function brancherListe() {
       masquerProduit(i);
       apres();
     }
-  });
+  };
+  zones.forEach((z) => z.addEventListener("click", clic));
 }
 
 brancherListe();
