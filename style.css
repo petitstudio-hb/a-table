@@ -40,6 +40,9 @@ body {
   margin: 0;
   font-size: 1.6rem;
   color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .bouton-icone {
@@ -653,3 +656,6 @@ input, select, textarea { font-size: 16px !important; }
 #liste-gestion select, #liste-gestion input, #liste-masques select { max-width: 100%; min-width: 0; box-sizing: border-box; }
 #liste-recherche { width: 100%; box-sizing: border-box; margin: 4px 0 8px; }
 #trouver-fermer { margin: 4px 0 8px; }
+
+/* Logo : le cabas de Cabasito dans l'en-tête */
+.barre h1 .logo { width: 1.35em; height: 1.35em; flex: none; }

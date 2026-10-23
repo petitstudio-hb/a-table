@@ -9,4 +9,5 @@
 !js/*.js
 !icones/
 !icones/*.png
+!icones/*.svg
 !README.md
