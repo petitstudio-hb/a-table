@@ -16,6 +16,7 @@ const CLE = {
   vu: "atable.magasinVu", // magasin affiché dans Ma course (séance 9)
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
+  paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
 };
 
 function lire(cle, defaut) {
@@ -50,6 +51,10 @@ let relevesReplies = new Set(lire(CLE.relevesReplies, []));
 // Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
 let releves = lire(CLE.releves, []);
 
+// Les paniers : { id, nom, produits: [indices dans PANIER] }. Le « Panier habituel » reprend d'abord tous les produits de la liste.
+let paniers = lire(CLE.paniers, null) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
+const panierHabituel = () => paniers.find((p) => p.id === "habituel");
+
 function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.reference, reference);
@@ -57,6 +62,7 @@ function sauvegarder() {
   ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
+  ecrire(CLE.paniers, paniers);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
   ecrire(CLE.magasins2, MAGASINS);
 }
@@ -65,6 +71,7 @@ function ajouterProduit({ nom, format, rayon }) {
   PANIER.push({ nom: nom || "Produit sans nom", format: format || "", rayon: rayon || "Ajoutés", prix: {} });
   const i = PANIER.length - 1;
   coches.add(i);
+  panierHabituel()?.produits.push(i); // un nouveau produit rejoint le panier habituel
   return i;
 }
 
@@ -112,7 +119,7 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "magasins", "releves", "sauvegarde", "apropos", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "sauvegarde", "apropos", "reglages"];
 // Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
 const VUES_PROFIL = ["releves", "sauvegarde", "apropos", "reglages"];
 
@@ -417,6 +424,7 @@ function toutAfficher() {
   afficherTableau();
   calculer();
   afficherMagasins();
+  if (typeof afficherPaniers === "function") afficherPaniers();
   if (typeof afficherTrouves === "function") afficherTrouves(); // met à jour « Déjà ajouté »
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
@@ -442,11 +450,12 @@ const lirePrix = (texte) => parseFloat(String(texte).replace(",", ".").replace(/
 function exporter() {
   const contenu = {
     application: "A table",
-    version: 3,
+    version: 4,
     date: new Date().toISOString(),
     releves,
     produitsAjoutes: PANIER.slice(NB_PRODUITS_BASE),
     magasins: MAGASINS,
+    paniers,
     coches: [...coches],
     reference,
   };
@@ -474,6 +483,8 @@ async function importer(fichier) {
       releves = donnees.releves.filter((r) => r.produit < PANIER.length);
       coches = new Set(donnees.coches || PANIER.map((_, i) => i));
       reference = donnees.reference || reference;
+      paniers = Array.isArray(donnees.paniers) ? donnees.paniers : [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
+      for (const p of paniers) p.produits = p.produits.filter((i) => i < PANIER.length);
       message.textContent = `Import terminé : ${releves.length} relevés.`;
     } else {
       throw new Error("format inconnu");

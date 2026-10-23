@@ -601,3 +601,10 @@ input, select, textarea { font-size: 16px !important; }
 .profil-menu hr { border: none; border-top: 1px solid var(--ligne); margin: 6px 4px; }
 
 .releves li.rayon-releve { display: block; padding: 0; border: none; }
+
+/* ---------- Séance 12 : paniers ---------- */
+.etiquette { font-style: normal; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: var(--vert-fond); color: var(--vert); vertical-align: 1px; }
+.suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.puce { padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; }
+#creer-panier[hidden] { display: none; }
+.releves em.etiquette { color: var(--vert); font-size: 0.72rem; }
