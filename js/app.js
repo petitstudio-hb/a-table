@@ -251,6 +251,17 @@ function garantirDuel() {
   return { mags, A: mags.find((m) => m.id === magasinVu) || null, B: mags.find((m) => m.id === reference) || null };
 }
 
+// Cases à cocher pour choisir les magasins affichés dans Ma course (le même réglage que dans l'onglet Magasins).
+let choixMagasinsOuvert = false;
+function afficherChoixMagasins() {
+  const zone = document.querySelector("#liste-choix-magasins");
+  document.querySelector("#choix-magasins").setAttribute("aria-expanded", String(choixMagasinsOuvert));
+  zone.hidden = !choixMagasinsOuvert;
+  if (!choixMagasinsOuvert) return;
+  zone.innerHTML = MAGASINS.map((m) => `<label class="choix-mag"><input type="checkbox" data-affiche="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>${echapper(m.nom)}${m.adresse ? `<small>${echapper(m.adresse)}</small>` : ""}</span></label>`).join("")
+    + `<p class="aide">Décochez un magasin pour le retirer du classement et du duel. Il reste dans l'onglet Magasins.</p>`;
+}
+
 // Classement des magasins pour le panier, duel entre les deux magasins choisis, puis la liste en deux colonnes.
 function afficherCourse() {
   const { mags, A, B } = garantirDuel();
@@ -258,7 +269,8 @@ function afficherCourse() {
   const duel = document.querySelector("#duel");
   const bilan = document.querySelector("#duel-bilan");
   const liste = document.querySelector("#liste-course");
-  document.querySelector("#course-comparaison").hidden = mags.length === 0;
+  document.querySelector("#course-comparaison").hidden = MAGASINS.length === 0;
+  afficherChoixMagasins();
 
   // 1. Le classement : seulement les magasins qui connaissent au moins 80 % des prix cochés sont classés (décision D13).
   const infos = mags.map((m) => ({ m, ...totalDe(m) }));
@@ -586,6 +598,18 @@ function brancherEvenements() {
 
   document.querySelector("#choix-panier").addEventListener("change", (e) => {
     panierCourse = e.target.value;
+    sauvegarder();
+    toutAfficher();
+  });
+  // Choisir les magasins affichés : décocher un magasin le retire du classement et du duel.
+  document.querySelector("#choix-magasins").addEventListener("click", () => {
+    choixMagasinsOuvert = !choixMagasinsOuvert;
+    afficherChoixMagasins();
+  });
+  document.querySelector("#liste-choix-magasins").addEventListener("change", (e) => {
+    const m = MAGASINS.find((x) => x.id === e.target.dataset.affiche);
+    if (!m) return;
+    m.affiche = e.target.checked;
     sauvegarder();
     toutAfficher();
   });
