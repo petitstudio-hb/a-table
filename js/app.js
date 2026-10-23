@@ -17,6 +17,7 @@ const CLE = {
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
   paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
+  panierCourse: "atable.panierCourse", // panier affiché dans Ma course (séance 15)
 };
 
 function lire(cle, defaut) {
@@ -55,6 +56,13 @@ let releves = lire(CLE.releves, []);
 let paniers = lire(CLE.paniers, null) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
 const panierHabituel = () => paniers.find((p) => p.id === "habituel");
 
+// Le panier affiché dans « Ma course » : sa liste, ses totaux et ses économies ne portent que sur ses produits.
+let panierCourse = lire(CLE.panierCourse, "habituel");
+function produitsCourse() {
+  if (!paniers.some((p) => p.id === panierCourse)) panierCourse = "habituel";
+  return [...paniers.find((p) => p.id === panierCourse).produits].sort((a, b) => a - b);
+}
+
 function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.reference, reference);
@@ -63,6 +71,7 @@ function sauvegarder() {
   ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
   ecrire(CLE.paniers, paniers);
+  ecrire(CLE.panierCourse, panierCourse);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
   ecrire(CLE.magasins2, MAGASINS);
 }
@@ -153,6 +162,10 @@ window.addEventListener("hashchange", () => montrer(location.hash.slice(1)));
 
 function remplirListes() {
   const options = MAGASINS.map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
+  produitsCourse(); // vérifie que le panier affiché existe encore
+  const choixPanier = document.querySelector("#choix-panier");
+  choixPanier.innerHTML = paniers.map((p) => `<option value="${p.id}">${echapper(p.nom)} (${p.produits.length})</option>`).join("");
+  choixPanier.value = panierCourse;
   const ref = document.querySelector("#reference");
   ref.innerHTML = visibles().map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("");
   if (!visibles().some((m) => m.id === reference)) reference = (visibles()[0] || MAGASINS[0] || {}).id;
@@ -174,7 +187,7 @@ const nomCourt = (m) => m.nom.split(" ")[0].slice(0, 12);
 
 // Un produit n'a de prix « utile » que s'il est connu ; les totaux ne comptent que les produits cochés.
 function totalDe(m) {
-  const indices = PANIER.map((_, i) => i).filter((i) => coches.has(i));
+  const indices = produitsCourse().filter((i) => coches.has(i));
   const prix = indices.map((i) => prixDe(i, m.id).prix).filter((p) => p !== null);
   return { total: prix.reduce((a, b) => a + b, 0), connus: prix.length, coches: indices.length };
 }
@@ -207,11 +220,11 @@ function afficherCourse() {
   if (!vu) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
 
   const autres = mags.filter((m) => m.id !== vu.id);
-  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
+  const rayons = [...new Set(produitsCourse().map((i) => PANIER[i].rayon))];
   liste.innerHTML = rayons
     .map((rayon) => {
       const replie = rayonsReplies.has(rayon);
-      const produits = PANIER.map((p, i) => ({ p, i })).filter(({ p }) => p.rayon === rayon);
+      const produits = produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
         const { prix, saisi } = prixDe(i, vu.id);
         const refPrix = prixDe(i, reference).prix;
@@ -241,6 +254,7 @@ function afficherCourse() {
           <span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button>${lignes}</div>`;
     })
     .join("");
+  if (!rayons.length) liste.innerHTML = `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
 
   const t = totalDe(vu);
   document.querySelector("#course-total").innerHTML =
@@ -256,8 +270,8 @@ function afficherTableau() {
     `<th scope="row">Total des produits cochés</th>` + mags.map((m) => `<td data-total="${m.id}"></td>`).join("");
 
   // Produits regroupés par rayon, dans l'ordre où chaque rayon apparaît.
-  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
-  const ordre = rayons.flatMap((r) => PANIER.map((p, i) => ({ p, i })).filter(({ p }) => p.rayon === r));
+  const rayons = [...new Set(produitsCourse().map((i) => PANIER[i].rayon))];
+  const ordre = rayons.flatMap((r) => produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === r));
 
   let html = "";
   let rayonPrecedent = "";
@@ -292,7 +306,7 @@ function afficherTableau() {
 function calculer() {
   const mags = visibles();
   if (!mags.some((m) => m.id === magasinVu)) magasinVu = mags[0]?.id ?? null;
-  const indices = PANIER.map((_, i) => i).filter((i) => coches.has(i));
+  const indices = produitsCourse().filter((i) => coches.has(i));
 
   for (const m of mags) {
     const prix = indices.map((i) => prixDe(i, m.id).prix).filter((p) => p !== null);
@@ -329,7 +343,7 @@ function calculer() {
   });
   document.querySelector("#economies").innerHTML = cartes.join("");
   const n = indices.length;
-  document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${PANIER.length}`;
+  document.querySelector("#nb-coches").textContent = `${n} produit${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""} sur ${produitsCourse().length}`;
   afficherCourse();
 }
 
@@ -516,6 +530,11 @@ function brancherEvenements() {
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
   });
 
+  document.querySelector("#choix-panier").addEventListener("change", (e) => {
+    panierCourse = e.target.value;
+    sauvegarder();
+    toutAfficher();
+  });
   document.querySelector("#course-onglets").addEventListener("click", (e) => {
     const b = e.target.closest("[data-mag]");
     if (!b) return;
@@ -558,7 +577,8 @@ function brancherEvenements() {
   });
 
   const toutCocher = (valeur) => {
-    coches = valeur ? new Set(PANIER.map((_, i) => i)) : new Set();
+    const siens = produitsCourse(); // tout cocher ou décocher ne touche que le panier affiché
+    coches = valeur ? new Set([...coches, ...siens]) : new Set([...coches].filter((i) => !siens.includes(i)));
     sauvegarder();
     toutAfficher();
   };

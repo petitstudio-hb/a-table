@@ -269,6 +269,11 @@ function afficherVerification() {
   document.querySelector("#verif-magasin-nom").value = brouillon.magasinNom;
   document.querySelector("#verif-magasin-adresse").value = brouillon.magasinAdresse;
   document.querySelector("#verif-date").value = brouillon.date;
+  // Les nouveaux produits rejoignent le panier habituel ; on peut aussi les envoyer vers un autre panier.
+  const autres = paniers.filter((p) => p.id !== "habituel");
+  document.querySelector("#verif-panier-label").hidden = autres.length === 0;
+  document.querySelector("#verif-panier").innerHTML = `<option value="">Aucun autre panier</option>` + autres.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
+  document.querySelector("#verif-panier").value = brouillon.panier || "";
 
   const options = (choisi) => `<option value="-1" ${choisi === -1 ? "selected" : ""}>Nouveau produit (ajouté à ma liste)</option>`
     + PANIER.map((p, i) => `<option value="${i}" ${i === choisi ? "selected" : ""}>${echapper(p.nom)}${p.format ? ` (${echapper(p.format)})` : ""}</option>`).join("");
@@ -338,8 +343,10 @@ function valider() {
   }
   const date = document.querySelector("#verif-date").value || aujourdhui();
 
+  const panierChoisi = paniers.find((p) => p.id === document.querySelector("#verif-panier").value);
   for (const l of lignes) {
     const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon });
+    if (panierChoisi && !panierChoisi.produits.includes(produit)) { panierChoisi.produits.push(produit); coches.add(produit); }
     releves.push({
       produit,
       magasin,
@@ -392,6 +399,7 @@ function demarrerLecture() {
   document.querySelector("#verif-magasin-nom").addEventListener("input", (e) => { brouillon.magasinNom = e.target.value; });
   document.querySelector("#verif-magasin-adresse").addEventListener("input", (e) => { brouillon.magasinAdresse = e.target.value; });
   document.querySelector("#verif-date").addEventListener("change", (e) => { brouillon.date = e.target.value; });
+  document.querySelector("#verif-panier").addEventListener("change", (e) => { brouillon.panier = e.target.value; });
   document.querySelector("#verif-valider").addEventListener("click", valider);
   document.querySelector("#verif-annuler").addEventListener("click", () => {
     etat(file.length ? "Photo ignorée." : "Lecture annulée.");

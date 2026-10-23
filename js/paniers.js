@@ -138,8 +138,29 @@ function fermerPanier() {
 document.querySelector("#detail-panier").addEventListener("click", (e) => {
   if (e.target.closest("#retour-paniers")) { fermerPanier(); window.scrollTo(0, 0); return; }
   const panier = paniers.find((p) => p.id === panierOuvert);
+  if (e.target.closest("#courses-panier")) {
+    panierCourse = panier.id;
+    sauvegarder();
+    toutAfficher();
+    location.hash = "#course";
+    return;
+  }
+  if (e.target.closest("#dupliquer-panier")) {
+    let nom = `${panier.nom} (copie)`;
+    for (let n = 2; paniers.some((p) => p.nom.toLowerCase() === nom.toLowerCase()); n++) nom = `${panier.nom} (copie ${n})`;
+    paniers.push({ id: "p" + Date.now().toString(36), nom, produits: [...panier.produits] });
+    sauvegarder();
+    toutAfficher();
+    ouvrirPanier(paniers[paniers.length - 1].id);
+    notifier(`Panier dupliqué : ${nom}.`);
+    return;
+  }
   const ajout = e.target.closest("[data-ajouter-produit]");
-  if (ajout) panier.produits.push(Number(ajout.dataset.ajouterProduit));
+  if (ajout) {
+    const i = Number(ajout.dataset.ajouterProduit);
+    panier.produits.push(i);
+    coches.add(i); // un produit ajouté à un panier est à acheter
+  }
   const retrait = e.target.closest("[data-retirer-produit]");
   if (retrait) panier.produits = panier.produits.filter((i) => i !== Number(retrait.dataset.retirerProduit));
   if (ajout || retrait) { sauvegarder(); afficherPaniers(); }

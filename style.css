@@ -628,3 +628,9 @@ input, select, textarea { font-size: 16px !important; }
 .releves .ouvrir > span:first-child { display: block; flex: 1; min-width: 0; }
 .releves li { min-width: 0; }
 .releves li > .boutons { flex-shrink: 0; }
+
+/* ---------- Séance 15 : Ma course par panier ---------- */
+.choix-panier { display: flex; align-items: center; gap: 10px; margin: 4px 0 6px; font-weight: 600; }
+.choix-panier select { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; font-weight: 500; }
+.barre-panier { margin-bottom: 4px; }
+.barre-panier .principal, .barre-panier button { padding: 9px 14px; }

@@ -86,6 +86,9 @@
             <label>Date
               <input id="verif-date" type="date">
             </label>
+            <label id="verif-panier-label" class="large" hidden>Ajouter ces produits à un panier
+              <select id="verif-panier"></select>
+            </label>
           </div>
           <p id="verif-remarque" class="encart" hidden></p>
           <div id="verif-lignes"></div>
@@ -99,6 +102,10 @@
 
       <!-- ========== MA COURSE ========== -->
       <section id="vue-course" class="vue" hidden>
+        <label class="choix-panier">Panier
+          <select id="choix-panier"></select>
+        </label>
+
         <div id="course-onglets" class="course-onglets" role="tablist" aria-label="Magasin affiché"></div>
 
         <div class="carte-blanche resume">
@@ -212,7 +219,11 @@
         </div>
 
         <div id="detail-panier" class="carte-blanche" hidden>
-          <button type="button" id="retour-paniers" class="bouton-secondaire">‹ Mes paniers</button>
+          <div class="actions barre-panier">
+            <button type="button" id="retour-paniers" class="bouton-secondaire">‹ Mes paniers</button>
+            <button type="button" id="courses-panier" class="principal">Faire mes courses</button>
+            <button type="button" id="dupliquer-panier">Dupliquer</button>
+          </div>
           <h2 id="detail-nom" class="titre-panier"></h2>
           <p id="detail-compte" class="aide"></p>
           <div id="detail-totaux"></div>
