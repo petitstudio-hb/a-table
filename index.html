@@ -206,7 +206,7 @@
       <section id="vue-paniers" class="vue" hidden>
         <div id="carte-paniers" class="carte-blanche">
           <h2>Mes paniers</h2>
-          <p class="aide">Un panier est une liste de produits pour une occasion : tes courses habituelles, le ménage, les protéines… Touche un panier pour le composer.</p>
+          <p class="aide">Un panier est une liste de produits pour une occasion : tes courses habituelles, le ménage, les protéines… Touche un panier pour le composer. Sous chaque panier : le total des prix connus dans chaque magasin, avec le nombre de prix connus. Le moins cher (en vert) n'est désigné que si le magasin connaît au moins 80 % des prix du panier.</p>
           <ul id="liste-paniers" class="releves"></ul>
           <button type="button" id="creer-panier" class="bouton-secondaire">+ Créer un panier</button>
         </div>
@@ -215,6 +215,7 @@
           <button type="button" id="retour-paniers" class="bouton-secondaire">‹ Mes paniers</button>
           <h2 id="detail-nom" class="titre-panier"></h2>
           <p id="detail-compte" class="aide"></p>
+          <div id="detail-totaux"></div>
           <h3 class="sous-titre">Dans ce panier</h3>
           <ul id="detail-dedans" class="releves"></ul>
           <h3 class="sous-titre">Ajouter des produits</h3>

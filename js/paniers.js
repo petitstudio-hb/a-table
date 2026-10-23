@@ -40,7 +40,7 @@ function afficherListePaniers() {
       <li data-id="${p.id}">
         <button type="button" class="ouvrir" data-ouvrir-panier="${p.id}" aria-label="Composer le panier ${echapper(p.nom)}">
           <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : ""}
-            <span class="date">${detail}</span></span>
+            <span class="date">${detail}</span>${blocTotaux(p)}</span>
           <span class="fleche" aria-hidden="true">›</span>
         </button>
         <span class="boutons">
@@ -52,6 +52,35 @@ function afficherListePaniers() {
   if (panierEnModification === "__nouveau") html += formulaire({ id: "__nouveau", nom: "" });
   liste.innerHTML = html;
   document.querySelector("#creer-panier").hidden = panierEnModification === "__nouveau";
+}
+
+// ---------- Totaux par magasin (séance 14) ----------
+
+// Total des prix connus d'un panier dans un magasin, et nombre de prix connus.
+function totalPanier(panier, magasin) {
+  const prix = panier.produits.map((i) => prixDe(i, magasin.id).prix).filter((p) => p !== null);
+  return { total: prix.reduce((a, b) => a + b, 0), connus: prix.length, n: panier.produits.length };
+}
+
+// Le moins cher : seulement parmi les magasins qui connaissent au moins 80 % des prix du panier,
+// sinon un magasin aux prix manquants paraîtrait faussement moins cher (décision D13).
+function magasinMoinsCher(panier) {
+  const candidats = visibles().map((m) => ({ m, ...totalPanier(panier, m) })).filter((x) => x.n > 0 && x.connus >= 0.8 * x.n);
+  if (candidats.length < 2) return null;
+  return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
+}
+
+function blocTotaux(panier) {
+  if (!panier.produits.length) return "";
+  const mags = visibles();
+  if (!mags.length) return "";
+  const gagnant = magasinMoinsCher(panier);
+  const puces = mags.map((m) => {
+    const t = totalPanier(panier, m);
+    const classe = m.id === gagnant ? "best" : t.connus ? "" : "vide";
+    return `<span class="chip-mag ${classe}">${echapper(nomCourt(m))} <b>${t.connus ? euros(t.total) : "—"}</b> <small>${t.connus}/${t.n}</small></span>`;
+  }).join("");
+  return `<span class="totaux-panier">${puces}</span>`;
 }
 
 // ---------- Composer un panier ----------
@@ -70,6 +99,7 @@ function afficherDetailPanier() {
   const dedans = new Set(panier.produits);
   document.querySelector("#detail-nom").textContent = panier.nom;
   document.querySelector("#detail-compte").textContent = panier.produits.length ? texteNb(panier.produits.length) : "Aucun produit pour l'instant";
+  document.querySelector("#detail-totaux").innerHTML = blocTotaux(panier);
 
   // Dans le panier : regroupés comme dans la liste (par rayon).
   const rayons = [...new Set(PANIER.map((p) => p.rayon))];
