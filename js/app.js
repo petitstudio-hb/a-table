@@ -507,7 +507,7 @@ const lirePrix = (texte) => parseFloat(String(texte).replace(",", ".").replace(/
 
 function exporter() {
   const contenu = {
-    application: "A table",
+    application: "Cabasito",
     version: 4,
     date: new Date().toISOString(),
     releves,
@@ -534,7 +534,7 @@ async function importer(fichier) {
       const valides = donnees.filter((r) => Number.isInteger(r.produit) && r.produit < PANIER.length && typeof r.prix === "number");
       releves.push(...valides.map((r) => ({ ...r, envoye: Boolean(r.envoye) })));
       message.textContent = `${valides.length} relevé${valides.length > 1 ? "s" : ""} ajouté${valides.length > 1 ? "s" : ""}.`;
-    } else if (donnees.application === "A table" && Array.isArray(donnees.releves)) {
+    } else if ((donnees.application === "Cabasito" || donnees.application === "A table") && Array.isArray(donnees.releves)) {
       if (!confirm("Remplacer toutes les données de cet appareil par celles du fichier ?")) return;
       PANIER.splice(NB_PRODUITS_BASE, Infinity, ...(donnees.produitsAjoutes || []));
       modifs = donnees.modifs || {};

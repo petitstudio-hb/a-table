@@ -1,4 +1,4 @@
-# A table
+# Cabasito (anciennement A table)
 
 Comparateur de supermarchés basé sur mes courses habituelles : dans quel magasin mon panier coûte-t-il le moins cher ?
 
