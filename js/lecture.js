@@ -112,7 +112,7 @@ const SCHEMA = {
 };
 
 function consignes(type) {
-  const panier = PANIER.map((p, i) => `${i} | ${p.nom} | ${p.format || "format libre"} | ${p.rayon}`).join("\n");
+  const panier = produitsActifs().map((i) => `${i} | ${PANIER[i].nom} | ${PANIER[i].format || "format libre"} | ${PANIER[i].rayon}`).join("\n");
   const magasins = MAGASINS.map((m) => `${m.id} | ${m.nom} | ${m.adresse || ""}`).join("\n");
   const rayons = [...new Set(PANIER.map((p) => p.rayon))].join(", ");
   const commun = `Tu aides une personne à suivre les prix de ses courses en France. Tu lis une photo et tu renvoies les produits et leurs prix, en euros, sous forme de données structurées.
@@ -300,7 +300,7 @@ function afficherVerification() {
   document.querySelector("#verif-panier").value = brouillon.panier || "";
 
   const options = (choisi) => `<option value="-1" ${choisi === -1 ? "selected" : ""}>Nouveau produit (ajouté à ma liste)</option>`
-    + PANIER.map((p, i) => `<option value="${i}" ${i === choisi ? "selected" : ""}>${echapper(p.nom)}${p.format ? ` (${echapper(p.format)})` : ""}</option>`).join("");
+    + produitsActifs().map((i) => `<option value="${i}" ${i === choisi ? "selected" : ""}>${echapper(PANIER[i].nom)}${PANIER[i].format ? ` (${echapper(PANIER[i].format)})` : ""}</option>`).join("");
 
   document.querySelector("#verif-lignes").innerHTML = brouillon.lignes.length
     ? brouillon.lignes.map((l, k) => {

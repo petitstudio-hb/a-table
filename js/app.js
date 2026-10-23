@@ -18,6 +18,7 @@ const CLE = {
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
   paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
   panierCourse: "atable.panierCourse", // panier affiché dans Ma course (séance 15)
+  modifs: "atable.modifs", // changements sur les produits de base (séance 18)
 };
 
 function lire(cle, defaut) {
@@ -34,7 +35,18 @@ function ecrire(cle, valeur) {
 
 // Les produits et magasins de donnees.js, complétés par ceux ajoutés sur le site.
 const NB_PRODUITS_BASE = PANIER.length;
+const BASE_ORIGINE = PANIER.map(({ nom, format, rayon }) => ({ nom, format, rayon }));
 PANIER.push(...lire(CLE.produits, []));
+
+// « Gérer ma liste » (séance 18) : les changements faits sur les produits de donnees.js
+// (nom, format, rayon, masqué) sont gardés à part ; ceux des produits ajoutés le sont avec eux.
+let modifs = lire(CLE.modifs, {});
+function appliquerModifs() {
+  for (let i = 0; i < NB_PRODUITS_BASE; i++) Object.assign(PANIER[i], BASE_ORIGINE[i], { masque: false }, modifs[i] || {});
+}
+appliquerModifs();
+// Les produits encore utilisables (un produit supprimé reste en place, masqué, pour garder les indices).
+const produitsActifs = () => PANIER.map((p, i) => i).filter((i) => !PANIER[i].masque);
 
 // Les magasins : la liste enregistrée sur l'appareil, sinon celle de donnees.js
 // complétée par les anciens magasins ajoutés depuis les photos.
@@ -73,6 +85,7 @@ function sauvegarder() {
   ecrire(CLE.paniers, paniers);
   ecrire(CLE.panierCourse, panierCourse);
   ecrire(CLE.produits, PANIER.slice(NB_PRODUITS_BASE));
+  ecrire(CLE.modifs, modifs);
   ecrire(CLE.magasins2, MAGASINS);
 }
 
@@ -156,9 +169,9 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "sauvegarde", "apropos", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "liste", "sauvegarde", "apropos", "reglages"];
 // Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
-const VUES_PROFIL = ["releves", "sauvegarde", "apropos", "reglages"];
+const VUES_PROFIL = ["releves", "liste", "sauvegarde", "apropos", "reglages"];
 
 function montrer(vue) {
   if (!VUES.includes(vue)) vue = "photo";
@@ -206,7 +219,7 @@ function remplirListes() {
 
   const prod = document.querySelector("#saisie-produit");
   const prodChoisi = prod.value;
-  prod.innerHTML = PANIER.map((p, i) => `<option value="${i}">${echapper(p.nom)}${p.format ? ` (${echapper(p.format)})` : ""}</option>`).join("");
+  prod.innerHTML = produitsActifs().map((i) => `<option value="${i}">${echapper(PANIER[i].nom)}${PANIER[i].format ? ` (${echapper(PANIER[i].format)})` : ""}</option>`).join("");
   if (prodChoisi) prod.value = prodChoisi;
 }
 
@@ -468,6 +481,7 @@ function toutAfficher() {
   calculer();
   afficherMagasins();
   if (typeof afficherPaniers === "function") afficherPaniers();
+  if (typeof afficherListe === "function") afficherListe();
   if (typeof afficherTrouves === "function") afficherTrouves(); // met à jour « Déjà ajouté »
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
@@ -501,6 +515,7 @@ function exporter() {
     paniers,
     coches: [...coches],
     reference,
+    modifs,
   };
   const lien = document.createElement("a");
   lien.href = URL.createObjectURL(new Blob([JSON.stringify(contenu, null, 2)], { type: "application/json" }));
@@ -521,6 +536,8 @@ async function importer(fichier) {
     } else if (donnees.application === "A table" && Array.isArray(donnees.releves)) {
       if (!confirm("Remplacer toutes les données de cet appareil par celles du fichier ?")) return;
       PANIER.splice(NB_PRODUITS_BASE, Infinity, ...(donnees.produitsAjoutes || []));
+      modifs = donnees.modifs || {};
+      appliquerModifs();
       if (Array.isArray(donnees.magasins)) MAGASINS.splice(0, Infinity, ...donnees.magasins);
       else MAGASINS.push(...(donnees.magasinsAjoutes || []).filter((m) => !MAGASINS.some((x) => x.id === m.id)));
       releves = donnees.releves.filter((r) => r.produit < PANIER.length);

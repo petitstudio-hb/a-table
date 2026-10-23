@@ -110,7 +110,7 @@ function afficherDetailPanier() {
 
   // À ajouter : les produits de ma liste qui n'y sont pas encore, filtrés par la recherche.
   const requete = sansAccent(document.querySelector("#detail-recherche").value.trim());
-  const candidats = PANIER.map((p, i) => i)
+  const candidats = produitsActifs()
     .filter((i) => !dedans.has(i))
     .filter((i) => !requete || sansAccent(PANIER[i].nom + " " + PANIER[i].rayon + " " + PANIER[i].format).includes(requete))
     .sort((a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b);

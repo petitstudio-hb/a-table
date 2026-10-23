@@ -637,3 +637,8 @@ input, select, textarea { font-size: 16px !important; }
 
 /* Séance 16 : association prudente */
 .ligne-verif .avertissement { grid-column: 1 / -1; margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff4e0; color: #7a4b00; font-size: 14px; }
+
+/* Séance 18 : gérer ma liste */
+.rayon-titre-liste { margin: 14px 0 4px; font-size: 15px; color: var(--accent); }
+#liste-gestion .releves li { flex-wrap: wrap; }
+#liste-gestion .boutons { flex-wrap: wrap; }

@@ -23,6 +23,7 @@
         </button>
         <nav id="profil-menu" class="profil-menu" aria-label="Mon profil" hidden>
           <a href="#releves">Mes relevés</a>
+          <a href="#liste">Gérer ma liste</a>
           <a href="#sauvegarde">Sauvegarde et restauration</a>
           <a href="#reglages">Réglages</a>
           <hr>
@@ -262,6 +263,15 @@
         </div>
       </section>
 
+      <!-- ========== GÉRER MA LISTE ========== -->
+      <section id="vue-liste" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>Gérer ma liste</h2>
+          <p class="aide">Renomme un produit, change son format ou son rayon, fusionne deux produits identiques ou supprime-en un. Les prix déjà relevés suivent.</p>
+          <div id="liste-gestion"></div>
+        </div>
+      </section>
+
       <!-- ========== À PROPOS ========== -->
       <section id="vue-apropos" class="vue" hidden>
         <div class="carte-blanche">
@@ -357,6 +367,7 @@
     <script src="js/lecture.js"></script>
     <script src="js/trouver.js"></script>
     <script src="js/paniers.js"></script>
+    <script src="js/liste.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>
 </html>
