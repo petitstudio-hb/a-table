@@ -1,12 +1,26 @@
-// Page « Mes paniers » (séance 12) : créer, renommer et supprimer des paniers.
+// Page « Mes paniers » (séances 12 et 13) : créer, renommer, supprimer des paniers,
+// et composer un panier comme une playlist (ajouter et retirer des produits).
 // Les données (`paniers`) et leur sauvegarde sont dans app.js.
-// Un panier est une liste de produits de ta liste ; le « Panier habituel » existe toujours.
+// Un panier est une liste de numéros de produits de ta liste ; le « Panier habituel » existe toujours.
 
 let panierEnModification = null; // id du panier en cours de renommage, ou "__nouveau" pour une création
+let panierOuvert = null; // id du panier dont on compose le contenu (écran « Composer »)
 
 const SUGGESTIONS_PANIERS = ["Ménage", "Protéines", "Apéro", "Petit-déjeuner"];
+const MAX_RESULTATS = 40;
+
+const texteNb = (n) => `${n} produit${n > 1 ? "s" : ""}`;
+const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 function afficherPaniers() {
+  if (panierOuvert && !paniers.some((p) => p.id === panierOuvert)) panierOuvert = null;
+  document.querySelector("#carte-paniers").hidden = panierOuvert !== null;
+  document.querySelector("#detail-panier").hidden = panierOuvert === null;
+  if (panierOuvert) afficherDetailPanier();
+  else afficherListePaniers();
+}
+
+function afficherListePaniers() {
   const liste = document.querySelector("#liste-paniers");
   const formulaire = (p) => `
     <li class="modif" data-id="${p.id}">
@@ -21,11 +35,14 @@ function afficherPaniers() {
   let html = paniers.map((p) => {
     if (p.id === panierEnModification) return formulaire(p);
     const n = p.produits.length;
-    const detail = n ? `${n} produit${n > 1 ? "s" : ""}` : "Vide pour l'instant : tu pourras y ajouter des produits à la prochaine étape";
+    const detail = n ? texteNb(n) : "Vide : touche pour y ajouter des produits";
     return `
       <li data-id="${p.id}">
-        <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : ""}
-          <span class="date">${detail}</span></span>
+        <button type="button" class="ouvrir" data-ouvrir-panier="${p.id}" aria-label="Composer le panier ${echapper(p.nom)}">
+          <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : ""}
+            <span class="date">${detail}</span></span>
+          <span class="fleche" aria-hidden="true">›</span>
+        </button>
         <span class="boutons">
           <button type="button" data-renommer-panier="${p.id}">Renommer</button>
           ${p.id === "habituel" ? "" : `<button type="button" data-supprimer-panier="${p.id}" aria-label="Supprimer ${echapper(p.nom)}">✕</button>`}
@@ -37,6 +54,70 @@ function afficherPaniers() {
   document.querySelector("#creer-panier").hidden = panierEnModification === "__nouveau";
 }
 
+// ---------- Composer un panier ----------
+
+const ligneProduit = (i, bouton) => {
+  const p = PANIER[i];
+  return `<li class="ligne-panier">
+    <span><strong>${echapper(p.nom)}</strong>${p.format ? ` <span class="lc-format">${echapper(p.format)}</span>` : ""}
+      <span class="date">${echapper(p.rayon)}</span></span>
+    <span class="boutons">${bouton}</span>
+  </li>`;
+};
+
+function afficherDetailPanier() {
+  const panier = paniers.find((p) => p.id === panierOuvert);
+  const dedans = new Set(panier.produits);
+  document.querySelector("#detail-nom").textContent = panier.nom;
+  document.querySelector("#detail-compte").textContent = panier.produits.length ? texteNb(panier.produits.length) : "Aucun produit pour l'instant";
+
+  // Dans le panier : regroupés comme dans la liste (par rayon).
+  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
+  const tries = [...dedans].sort((a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b);
+  document.querySelector("#detail-dedans").innerHTML = tries.length
+    ? tries.map((i) => ligneProduit(i, `<button type="button" data-retirer-produit="${i}" aria-label="Retirer ${echapper(PANIER[i].nom)} du panier">Retirer</button>`)).join("")
+    : `<li class="vide">Ce panier est vide. Ajoute des produits ci-dessous.</li>`;
+
+  // À ajouter : les produits de ma liste qui n'y sont pas encore, filtrés par la recherche.
+  const requete = sansAccent(document.querySelector("#detail-recherche").value.trim());
+  const candidats = PANIER.map((p, i) => i)
+    .filter((i) => !dedans.has(i))
+    .filter((i) => !requete || sansAccent(PANIER[i].nom + " " + PANIER[i].rayon + " " + PANIER[i].format).includes(requete))
+    .sort((a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b);
+  const visibles = candidats.slice(0, MAX_RESULTATS);
+  let html = visibles.map((i) => ligneProduit(i, `<button type="button" class="ajout" data-ajouter-produit="${i}" aria-label="Ajouter ${echapper(PANIER[i].nom)} au panier">+ Ajouter</button>`)).join("");
+  if (!candidats.length) html = `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Tous les produits de ta liste sont déjà dans ce panier."}</li>`;
+  else if (candidats.length > MAX_RESULTATS) html += `<li class="vide">${candidats.length - MAX_RESULTATS} autres produits : affine ta recherche.</li>`;
+  document.querySelector("#detail-ajout").innerHTML = html;
+}
+
+function ouvrirPanier(id) {
+  panierOuvert = id;
+  panierEnModification = null;
+  document.querySelector("#detail-recherche").value = "";
+  afficherPaniers();
+  window.scrollTo(0, 0);
+}
+
+function fermerPanier() {
+  if (panierOuvert === null) return;
+  panierOuvert = null;
+  afficherPaniers();
+}
+
+document.querySelector("#detail-panier").addEventListener("click", (e) => {
+  if (e.target.closest("#retour-paniers")) { fermerPanier(); window.scrollTo(0, 0); return; }
+  const panier = paniers.find((p) => p.id === panierOuvert);
+  const ajout = e.target.closest("[data-ajouter-produit]");
+  if (ajout) panier.produits.push(Number(ajout.dataset.ajouterProduit));
+  const retrait = e.target.closest("[data-retirer-produit]");
+  if (retrait) panier.produits = panier.produits.filter((i) => i !== Number(retrait.dataset.retirerProduit));
+  if (ajout || retrait) { sauvegarder(); afficherPaniers(); }
+});
+document.querySelector("#detail-recherche").addEventListener("input", afficherDetailPanier);
+
+// ---------- Créer, renommer, supprimer ----------
+
 function enregistrerPanier(id, nom) {
   nom = nom.trim();
   if (!nom) { notifier("Donne un nom au panier."); return false; }
@@ -47,6 +128,8 @@ function enregistrerPanier(id, nom) {
 }
 
 document.querySelector("#liste-paniers").addEventListener("click", (e) => {
+  const ouvrir = e.target.closest("[data-ouvrir-panier]");
+  if (ouvrir) { ouvrirPanier(ouvrir.dataset.ouvrirPanier); return; }
   const renommer = e.target.closest("[data-renommer-panier]");
   if (renommer) { panierEnModification = renommer.dataset.renommerPanier; afficherPaniers(); return; }
   if (e.target.closest("[data-annuler-panier]")) { panierEnModification = null; afficherPaniers(); return; }
@@ -55,10 +138,13 @@ document.querySelector("#liste-paniers").addEventListener("click", (e) => {
   const enregistrer = e.target.closest("[data-enregistrer-panier]");
   if (enregistrer) {
     const nom = enregistrer.closest("li").querySelector('[data-champ="nom"]').value;
-    if (!enregistrerPanier(enregistrer.dataset.enregistrerPanier, nom)) return;
+    const id = enregistrer.dataset.enregistrerPanier;
+    if (!enregistrerPanier(id, nom)) return;
     panierEnModification = null;
     sauvegarder();
     toutAfficher();
+    // Un panier qu'on vient de créer s'ouvre tout de suite : on le remplit.
+    if (id === "__nouveau") ouvrirPanier(paniers[paniers.length - 1].id);
     return;
   }
   const supprimer = e.target.closest("[data-supprimer-panier]");

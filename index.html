@@ -204,11 +204,22 @@
 
       <!-- ========== MES PANIERS ========== -->
       <section id="vue-paniers" class="vue" hidden>
-        <div class="carte-blanche">
+        <div id="carte-paniers" class="carte-blanche">
           <h2>Mes paniers</h2>
-          <p class="aide">Un panier est une liste de produits pour une occasion : tes courses habituelles, le ménage, les protéines… Crée-en autant que tu veux.</p>
+          <p class="aide">Un panier est une liste de produits pour une occasion : tes courses habituelles, le ménage, les protéines… Touche un panier pour le composer.</p>
           <ul id="liste-paniers" class="releves"></ul>
           <button type="button" id="creer-panier" class="bouton-secondaire">+ Créer un panier</button>
+        </div>
+
+        <div id="detail-panier" class="carte-blanche" hidden>
+          <button type="button" id="retour-paniers" class="bouton-secondaire">‹ Mes paniers</button>
+          <h2 id="detail-nom" class="titre-panier"></h2>
+          <p id="detail-compte" class="aide"></p>
+          <h3 class="sous-titre">Dans ce panier</h3>
+          <ul id="detail-dedans" class="releves"></ul>
+          <h3 class="sous-titre">Ajouter des produits</h3>
+          <input id="detail-recherche" class="recherche" type="search" placeholder="Rechercher un produit ou un rayon" autocomplete="off" aria-label="Rechercher un produit">
+          <ul id="detail-ajout" class="releves"></ul>
         </div>
       </section>
 

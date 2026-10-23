@@ -130,6 +130,7 @@ function montrer(vue) {
   document.querySelectorAll(".onglets a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
   document.querySelector("#profil-bouton").classList.toggle("actif", VUES_PROFIL.includes(vue));
   fermerProfil();
+  if (vue !== "paniers" && typeof fermerPanier === "function") fermerPanier();
   window.scrollTo(0, 0);
 }
 
