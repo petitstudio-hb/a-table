@@ -2,7 +2,12 @@
 // Les magasins viennent d'OpenStreetMap (API Overpass, gratuite, sans clé).
 // La position (GPS ou adresse tapée) sert uniquement à la recherche : elle n'est jamais enregistrée (décision D9).
 
-const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"];
+// Serveurs Overpass, essayés dans l'ordre, avec le délai maximal de chacun (en secondes).
+// Le serveur français répond en moins d'une seconde ; l'allemand est plus lent (30 à 45 s certains jours).
+const OVERPASS = [
+  { url: "https://overpass.openstreetmap.fr/api/interpreter", delai: 25 },
+  { url: "https://overpass-api.de/api/interpreter", delai: 80 },
+];
 const NOMINATIM = "https://nominatim.openstreetmap.org/search";
 
 let trouves = []; // résultats de la dernière recherche
@@ -45,8 +50,13 @@ async function chercherMagasins(centre, rayon) {
   let donnees = null;
   for (const serveur of OVERPASS) {
     try {
-      const rep = await fetch(serveur, { method: "POST", body: "data=" + encodeURIComponent(requete), headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: AbortSignal.timeout(20000) });
-      if (rep.ok) { donnees = await rep.json(); break; }
+      // AbortController plutôt qu'AbortSignal.timeout, absent des anciens Safari.
+      const arret = new AbortController();
+      const minuteur = setTimeout(() => arret.abort(), serveur.delai * 1000);
+      try {
+        const rep = await fetch(serveur.url, { method: "POST", body: "data=" + encodeURIComponent(requete), headers: { "Content-Type": "application/x-www-form-urlencoded" }, signal: arret.signal });
+        if (rep.ok) { donnees = await rep.json(); break; }
+      } finally { clearTimeout(minuteur); }
     } catch (e) { /* serveur suivant */ }
   }
   if (!donnees) throw new Error("OpenStreetMap ne répond pas pour l'instant. Réessaie dans un moment.");
@@ -88,10 +98,12 @@ function afficherTrouves() {
 }
 
 async function lancerRecherche(source) {
+  let patience;
   const bouton = document.querySelectorAll("#trouver button");
   bouton.forEach((b) => (b.disabled = true));
   try {
     etatTrouver("Recherche en cours…");
+    patience = setTimeout(() => etatTrouver("Le serveur est lent en ce moment, ça peut prendre jusqu'à une minute…"), 8000);
     const adresse = document.querySelector("#trouver-adresse").value.trim();
     const centre = source === "adresse" ? await positionAdresse(adresse) : await positionGps();
     const rayon = Number(document.querySelector("#trouver-rayon").value);
@@ -103,6 +115,7 @@ async function lancerRecherche(source) {
   } catch (e) {
     etatTrouver(e.message, true);
   } finally {
+    clearTimeout(patience);
     bouton.forEach((b) => (b.disabled = false));
   }
 }
