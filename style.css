@@ -841,3 +841,6 @@ input, select, textarea { font-size: 16px !important; }
 .rang-nom { flex: 1 1 45%; min-width: 0; }
 .rang-prix { flex: 0 1 auto; max-width: 50%; }
 .rang-nom small { white-space: normal; }
+.rang-prix { font-size: 0.92rem; }
+.rang-prix { white-space: nowrap; }
+.rang-prix small { white-space: normal; }
