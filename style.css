@@ -782,3 +782,28 @@ input, select, textarea { font-size: 16px !important; }
 .ligne-verif:has(.promo-bouton.actif) { border-left: 5px solid var(--rouge); }
 .badge-promo { display: inline-block; margin-left: 6px; padding: 0 5px; background: var(--rouge); color: #fff; font-family: var(--mono); font-weight: 700; font-size: 0.62rem; letter-spacing: 0.04em; vertical-align: 2px; }
 .ligne-duel .lc-prix .badge-promo { display: block; margin: 2px 0 0; text-align: center; }
+
+/* ---------- Revue visuelle (26/10/2026) : paniers par rayon, flèche, tableau « Tout comparer » ---------- */
+.rayon-bande { margin: 12px 0 0; padding: 5px 10px; background: var(--accent); color: var(--carte); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; list-style: none; border: none; }
+#detail-dedans .rayon-bande:first-child, #detail-ajout .rayon-bande:first-child { margin-top: 4px; }
+
+/* Flèche de Mes paniers : plus grande, dans un carré vert, pour qu'on voie qu'on peut ouvrir. */
+#liste-paniers .ouvrir .fleche { flex: none; display: grid; place-items: center; width: 34px; height: 34px; background: var(--accent); color: var(--carte); font-size: 1.7rem; font-weight: 800; line-height: 1; padding-bottom: 3px; }
+.rayon-titre .fleche { font-size: 1.1rem; font-weight: 800; }
+
+/* Tableau « Tout comparer » : même langage que Ma course. */
+#tout-comparer table { font-size: 0.9rem; }
+#tout-comparer thead th { background: var(--accent); color: var(--carte); font-weight: 800; border-bottom: none; }
+#tout-comparer thead th span { color: #cfe3d5; }
+#tout-comparer tr.rayon td { background: var(--ligne); color: var(--accent); font-weight: 800; padding-top: 6px; padding-bottom: 6px; }
+#tout-comparer td, #tout-comparer tfoot th, #tout-comparer tfoot td { font-family: var(--mono); font-weight: 700; border-bottom: 1px dashed #a9b3a6; }
+#tout-comparer tbody th { font-family: inherit; font-weight: 500; }
+#tout-comparer td.meilleur { background: var(--jaune); color: #1b2a22; }
+#tout-comparer td.manquant { color: #a2aca4; font-weight: 400; }
+#tout-comparer tfoot { border-top: 2px solid var(--accent); }
+#liste-paniers .ouvrir { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; }
+#liste-paniers .ouvrir > span:first-child { flex: 1; min-width: 0; }
+#liste-paniers .ouvrir .fleche { font-size: 2.1rem; padding-bottom: 5px; }
+#liste-paniers li:not(.modif) { flex-direction: column; align-items: stretch; gap: 8px; }
+#liste-paniers li:not(.modif) > .boutons { align-self: flex-end; }
+#liste-paniers .ouvrir { width: 100%; }

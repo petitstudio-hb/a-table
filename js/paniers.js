@@ -89,10 +89,24 @@ const ligneProduit = (i, bouton) => {
   const p = PANIER[i];
   return `<li class="ligne-panier">
     <span><strong>${echapper(p.nom)}</strong>${p.format ? ` <span class="lc-format">${echapper(p.format)}</span>` : ""}
-      <span class="date">${echapper(p.rayon)}</span></span>
+      ${p.marque ? `<span class="date">${echapper(p.marque)}</span>` : ""}</span>
     <span class="boutons">${bouton}</span>
   </li>`;
 };
+
+// Les produits regroupés par rayon, avec un bandeau vert par rayon (comme dans Ma course).
+function lignesParRayon(indices, boutonDe) {
+  let html = "";
+  let courant = null;
+  for (const i of indices) {
+    if (PANIER[i].rayon !== courant) {
+      courant = PANIER[i].rayon;
+      html += `<li class="rayon-bande">${echapper(courant)}</li>`;
+    }
+    html += ligneProduit(i, boutonDe(i));
+  }
+  return html;
+}
 
 function afficherDetailPanier() {
   const panier = paniers.find((p) => p.id === panierOuvert);
@@ -105,7 +119,7 @@ function afficherDetailPanier() {
   const rayons = [...new Set(PANIER.map((p) => p.rayon))];
   const tries = [...dedans].sort((a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b);
   document.querySelector("#detail-dedans").innerHTML = tries.length
-    ? tries.map((i) => ligneProduit(i, `<button type="button" data-retirer-produit="${i}" aria-label="Retirer ${echapper(PANIER[i].nom)} du panier">Retirer</button>`)).join("")
+    ? lignesParRayon(tries, (i) => `<button type="button" data-retirer-produit="${i}" aria-label="Retirer ${echapper(PANIER[i].nom)} du panier">Retirer</button>`)
     : `<li class="vide">Ce panier est vide. Ajoute des produits ci-dessous.</li>`;
 
   // À ajouter : les produits de ma liste qui n'y sont pas encore, filtrés par la recherche.
@@ -115,7 +129,7 @@ function afficherDetailPanier() {
     .filter((i) => !requete || sansAccent(PANIER[i].nom + " " + PANIER[i].rayon + " " + PANIER[i].format).includes(requete))
     .sort((a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b);
   const visibles = candidats.slice(0, MAX_RESULTATS);
-  let html = visibles.map((i) => ligneProduit(i, `<button type="button" class="ajout" data-ajouter-produit="${i}" aria-label="Ajouter ${echapper(PANIER[i].nom)} au panier">+ Ajouter</button>`)).join("");
+  let html = lignesParRayon(visibles, (i) => `<button type="button" class="ajout" data-ajouter-produit="${i}" aria-label="Ajouter ${echapper(PANIER[i].nom)} au panier">+ Ajouter</button>`);
   if (!candidats.length) html = `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Tous les produits de ta liste sont déjà dans ce panier."}</li>`;
   else if (candidats.length > MAX_RESULTATS) html += `<li class="vide">${candidats.length - MAX_RESULTATS} autres produits : affine ta recherche.</li>`;
   document.querySelector("#detail-ajout").innerHTML = html;
