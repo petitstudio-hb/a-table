@@ -804,8 +804,8 @@ input, select, textarea { font-size: 16px !important; }
 #liste-paniers .ouvrir { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left; }
 #liste-paniers .ouvrir > span:first-child { flex: 1; min-width: 0; }
 #liste-paniers .ouvrir .fleche { font-size: 2.1rem; padding-bottom: 5px; }
-#liste-paniers li:not(.modif) { flex-direction: column; align-items: stretch; gap: 8px; }
-#liste-paniers li:not(.modif) > .boutons { align-self: flex-end; }
+#liste-paniers > li:not(.modif) { flex-direction: column; align-items: stretch; gap: 8px; }
+#liste-paniers > li:not(.modif) > .boutons { align-self: flex-end; }
 #liste-paniers .ouvrir { width: 100%; }
 
 /* ---------- Mes achats : tickets et dépenses (séance 25) ---------- */
@@ -908,3 +908,14 @@ input, select, textarea { font-size: 16px !important; }
 .lien-fleche span { text-decoration: underline; }
 .fleche-lien { flex: none; width: 9px; height: 9px; margin: 0 6px 4px 0; border-right: 3px solid currentColor; border-bottom: 3px solid currentColor; transform: rotate(45deg); transition: transform 0.15s; }
 .lien-fleche[aria-expanded="true"] .fleche-lien { transform: rotate(-135deg); margin-bottom: -2px; }
+
+/* Séance 33 : panier déplié sur place dans Mes paniers */
+#liste-paniers > li.ouvert { border: 2px solid var(--accent); padding: 8px; }
+#liste-paniers > li.ouvert .ouvrir .fleche::before { transform: rotate(135deg); left: 6px; top: 6px; }
+.detail-deplie { margin-top: 8px; padding-top: 10px; border-top: 1.5px dashed var(--ligne); }
+.detail-deplie .pleine { width: 100%; min-height: 48px; }
+.actions-centre { display: flex; justify-content: center; gap: 10px; margin: 8px 0 12px; }
+.actions-centre button { flex: 1; max-width: 160px; min-height: 44px; }
+.detail-deplie .sous-titre { margin: 14px 0 4px; }
+.lien-supprimer { display: block; margin: 16px auto 4px; padding: 10px; border: none; background: none; color: var(--discret); text-decoration: underline; font: inherit; font-size: 0.85rem; cursor: pointer; }
+#liste-paniers > li.ouvert { flex-direction: column; align-items: stretch; }
