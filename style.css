@@ -894,3 +894,11 @@ input, select, textarea { font-size: 16px !important; }
 /* Séance 32 : Où aller ? */
 #ou-aller .bilan { margin: 10px 0; padding: 10px; background: var(--jaune); color: #1b2a22; }
 .rang-fixe { cursor: default; }
+
+/* Flèches, option 1 choisie par Hugo (26/10/2026) : chevron seul, sans cadre, dessiné en CSS. */
+.rayon-titre .fleche, .rayon-bande-bouton .fleche { position: relative; display: block; flex: none; width: 24px; height: 24px; font-size: 0; background: none; color: inherit; }
+.rayon-titre .fleche::before, .rayon-bande-bouton .fleche::before { content: ""; position: absolute; left: 6px; top: 4px; width: 9px; height: 9px; border-right: 3px solid currentColor; border-bottom: 3px solid currentColor; transform: rotate(45deg); }
+[aria-expanded="false"] > .fleche::before { left: 3px; top: 7px; transform: rotate(-45deg); }
+#liste-paniers .ouvrir .fleche { width: 32px; height: 32px; background: none; color: var(--accent); }
+#liste-paniers .ouvrir .fleche::before { left: 8px; top: 9px; width: 14px; height: 14px; border-width: 4px; border-color: currentColor; }
+.releves .ouvrir .fleche { font-size: 0; }
