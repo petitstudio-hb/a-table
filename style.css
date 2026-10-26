@@ -878,3 +878,11 @@ input, select, textarea { font-size: 16px !important; }
 /* Séance 30 : Ma course sans duel ; aucune colonne de prix possible. */
 .ligne-duel[style*="--cols:0"], .liste-tete[style*="--cols:0"] { grid-template-columns: 1fr; }
 .repere { font-size: 15px; }
+
+/* Séance 31 : exclure un ticket de Mes achats */
+.ticket summary .etiquette { margin-left: auto; }
+.ticket-croix { flex: none; width: 36px; height: 36px; border: none; background: none; color: var(--discret); font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0 0 3px; }
+.ticket-action { flex: none; min-height: 36px; padding: 0 10px; border: 1.5px solid var(--accent); background: var(--carte); color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
+.exclus { margin-top: 16px; border-top: 2px solid var(--accent); }
+.exclus[hidden] { display: none; }
+.exclus > summary { padding: 12px 2px; font-weight: 800; color: var(--accent); cursor: pointer; }

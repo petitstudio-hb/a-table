@@ -13,10 +13,11 @@ function ticketsGroupes() {
   for (const r of releves) {
     if (r.source !== "ticket") continue;
     const cle = r.ticket || `${r.magasin}|${r.date}`;
-    if (!groupes.has(cle)) groupes.set(cle, { cle, magasin: r.magasin, date: r.date, lignes: [], total: 0 });
+    if (!groupes.has(cle)) groupes.set(cle, { cle, magasin: r.magasin, date: r.date, lignes: [], total: 0, exclu: true });
     const g = groupes.get(cle);
     g.lignes.push(r);
     g.total += montantDe(r);
+    if (!r.exclu) g.exclu = false; // exclu seulement si toutes ses lignes le sont
   }
   return [...groupes.values()].sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -31,7 +32,9 @@ function debutSemaine(iso) {
 const debutMois = (iso) => iso.slice(0, 7);
 
 function afficherAchats() {
-  const tickets = ticketsGroupes();
+  const tous = ticketsGroupes();
+  const tickets = tous.filter((t) => !t.exclu);
+  const exclus = tous.filter((t) => t.exclu);
   const kpi = document.querySelector("#achats-kpi");
   if (!kpi) return;
   const aujourdhuiIso = aujourdhui();
@@ -42,10 +45,16 @@ function afficherAchats() {
   const ceMois = tickets.filter((t) => debutMois(t.date) === mois);
   const moyenne = tickets.length ? somme(tickets) / tickets.length : 0;
 
+  const zoneExclus = `<details class="exclus" ${exclus.length ? "" : "hidden"}>
+      <summary>Tickets exclus (${exclus.length})</summary>
+      <p class="aide">Ces tickets ne comptent plus dans les dépenses, mais leurs prix restent dans l'appli.</p>
+      ${exclus.map((t) => ticketHtml(t, true)).join("")}
+    </details>`;
+
   if (!tickets.length) {
     kpi.innerHTML = "";
     document.querySelector("#achats-semaines").innerHTML = "";
-    document.querySelector("#achats-liste").innerHTML = `<p class="encart">Aucun ticket lu pour l'instant. Photographiez ou importez un ticket depuis l'onglet Photo.</p>`;
+    document.querySelector("#achats-liste").innerHTML = `<p class="encart">${exclus.length ? "Tous vos tickets sont exclus des dépenses." : "Aucun ticket lu pour l'instant. Photographiez ou importez un ticket depuis l'onglet Photo."}</p>` + zoneExclus;
     return;
   }
 
@@ -69,15 +78,43 @@ function afficherAchats() {
   document.querySelector("#achats-semaines").innerHTML = `<p class="etiq">DÉPENSE PAR SEMAINE</p>` + semaines.map((s) => `
     <div class="barre-sem"><span>sem. du ${dateFr(s.iso).slice(0, 5)}</span><i style="width:${Math.round((s.total / max) * 100)}%"></i><b class="mono">${s.total ? euros(s.total) : "—"}</b></div>`).join("");
 
-  document.querySelector("#achats-liste").innerHTML = `<p class="etiq">MES TICKETS</p>` + tickets.map((t) => `
+  document.querySelector("#achats-liste").innerHTML = `<p class="etiq">MES TICKETS</p>` + tickets.map((t) => ticketHtml(t, false)).join("") + zoneExclus;
+}
+
+// Un ticket déplié : ses lignes. La croix l'exclut de Mes achats (repère `exclu` sur ses relevés, rien n'est supprimé) ; « Remettre » le ramène.
+function ticketHtml(t, exclu) {
+  const action = exclu
+    ? `<button type="button" class="ticket-action" data-remettre="${echapper(t.cle)}">Remettre</button>`
+    : `<button type="button" class="ticket-croix" data-exclure="${echapper(t.cle)}" aria-label="Exclure ce ticket de Mes achats">×</button>`;
+  return `
     <details class="ticket">
-      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b><small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span></summary>
+      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b><small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span>${action}</summary>
       <ul>${t.lignes.map((r) => {
         const p = PANIER[r.produit];
         return `<li><span>${echapper(p?.nom || "Produit supprimé")}${r.marque ? ` <small>${echapper(r.marque)}</small>` : ""}${r.promo ? ` <span class="badge-promo">PROMO</span>` : ""}${r.quantite && r.quantite !== 1 ? ` <small>× ${String(r.quantite).replace(".", ",")}</small>` : ""}</span><b class="mono">${euros(montantDe(r))}</b></li>`;
       }).join("")}</ul>
-    </details>`).join("");
+    </details>`;
 }
+
+function basculerExclusion(cle, exclu) {
+  for (const r of releves) {
+    if (r.source === "ticket" && (r.ticket || `${r.magasin}|${r.date}`) === cle) {
+      if (exclu) r.exclu = true; else delete r.exclu;
+    }
+  }
+  sauvegarder();
+  afficherAchats();
+  notifier(exclu ? "Ticket exclu. Il est en bas de la liste." : "Ticket remis dans Mes achats.");
+}
+
+document.querySelector("#achats-liste").addEventListener("click", (e) => {
+  const croix = e.target.closest("[data-exclure]");
+  const remettre = e.target.closest("[data-remettre]");
+  if (!croix && !remettre) return;
+  e.preventDefault(); // le bouton est dans le résumé : sans cela, le ticket s'ouvrirait ou se fermerait
+  if (croix) basculerExclusion(croix.dataset.exclure, true);
+  else basculerExclusion(remettre.dataset.remettre, false);
+});
 
 function majModeReleves() {
   const ticket = modeReleves === "ticket";
