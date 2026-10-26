@@ -245,12 +245,24 @@
       <section id="vue-releves" class="vue" hidden>
         <div class="carte-blanche">
           <h2>Mes relevés (<span id="nb-releves">0</span>)</h2>
-          <p class="aide">Tous les prix enregistrés, classés par rayon, du plus récent au plus ancien.</p>
-          <div class="actions">
-            <button type="button" id="releves-replier">Tout replier</button>
-            <button type="button" id="releves-deplier">Tout déplier</button>
+          <div class="mode-releves" role="group" aria-label="Façon de voir les relevés">
+            <button type="button" id="mode-rayon" class="actif" aria-pressed="true">Par rayon</button>
+            <button type="button" id="mode-ticket" aria-pressed="false">Mes achats</button>
           </div>
-          <ul id="liste-releves" class="releves"></ul>
+          <div id="releves-rayons">
+            <p class="aide">Tous les prix enregistrés, classés par rayon, du plus récent au plus ancien.</p>
+            <div class="actions">
+              <button type="button" id="releves-replier">Tout replier</button>
+              <button type="button" id="releves-deplier">Tout déplier</button>
+            </div>
+            <ul id="liste-releves" class="releves"></ul>
+          </div>
+          <div id="achats" hidden>
+            <p class="aide">Vos achats lus sur tickets : combien vous dépensez, et le détail de chaque ticket.</p>
+            <div id="achats-kpi" class="kpi"></div>
+            <div id="achats-semaines"></div>
+            <div id="achats-liste"></div>
+          </div>
         </div>
       </section>
 
@@ -377,6 +389,7 @@
     <script src="js/trouver.js"></script>
     <script src="js/paniers.js"></script>
     <script src="js/liste.js"></script>
+    <script src="js/achats.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>
 </html>

@@ -274,6 +274,7 @@ function ligneBrouillon(l) {
     marque: (l.marque || "").trim(),
     quantite: l.quantite,
     prixUnitaire: l.prix_unitaire,
+    prixTotal: l.prix_total,
     prixKg: l.prix_kg,
     poids: l.poids,
     promo: l.promo,
@@ -413,8 +414,8 @@ function majChamp(e) {
   else if (champ === "marque") l.marque = e.target.value;
   else if (champ === "poids") l.poids = e.target.value;
   else if (champ === "rayon") l.rayon = e.target.value;
-  else if (champ === "prix") l.prix = lirePrix(e.target.value);
-  else if (champ === "quantite") l.quantite = lirePrix(e.target.value) || 1;
+  else if (champ === "prix") { l.prix = lirePrix(e.target.value); l.montantModifie = true; }
+  else if (champ === "quantite") { l.quantite = lirePrix(e.target.value) || 1; l.montantModifie = true; }
   const pkg = bloc.querySelector("[data-pkg]");
   if (pkg) pkg.textContent = texteKg(l);
 }
@@ -436,6 +437,7 @@ function valider() {
   }
   const date = document.querySelector("#verif-date").value || aujourdhui();
 
+  const idTicket = "t" + Date.now().toString(36);
   const panierChoisi = paniers.find((p) => p.id === document.querySelector("#verif-panier").value);
   for (const l of lignes) {
     const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon, marque: l.marque });
@@ -449,6 +451,8 @@ function valider() {
       quantite: l.quantite ?? 1,
       libelle: l.libelle || null,
       marque: (l.marque || "").trim() || null,
+      ticket: idTicket,
+      montant: !l.montantModifie && l.prixTotal > 0 ? Math.round(l.prixTotal * 100) / 100 : Math.round(l.prix * (l.quantite ?? 1) * 100) / 100,
       variante: l.produit >= 0 && l.lien === "variante" && l.variante.trim() ? l.variante.trim() : null,
       source: brouillon.type,
       code: null,

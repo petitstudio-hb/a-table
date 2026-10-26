@@ -807,3 +807,23 @@ input, select, textarea { font-size: 16px !important; }
 #liste-paniers li:not(.modif) { flex-direction: column; align-items: stretch; gap: 8px; }
 #liste-paniers li:not(.modif) > .boutons { align-self: flex-end; }
 #liste-paniers .ouvrir { width: 100%; }
+
+/* ---------- Mes achats : tickets et dépenses (séance 25) ---------- */
+.mode-releves { display: flex; gap: 0; margin: 4px 0 12px; border: 1.5px solid var(--accent); }
+.mode-releves button { flex: 1; min-height: 44px; border: none; background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+.mode-releves button.actif { background: var(--accent); color: var(--carte); }
+.kpi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 6px 0 14px; }
+.kpi-case { background: var(--jaune); color: #1b2a22; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.kpi-case span { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.kpi-case b { font-size: 1.05rem; }
+.kpi-case small { font-size: 0.68rem; color: #3b4a3f; }
+.barre-sem { display: grid; grid-template-columns: 96px 1fr 78px; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.8rem; color: var(--discret); }
+.barre-sem i { display: block; height: 14px; background: var(--accent); min-width: 2px; }
+.barre-sem b { text-align: right; color: var(--texte); font-size: 0.85rem; }
+.ticket { border-top: 1px dashed #a9b3a6; }
+.ticket summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 2px; min-height: 48px; cursor: pointer; list-style: none; }
+.ticket summary::-webkit-details-marker { display: none; }
+.ticket summary small { display: block; color: var(--discret); font-size: 0.78rem; }
+.ticket ul { margin: 0 0 10px; padding: 0 0 0 12px; border-left: 3px solid var(--accent); list-style: none; }
+.ticket li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 0.92rem; }
+.ticket li small { color: var(--discret); }

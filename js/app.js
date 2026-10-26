@@ -503,6 +503,7 @@ function toutAfficher() {
   afficherMagasins();
   if (typeof afficherPaniers === "function") afficherPaniers();
   if (typeof afficherListe === "function") afficherListe();
+  if (typeof majModeReleves === "function") majModeReleves();
   if (typeof afficherTrouves === "function") afficherTrouves(); // met à jour « Déjà ajouté »
   afficherReleves();
   if (typeof afficherEnvoi === "function") afficherEnvoi();
