@@ -108,6 +108,10 @@
       <!-- ========== MA COURSE ========== -->
       <section id="vue-course" class="vue" hidden>
         <p id="rappel-sauvegarde" class="encart rappel" hidden><span>Pense à télécharger une sauvegarde de tes données. <a href="#sauvegarde">Sauvegarder</a></span><button type="button" id="rappel-fermer" aria-label="Masquer le rappel">×</button></p>
+        <div class="interrupteur" id="interrupteur-courses">
+          <span>Mode courses<small>Ma liste de courses à cocher pour quand je suis en magasin</small></span>
+          <button type="button" class="bascule" id="bascule-courses" role="switch" aria-checked="false" aria-label="Mode courses"></button>
+        </div>
         <label class="choix-panier">Panier
           <select id="choix-panier"></select>
         </label>
@@ -134,6 +138,28 @@
           <p id="course-total" class="course-total"></p>
           <p class="aide">Un trait orange signale un prix relevé par toi. Le classement compare les magasins sur les produits cochés.</p>
           <button type="button" id="tout-comparer-bouton" class="bouton-secondaire">Tout comparer</button>
+        </div>
+
+        <div id="libre-carte" class="carte-blanche">
+          <h2>Autres produits</h2>
+          <p class="aide">Un produit qui n'est pas dans le panier ? Tape son nom : ta liste te propose les produits qu'elle connaît.</p>
+          <div class="libre-champ">
+            <input id="libre-champ" placeholder="ex. piles, lait, bougies…" autocomplete="off" aria-controls="sugg-libre">
+            <ul id="sugg-libre" hidden></ul>
+          </div>
+          <div id="libre-liste"></div>
+        </div>
+        <div id="barre-courses" hidden>
+          <span><small>Dans mon cabas</small><span id="cabas-totaux"></span></span>
+          <span>Reste <b id="cabas-reste">0</b></span>
+          <button type="button" id="courses-fin">J'ai terminé</button>
+        </div>
+        <div id="fin-courses" class="feuille-fin" hidden>
+          <h2>Courses terminées ?</h2>
+          <div id="fin-recap" class="recap"></div>
+          <button type="button" class="principal pleine" id="fin-scanner">Scanner mon ticket</button>
+          <button type="button" class="second pleine" id="fin-terminer">Terminer sans scanner</button>
+          <button type="button" class="lien-discret" id="fin-retour">‹ Retour aux courses</button>
         </div>
 
         <div id="tout-comparer" class="carte-blanche" hidden>
@@ -416,6 +442,7 @@
     <script src="js/achats.js"></script>
     <script src="js/carte.js"></script>
     <script src="js/ouialler.js"></script>
+    <script src="js/courses.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   <script>

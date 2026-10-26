@@ -21,6 +21,9 @@ const CLE = {
   magasins: "atable.magasins", // ancien format (séances 6 et avant) : magasins ajoutés depuis les photos
   magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
   compares: "atable.compares", // magasins dont la colonne de prix est affichée dans Ma course ; null = les deux premiers du classement (séance 30)
+  modeCourses: "atable.modeCourses", // mode courses actif (séance 36)
+  cabas: "atable.cabas", // produits mis dans le cabas pendant les courses
+  cabasLibres: "atable.cabasLibres", // produits en texte libre ajoutés pendant les courses
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
   paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
@@ -69,6 +72,9 @@ const produitsActifs = () => PANIER.map((p, i) => i).filter((i) => !PANIER[i].ma
 
 let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
 let compares = lire(CLE.compares, null);
+let modeCourses = lire(CLE.modeCourses, false);
+const cabas = new Set(lire(CLE.cabas, []));
+let cabasLibres = lire(CLE.cabasLibres, []); // { nom, i (numéro de produit connu, ou null), pris }
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
 let detailsOuverts = new Set(); // produits dont « voir les autres » est ouvert dans Ma course (non mémorisé)
@@ -89,6 +95,9 @@ function produitsCourse() {
 function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.compares, compares);
+  ecrire(CLE.modeCourses, modeCourses);
+  ecrire(CLE.cabas, [...cabas]);
+  ecrire(CLE.cabasLibres, cabasLibres);
   ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
@@ -290,9 +299,15 @@ function afficherChoixMagasins() {
 // Classement des magasins pour le panier, puis la liste avec une colonne de prix par magasin choisi dans le classement.
 function afficherCourse() {
   const mags = visibles();
+  // En mode courses, on est dans un seul magasin : celui du choix, sinon celui qui connaît le plus de prix.
+  if (modeCourses && mags.length && !(compares && compares.length === 1 && mags.some((m) => m.id === compares[0]))) {
+    compares = [[...classerMagasins(mags).infos].sort((a, b) => b.connus - a.connus)[0].m.id];
+    sauvegarder();
+  }
   const colonnes = magasinsCompares(mags);
   const classement = document.querySelector("#classement");
   const liste = document.querySelector("#liste-course");
+  document.querySelector("#vue-course").classList.toggle("mode-courses", modeCourses);
   document.querySelector("#course-comparaison").hidden = MAGASINS.length === 0;
   afficherChoixMagasins();
 
@@ -317,12 +332,14 @@ function afficherCourse() {
 
   // La liste : une colonne de prix par magasin choisi dans le classement, le moins cher de la ligne en étiquette jaune.
   if (!mags.length) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
-  const rayons = [...new Set(produitsCourse().map((i) => PANIER[i].rayon))];
+  // En mode courses, seulement ce qu'il y a à acheter (les produits cochés dans Ma course).
+  const aListe = (i) => !modeCourses || coches.has(i);
+  const rayons = [...new Set(produitsCourse().filter(aListe).map((i) => PANIER[i].rayon))];
   const tete = `<div class="liste-tete" style="--cols:${colonnes.length}"><span>${echapper(paniers.find((p) => p.id === panierCourse)?.nom || "")}</span>${colonnes.map((m) => `<span>${echapper(nomCourt(m)).toUpperCase()}</span>`).join("")}</div>`;
   liste.innerHTML = rayons.length ? tete + rayons
     .map((rayon) => {
       const replie = rayonsReplies.has(rayon);
-      const produits = produitsCourse().map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
+      const produits = produitsCourse().filter(aListe).map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
         const prix = colonnes.map((m) => prixDe(i, m.id));
         const connus = prix.filter((x) => x.prix !== null);
@@ -336,9 +353,9 @@ function afficherCourse() {
           return `<button type="button" class="cellule lc-prix ${q === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${m.id}" title="Saisir le prix chez ${echapper(m.nom)}">${q === null ? "+ prix" : `<span class="etiquette ${meilleur ? "" : "simple"}">${euros(q).replace(" €", "")}</span>${prix[k].promo ? `<span class="badge-promo">PROMO</span>` : ""}`}</button>`;
         }).join("");
         return `
-          <div class="ligne-course ligne-duel ${coches.has(i) ? "" : "decoche"}" style="--cols:${colonnes.length}">
+          <div class="ligne-course ligne-duel ${modeCourses ? (cabas.has(i) ? "pris" : "") : (coches.has(i) ? "" : "decoche")}" style="--cols:${colonnes.length}">
             <label>
-              <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
+              <input type="checkbox" data-index="${i}" ${(modeCourses ? cabas.has(i) : coches.has(i)) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
                 <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
             </label>${cellules}
@@ -354,6 +371,7 @@ function afficherCourse() {
     const t = totalDe(m);
     return `<span>Total ${echapper(m.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
   }).join("");
+  if (typeof majCourses === "function") majCourses();
 }
 
 function afficherTableau() {
@@ -682,6 +700,7 @@ function brancherEvenements() {
     const b = e.target.closest("[data-compare]");
     if (!b) return;
     const id = b.dataset.compare;
+    if (modeCourses) { compares = [id]; sauvegarder(); calculer(); return; } // en magasin : un seul, celui où l'on est
     const actuels = magasinsCompares(visibles()).map((m) => m.id);
     compares = actuels.includes(id) ? actuels.filter((x) => x !== id) : [...actuels, id];
     sauvegarder();
@@ -691,6 +710,7 @@ function brancherEvenements() {
   listeCourse.addEventListener("change", (e) => {
     if (!e.target.matches("input[type=checkbox]")) return;
     const i = Number(e.target.dataset.index);
+    if (modeCourses) { e.target.checked ? cabas.add(i) : cabas.delete(i); sauvegarder(); calculer(); return; }
     e.target.checked ? coches.add(i) : coches.delete(i);
     sauvegarder();
     afficherTableau();
