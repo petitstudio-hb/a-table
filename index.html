@@ -178,11 +178,24 @@
 
       <!-- ========== MAGASINS ========== -->
       <section id="vue-magasins" class="vue" hidden>
+        <div class="mode-releves" role="group" aria-label="Façon de voir les magasins">
+          <button type="button" id="mag-liste" class="actif" aria-pressed="true">Liste</button>
+          <button type="button" id="mag-carte" aria-pressed="false">Carte</button>
+        </div>
+
         <div class="carte-blanche">
           <h2>Mes supermarchés</h2>
           <p class="aide">Les magasins que tu compares. Désactive « Affiché » pour masquer un magasin dans « Ma course » sans le supprimer.</p>
           <ul id="liste-magasins" class="releves"></ul>
           <button type="button" id="ajouter-magasin" class="bouton-secondaire">+ Ajouter un magasin</button>
+        </div>
+
+        <div id="carte-magasins" class="carte-blanche" hidden>
+          <h2>Carte des magasins</h2>
+          <div id="carte-legende" class="carte-legende"><span><i class="pt-vert"></i>Moins cher</span><span><i class="pt-orange"></i>Prix moyen</span><span><i class="pt-rouge"></i>Plus cher</span><span><i class="pt-gris"></i>Prix inconnus</span><span><i class="pt-neuf"></i>Pas dans ma liste</span></div>
+          <div id="carte-zone" role="application" aria-label="Carte des magasins"></div>
+          <p id="carte-etat" class="aide"></p>
+          <div id="carte-fiche" class="carte-fiche" hidden></div>
         </div>
 
         <div id="trouver" class="carte-blanche">
@@ -403,6 +416,7 @@
     <script src="js/paniers.js"></script>
     <script src="js/liste.js"></script>
     <script src="js/achats.js"></script>
+    <script src="js/carte.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>

@@ -12,6 +12,7 @@ const NOMINATIM = "https://nominatim.openstreetmap.org/search";
 
 let trouves = []; // résultats de la dernière recherche
 let nbAffiches = 30; // nombre de résultats montrés (le reste derrière « Afficher plus »)
+let centreRecherche = null; // centre de la dernière recherche, gardé en mémoire seulement (jamais enregistré, D9)
 
 const distanceM = (a, b) => {
   const rad = (x) => (x * Math.PI) / 180;
@@ -84,6 +85,8 @@ async function chercherMagasins(centre, rayon) {
         nom: t.name || t.brand || "",
         rue,
         osm: { type: e.type.toUpperCase(), id: e.id },
+        lat,
+        lon,
         distance: distanceM(centre, { lat, lon }),
       };
     })
@@ -127,6 +130,7 @@ function afficherTrouves() {
     .join("");
   document.querySelector("#trouver-resultats").hidden = trouves.length === 0;
   document.querySelector("#trouver-plus").hidden = trouves.length <= nbAffiches;
+  if (typeof majCarte === "function") majCarte();
 }
 
 async function lancerRecherche(source) {
@@ -141,6 +145,8 @@ async function lancerRecherche(source) {
     if (source === "gps") afficherAdresse(centre); // sans attendre : l'adresse s'écrit dans le champ quand elle arrive
     const rayon = Number(document.querySelector("#trouver-rayon").value);
     trouves = await chercherMagasins(centre, rayon);
+    centreRecherche = centre;
+    placerMagasinsConnus();
     nbAffiches = 30;
     afficherTrouves();
     const n = trouves.length;
@@ -168,15 +174,18 @@ document.querySelector("#trouver-plus").addEventListener("click", () => {
   nbAffiches += 30;
   afficherTrouves();
 });
-document.querySelector("#trouver-liste").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-ajouter-trouve]");
-  if (!b) return;
-  const m = trouves[Number(b.dataset.ajouterTrouve)];
+function ajouterTrouve(k) {
+  const m = trouves[k];
   const id = ajouterMagasin(m.nom, m.rue);
-  MAGASINS.find((x) => x.id === id).osm = m.osm;
+  Object.assign(MAGASINS.find((x) => x.id === id), { osm: m.osm, lat: m.lat, lon: m.lon });
   sauvegarder();
   toutAfficher();
   notifier(`${m.nom} ajouté.`);
+  if (typeof majCarte === "function") majCarte();
+}
+document.querySelector("#trouver-liste").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ajouter-trouve]");
+  if (b) ajouterTrouve(Number(b.dataset.ajouterTrouve));
 });
 
 // ---------- Adresses proposées en tapant (séance 25) ----------
@@ -220,3 +229,18 @@ document.querySelector("#trouver-suggestions").addEventListener("click", (e) => 
   afficherSuggestions();
   lancerRecherche("adresse");
 });
+
+// Les magasins de ma liste qui n'ont pas encore d'emplacement le reçoivent quand une recherche les retrouve (E6.4).
+// C'est l'emplacement du magasin, pas celui de l'utilisateur.
+function placerMagasinsConnus() {
+  let change = false;
+  for (const m of trouves) {
+    const connu = magasinConnu(m);
+    if (connu && typeof connu.lat !== "number" && typeof m.lat === "number") {
+      Object.assign(connu, { lat: m.lat, lon: m.lon });
+      if (!connu.osm) connu.osm = m.osm;
+      change = true;
+    }
+  }
+  if (change) sauvegarder();
+}

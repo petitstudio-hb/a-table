@@ -864,3 +864,13 @@ input, select, textarea { font-size: 16px !important; }
 /* Chevron de Mes paniers dessiné en CSS : net et bien visible, quelle que soit la police. */
 #liste-paniers .ouvrir .fleche { width: 40px; height: 40px; font-size: 0; padding: 0; position: relative; }
 #liste-paniers .ouvrir .fleche::before { content: ""; position: absolute; left: 13px; top: 14px; width: 11px; height: 11px; border-right: 4px solid var(--carte); border-top: 4px solid var(--carte); transform: rotate(45deg); }
+
+/* ---------- Séance 30 : carte des magasins ---------- */
+#carte-zone { height: 55vh; min-height: 320px; border: 1.5px solid var(--accent); background: #dfe8d5; }
+.carte-legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 8px; font-size: 0.78rem; color: var(--discret); }
+.carte-legende span { display: inline-flex; align-items: center; gap: 5px; }
+.carte-legende i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px #9aa39c; }
+.pt-vert { background: #1f8a4c; } .pt-orange { background: #e08a1e; } .pt-rouge { background: #c0392b; } .pt-gris { background: #9aa39c; } .pt-neuf { background: #faf8f0; box-shadow: 0 0 0 1.5px #0e4d2f !important; }
+.point-carte span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1px #5f6b63; font: 700 0.85rem var(--mono, monospace); }
+.carte-fiche { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; padding: 10px; background: var(--carte); border: 1.5px solid var(--accent); }
+.carte-fiche .date { display: block; }
