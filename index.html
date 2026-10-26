@@ -112,7 +112,7 @@
         </label>
 
         <div id="course-comparaison" class="carte-blanche comparaison">
-          <p class="etiq">OÙ CE PANIER COÛTE LE MOINS ?</p>
+          <p id="classement-etiq" class="etiq">OÙ CE PANIER COÛTE LE MOINS ?</p>
           <div id="classement"></div>
           <button type="button" id="choix-magasins" class="lien-discret" aria-expanded="false">Choisir les magasins affichés</button>
           <div id="liste-choix-magasins" class="choix-magasins" hidden></div>
@@ -202,8 +202,9 @@
           </div>
           <form id="trouver-form" class="formulaire">
             <label class="large">Ou une adresse
-              <input id="trouver-adresse" type="text" placeholder="ex. 10 rue Lepic, Paris" autocomplete="off">
+              <input id="trouver-adresse" type="text" placeholder="ex. 10 rue Lepic, Paris" autocomplete="off" aria-controls="trouver-suggestions">
             </label>
+            <ul id="trouver-suggestions" class="suggestions-adresses" hidden></ul>
             <button type="submit">Chercher</button>
           </form>
           <p id="trouver-etat" class="message" role="status"></p>

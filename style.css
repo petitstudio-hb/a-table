@@ -827,3 +827,17 @@ input, select, textarea { font-size: 16px !important; }
 .ticket ul { margin: 0 0 10px; padding: 0 0 0 12px; border-left: 3px solid var(--accent); list-style: none; }
 .ticket li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 0.92rem; }
 .ticket li small { color: var(--discret); }
+
+/* ---------- Magasins : adresses proposées et niveau de prix (séance 25) ---------- */
+.suggestions-adresses { list-style: none; margin: -4px 0 8px; padding: 0; border: 1.5px solid var(--accent); background: var(--carte); }
+.suggestions-adresses button { width: 100%; min-height: 44px; padding: 8px 12px; border: none; border-bottom: 1px dashed var(--ligne); background: none; color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.suggestions-adresses li:last-child button { border-bottom: none; }
+.niveau { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; padding: 1px 7px; border: 1.5px solid; font-size: 0.72rem; font-weight: 700; vertical-align: 1px; }
+.niveau i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.niveau.vert { color: #1d7a3f; }
+.niveau.orange { color: #b35f00; }
+.niveau.rouge { color: #a32d1b; }
+.niveau.gris { color: var(--discret); border-style: dashed; }
+.rang-nom { flex: 1 1 45%; min-width: 0; }
+.rang-prix { flex: 0 1 auto; max-width: 50%; }
+.rang-nom small { white-space: normal; }

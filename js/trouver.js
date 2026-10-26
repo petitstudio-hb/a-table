@@ -93,15 +93,34 @@ async function chercherMagasins(centre, rayon) {
 
 const dejaAjoute = (m) => MAGASINS.some((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
 
+// Le magasin de ma liste qui correspond à un résultat de recherche, s'il y en a un.
+const magasinConnu = (m) => MAGASINS.find((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
+
+// Niveau de prix d'un magasin de ma liste pour le panier habituel : vert (le moins cher), rouge (le plus cher), orange (entre les deux).
+// Seuls les magasins qui connaissent au moins 80 % des prix sont classés (décision D13).
+function niveauPrix(magasin) {
+  const habituel = panierHabituel();
+  if (!habituel || !habituel.produits.length) return null;
+  const ind = indicesPrix(MAGASINS, habituel.produits);
+  const notes = MAGASINS.filter((m) => ind.get(m.id).n >= 3).sort((a, b) => ind.get(a.id).indice - ind.get(b.id).indice);
+  const k = notes.findIndex((m) => m.id === magasin.id);
+  if (k === -1 || notes.length < 2) return null;
+  const rang = k / (notes.length - 1);
+  return rang <= 0.34 ? { classe: "vert", texte: "Moins cher" } : rang >= 0.66 ? { classe: "rouge", texte: "Plus cher" } : { classe: "orange", texte: "Prix moyen" };
+}
+
 function afficherTrouves() {
   const liste = document.querySelector("#trouver-liste");
   const dist = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} m` : `${(d / 1000).toFixed(1).replace(".", ",")} km`);
   liste.innerHTML = trouves
     .slice(0, nbAffiches)
     .map((m, k) => {
-      const ajoute = dejaAjoute(m);
+      const connu = magasinConnu(m);
+      const ajoute = Boolean(connu);
+      const niveau = connu ? niveauPrix(connu) : null;
+      const pastille = niveau ? `<span class="niveau ${niveau.classe}" title="${niveau.texte} pour le panier habituel"><i></i>${niveau.texte}</span>` : (connu ? `<span class="niveau gris"><i></i>Prix inconnus</span>` : "");
       return `<li>
-        <span><strong>${echapper(m.nom)}</strong><span class="date">${echapper(m.rue) || "Rue non renseignée"} · ${dist(m.distance)}</span></span>
+        <span><strong>${echapper(m.nom)}</strong> ${pastille}<span class="date">${echapper(m.rue) || "Rue non renseignée"} · ${dist(m.distance)}</span></span>
         <span class="boutons">${ajoute ? `<em class="envoye">Déjà ajouté</em>` : `<button type="button" data-ajouter-trouve="${k}">+ Ajouter</button>`}</span>
       </li>`;
     })
@@ -118,7 +137,7 @@ async function lancerRecherche(source) {
     etatTrouver("Recherche en cours…");
     patience = setTimeout(() => etatTrouver("Le serveur est lent en ce moment, ça peut prendre jusqu'à une minute…"), 8000);
     const adresse = document.querySelector("#trouver-adresse").value.trim();
-    const centre = source === "adresse" ? await positionAdresse(adresse) : await positionGps();
+    const centre = source === "adresse" ? (centreChoisi && centreChoisi.texte === adresse ? centreChoisi : await positionAdresse(adresse)) : await positionGps();
     if (source === "gps") afficherAdresse(centre); // sans attendre : l'adresse s'écrit dans le champ quand elle arrive
     const rayon = Number(document.querySelector("#trouver-rayon").value);
     trouves = await chercherMagasins(centre, rayon);
@@ -158,4 +177,46 @@ document.querySelector("#trouver-liste").addEventListener("click", (e) => {
   sauvegarder();
   toutAfficher();
   notifier(`${m.nom} ajouté.`);
+});
+
+// ---------- Adresses proposées en tapant (séance 25) ----------
+// La Base Adresse Nationale (service de l'État, gratuit) propose des adresses au fil de la frappe.
+// Ce qui est tapé n'est envoyé qu'à ce service, pendant la saisie, et n'est jamais enregistré (décision D9).
+const BAN = "https://api-adresse.data.gouv.fr/search/";
+let centreChoisi = null; // adresse choisie dans la liste : { texte, lat, lon }
+let suggestionsAdresses = [];
+let minuteurAdresse;
+
+function afficherSuggestions() {
+  const liste = document.querySelector("#trouver-suggestions");
+  liste.hidden = suggestionsAdresses.length === 0;
+  liste.innerHTML = suggestionsAdresses.map((s, k) => `<li><button type="button" data-suggestion-adresse="${k}">${echapper(s.texte)}</button></li>`).join("");
+}
+
+document.querySelector("#trouver-adresse").addEventListener("input", (e) => {
+  centreChoisi = null;
+  clearTimeout(minuteurAdresse);
+  const q = e.target.value.trim();
+  if (q.length < 3) { suggestionsAdresses = []; afficherSuggestions(); return; }
+  minuteurAdresse = setTimeout(async () => {
+    try {
+      const rep = await fetch(`${BAN}?q=${encodeURIComponent(q)}&limit=5&autocomplete=1`);
+      if (!rep.ok) return;
+      const { features } = await rep.json();
+      if (document.querySelector("#trouver-adresse").value.trim() !== q) return; // le champ a changé entre-temps
+      suggestionsAdresses = (features || []).map((f) => ({ texte: f.properties.label, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }));
+      afficherSuggestions();
+    } catch (err) { /* sans suggestions, la recherche par « Chercher » reste possible */ }
+  }, 300);
+});
+
+document.querySelector("#trouver-suggestions").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-suggestion-adresse]");
+  if (!b) return;
+  const s = suggestionsAdresses[Number(b.dataset.suggestionAdresse)];
+  document.querySelector("#trouver-adresse").value = s.texte;
+  centreChoisi = s;
+  suggestionsAdresses = [];
+  afficherSuggestions();
+  lancerRecherche("adresse");
 });

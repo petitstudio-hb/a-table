@@ -239,15 +239,44 @@ function moinsCher() {
   return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
 }
 
+// Indice de prix d'un magasin : sur les produits dont au moins deux magasins connaissent le prix, moyenne du rapport
+// entre son prix et le prix le plus bas (1 = toujours le moins cher). Il ne dépend pas du nombre de prix connus au total.
+function indicesPrix(mags, produits) {
+  const res = new Map(mags.map((m) => [m.id, { somme: 0, n: 0 }]));
+  for (const i of produits) {
+    const connus = mags.map((m) => ({ m, p: prixDe(i, m.id).prix })).filter((x) => x.p !== null && x.p > 0);
+    if (connus.length < 2) continue;
+    const mini = Math.min(...connus.map((x) => x.p));
+    for (const x of connus) { const r = res.get(x.m.id); r.somme += x.p / mini; r.n++; }
+  }
+  return new Map([...res].map(([id, r]) => [id, { indice: r.n ? r.somme / r.n : null, n: r.n }]));
+}
+
+// Classement des magasins : par total quand au moins deux magasins connaissent 80 % des prix cochés (décision D13) ;
+// sinon, avec un grand panier, par indice de prix sur les produits connus de plusieurs magasins (au moins 3).
+function classerMagasins(mags) {
+  const infos = mags.map((m) => ({ m, ...totalDe(m) }));
+  const complets = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const ind = indicesPrix(mags, produitsCourse().filter((i) => coches.has(i)));
+  const parIndice = infos.filter((x) => ind.get(x.m.id).n >= 3).sort((a, b) => ind.get(a.m.id).indice - ind.get(b.m.id).indice);
+  const modeIndice = complets.length < 2 && parIndice.length >= 2;
+  return { infos, ind, classes: modeIndice ? parIndice : complets, modeIndice };
+}
+
 // Les deux magasins comparés (séance 23) : A est le magasin affiché (magasinVu), B celui auquel on le compare (reference).
 function garantirDuel() {
   const mags = visibles();
   // Par défaut, le duel oppose les deux magasins les moins chers (ceux qui connaissent assez de prix passent d'abord).
-  const infos = mags.map((m) => ({ m, ...totalDe(m) }));
-  const classes = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const { infos, classes } = classerMagasins(mags);
   const ordre = [...classes, ...infos.filter((x) => !classes.includes(x)).sort((a, b) => b.connus - a.connus)].map((x) => x.m);
   if (!mags.some((m) => m.id === magasinVu)) magasinVu = ordre[0]?.id ?? null;
   if (!mags.some((m) => m.id === reference) || reference === magasinVu) reference = ordre.find((m) => m.id !== magasinVu)?.id ?? null;
+  // Si les deux magasins n'ont aucun produit en commun, la comparaison ne dirait rien : on prend le premier magasin qui en a.
+  const communs = (a, b) => produitsCourse().filter((i) => coches.has(i) && prixDe(i, a).prix !== null && prixDe(i, b).prix !== null).length;
+  if (magasinVu && reference && communs(magasinVu, reference) === 0) {
+    const autre = ordre.find((m) => m.id !== magasinVu && communs(magasinVu, m.id) > 0);
+    if (autre) reference = autre.id;
+  }
   return { mags, A: mags.find((m) => m.id === magasinVu) || null, B: mags.find((m) => m.id === reference) || null };
 }
 
@@ -272,18 +301,22 @@ function afficherCourse() {
   document.querySelector("#course-comparaison").hidden = MAGASINS.length === 0;
   afficherChoixMagasins();
 
-  // 1. Le classement : seulement les magasins qui connaissent au moins 80 % des prix cochés sont classés (décision D13).
-  const infos = mags.map((m) => ({ m, ...totalDe(m) }));
-  const classes = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  // 1. Le classement : par total pour les magasins qui connaissent au moins 80 % des prix (décision D13),
+  // sinon par indice de prix sur les produits connus de plusieurs magasins.
+  const { infos, ind, classes, modeIndice } = classerMagasins(mags);
+  document.querySelector("#classement-etiq").textContent = modeIndice ? "OÙ C'EST LE MOINS CHER ? (sur les produits connus de plusieurs magasins)" : "OÙ CE PANIER COÛTE LE MOINS ?";
   const autres = infos.filter((x) => !classes.includes(x));
   classement.innerHTML = [...classes, ...autres].map((x) => {
     const pos = classes.indexOf(x);
     const repere = x.m.id === magasinVu ? "A" : x.m.id === reference ? "B" : "";
-    const sous = pos === 0 ? (classes.length > 1 ? "LE MOINS CHER" : "") : pos > 0 ? `+${euros(x.total - classes[0].total)} que ${echapper(nomCourt(classes[0].m))}` : "pas assez de prix";
+    const i0 = ind.get(x.m.id);
+    const ecart = pos > 0 ? (modeIndice ? `+${Math.round((i0.indice / ind.get(classes[0].m.id).indice - 1) * 100)} % que ${echapper(nomCourt(classes[0].m))}` : `+${euros(x.total - classes[0].total)} que ${echapper(nomCourt(classes[0].m))}`) : "";
+    const sous = pos === 0 ? (classes.length > 1 ? "LE MOINS CHER" : "") : pos > 0 ? ecart : "pas assez de prix";
+    const principal = pos < 0 ? "—" : modeIndice ? `${i0.n} produits` : euros(x.total);
     return `<button type="button" class="rang ${repere ? "choisi" : ""}" data-duel="${x.m.id}" aria-pressed="${Boolean(repere)}">
       <span class="num ${pos < 0 ? "off" : ""}">${pos < 0 ? "–" : pos + 1}</span>
       <span class="rang-nom">${echapper(x.m.nom)}<small>${x.connus} prix sur ${x.coches}</small></span>
-      <span class="rang-prix">${pos < 0 ? "—" : euros(x.total)}<small>${sous}</small></span>
+      <span class="rang-prix">${principal}<small>${sous}</small></span>
       <span class="repere ${repere ? "" : "vide"}">${repere}</span></button>`;
   }).join("");
 
