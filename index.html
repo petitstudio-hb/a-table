@@ -175,6 +175,23 @@
 
       <!-- ========== MAGASINS ========== -->
       <section id="vue-magasins" class="vue" hidden>
+        <div id="ou-aller" class="carte-blanche">
+          <h2>Où aller ?</h2>
+          <p class="aide">Le magasin le plus avantageux près de vous pour votre panier de Ma course (produits cochés). Votre position n'est pas enregistrée.</p>
+          <div class="formulaire">
+            <label>Distance maximale
+              <select id="ou-aller-rayon">
+                <option value="1000">1 km</option>
+                <option value="2000" selected>2 km</option>
+                <option value="5000">5 km</option>
+                <option value="20000">20 km</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions"><button type="button" id="ou-aller-bouton" class="principal">Où aller ?</button></div>
+          <div id="ou-aller-resultat" aria-live="polite"></div>
+        </div>
+
         <div class="mode-releves" role="group" aria-label="Façon de voir les magasins">
           <button type="button" id="mag-liste" class="actif" aria-pressed="true">Liste</button>
           <button type="button" id="mag-carte" aria-pressed="false">Carte</button>
@@ -414,6 +431,7 @@
     <script src="js/liste.js"></script>
     <script src="js/achats.js"></script>
     <script src="js/carte.js"></script>
+    <script src="js/ouialler.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>

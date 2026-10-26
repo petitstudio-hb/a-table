@@ -7,7 +7,8 @@ let panierEnModification = null; // id du panier en cours de renommage, ou "__no
 let panierOuvert = null; // id du panier dont on compose le contenu (écran « Composer »)
 
 const SUGGESTIONS_PANIERS = ["Ménage", "Protéines", "Apéro", "Petit-déjeuner"];
-const MAX_RESULTATS = 40;
+const MAX_RESULTATS = 150;
+const rayonsRepliesPanier = new Set(); // rayons repliés dans la composition d'un panier (R7)
 
 const texteNb = (n) => `${n} produit${n > 1 ? "s" : ""}`;
 const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -94,16 +95,18 @@ const ligneProduit = (i, bouton) => {
   </li>`;
 };
 
-// Les produits regroupés par rayon, avec un bandeau vert par rayon (comme dans Ma course).
+// Les produits regroupés par rayon, avec un bandeau vert par rayon qu'on peut replier (comme dans Ma course).
 function lignesParRayon(indices, boutonDe) {
   let html = "";
   let courant = null;
   for (const i of indices) {
-    if (PANIER[i].rayon !== courant) {
-      courant = PANIER[i].rayon;
-      html += `<li class="rayon-bande">${echapper(courant)}</li>`;
+    const rayon = PANIER[i].rayon;
+    if (rayon !== courant) {
+      courant = rayon;
+      const replie = rayonsRepliesPanier.has(rayon);
+      html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${!replie}"><span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`;
     }
-    html += ligneProduit(i, boutonDe(i));
+    if (!rayonsRepliesPanier.has(rayon)) html += ligneProduit(i, boutonDe(i));
   }
   return html;
 }
@@ -236,3 +239,12 @@ document.querySelector("#creer-panier").addEventListener("click", () => {
 });
 
 afficherPaniers();
+
+// Replier ou déplier un rayon dans la composition d'un panier.
+document.querySelector("#detail-panier").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-rayon-panier]");
+  if (!b) return;
+  const rayon = b.dataset.rayonPanier;
+  rayonsRepliesPanier.has(rayon) ? rayonsRepliesPanier.delete(rayon) : rayonsRepliesPanier.add(rayon);
+  afficherDetailPanier();
+});

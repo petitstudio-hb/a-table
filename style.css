@@ -886,3 +886,11 @@ input, select, textarea { font-size: 16px !important; }
 .exclus { margin-top: 16px; border-top: 2px solid var(--accent); }
 .exclus[hidden] { display: none; }
 .exclus > summary { padding: 12px 2px; font-weight: 800; color: var(--accent); cursor: pointer; }
+
+/* R7 : bandeaux de rayon repliables dans la composition d'un panier */
+.rayon-bande { padding: 0; }
+.rayon-bande-bouton { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; min-height: 36px; border: none; background: none; color: inherit; font: inherit; font-weight: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+
+/* Séance 32 : Où aller ? */
+#ou-aller .bilan { margin: 10px 0; padding: 10px; background: var(--jaune); color: #1b2a22; }
+.rang-fixe { cursor: default; }
