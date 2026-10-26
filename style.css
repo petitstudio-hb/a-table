@@ -844,3 +844,23 @@ input, select, textarea { font-size: 16px !important; }
 .rang-prix { font-size: 0.92rem; }
 .rang-prix { white-space: nowrap; }
 .rang-prix small { white-space: normal; }
+
+/* ---------- Séance 29 : croix de recherche, flèches, rappel de sauvegarde ---------- */
+.champ-recherche { position: relative; }
+.champ-recherche .recherche { padding-right: 44px; }
+.champ-recherche input::-webkit-search-cancel-button { display: none; }
+.recherche-croix { position: absolute; right: 4px; top: 8px; width: 38px; height: 38px; border: none; background: none; color: var(--discret); font-size: 1.7rem; line-height: 1; cursor: pointer; padding: 0 0 3px; }
+.recherche-croix[hidden] { display: none; }
+
+/* Flèches de repli des rayons : plus grandes, dans un carré, comme celle de Mes paniers. */
+.rayon-titre .fleche { display: grid; place-items: center; width: 28px; height: 28px; font-size: 1.3rem; font-weight: 800; line-height: 1; background: var(--carte); color: var(--accent); }
+.releves .ouvrir .fleche { font-size: 2rem; }
+
+.rappel { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rappel button { flex: none; width: 36px; height: 36px; border: none; background: none; font-size: 1.6rem; color: var(--discret); cursor: pointer; }
+.rappel[hidden] { display: none; }
+.case-notif { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-weight: 600; }
+.case-notif input { width: 22px; height: 22px; flex: none; }
+/* Chevron de Mes paniers dessiné en CSS : net et bien visible, quelle que soit la police. */
+#liste-paniers .ouvrir .fleche { width: 40px; height: 40px; font-size: 0; padding: 0; position: relative; }
+#liste-paniers .ouvrir .fleche::before { content: ""; position: absolute; left: 13px; top: 14px; width: 11px; height: 11px; border-right: 4px solid var(--carte); border-top: 4px solid var(--carte); transform: rotate(45deg); }

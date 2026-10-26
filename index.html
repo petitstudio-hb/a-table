@@ -29,7 +29,7 @@
           <a href="#reglages">Réglages</a>
           <hr>
           <span class="bientot" aria-disabled="true" data-bientot>Apparence <small>Bientôt</small></span>
-          <span class="bientot" aria-disabled="true" data-bientot>Notifications <small>Bientôt</small></span>
+          <a href="#notifications">Notifications</a>
           <span class="bientot" aria-disabled="true" data-bientot>Mes contributions Open Prices <small>Bientôt</small></span>
           <span class="bientot" aria-disabled="true" data-bientot>Mon compte <small>Bientôt</small></span>
           <hr>
@@ -107,6 +107,7 @@
 
       <!-- ========== MA COURSE ========== -->
       <section id="vue-course" class="vue" hidden>
+        <p id="rappel-sauvegarde" class="encart rappel" hidden><span>Pense à télécharger une sauvegarde de tes données. <a href="#sauvegarde">Sauvegarder</a></span><button type="button" id="rappel-fermer" aria-label="Masquer le rappel">×</button></p>
         <label class="choix-panier">Panier
           <select id="choix-panier"></select>
         </label>
@@ -294,6 +295,17 @@
         </div>
       </section>
 
+      <!-- ========== NOTIFICATIONS ========== -->
+      <section id="vue-notifications" class="vue" hidden>
+        <div class="carte-blanche">
+          <h2>Notifications</h2>
+          <p class="aide">Cabasito n'a pas de serveur : il ne peut pas te prévenir quand l'application est fermée. Pour l'instant, il te rappelle dans l'application quand une sauvegarde est utile.</p>
+          <label class="case-notif"><input id="notif-rappel" type="checkbox"> Me rappeler de télécharger une sauvegarde chaque semaine</label>
+          <p id="notif-etat" class="aide"></p>
+          <p class="aide"><a href="#sauvegarde">Aller à la sauvegarde</a></p>
+        </div>
+      </section>
+
       <!-- ========== À PROPOS ========== -->
       <section id="vue-apropos" class="vue" hidden>
         <div class="carte-blanche">
@@ -391,6 +403,7 @@
     <script src="js/paniers.js"></script>
     <script src="js/liste.js"></script>
     <script src="js/achats.js"></script>
+    <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   </body>
 </html>

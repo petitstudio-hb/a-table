@@ -170,9 +170,9 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "liste", "sauvegarde", "apropos", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "liste", "sauvegarde", "notifications", "apropos", "reglages"];
 // Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
-const VUES_PROFIL = ["releves", "liste", "sauvegarde", "apropos", "reglages"];
+const VUES_PROFIL = ["releves", "liste", "sauvegarde", "notifications", "apropos", "reglages"];
 
 function montrer(vue) {
   if (!VUES.includes(vue)) vue = "photo";
@@ -183,6 +183,7 @@ function montrer(vue) {
   fermerProfil();
   if (vue !== "paniers" && typeof fermerPanier === "function") fermerPanier();
   if (vue === "liste" && typeof afficherListe === "function") afficherListe();
+  if (vue === "course" && typeof majNotifs === "function") majNotifs();
   window.scrollTo(0, 0);
 }
 
@@ -576,6 +577,7 @@ function exporter() {
   lien.href = URL.createObjectURL(new Blob([JSON.stringify(contenu, null, 2)], { type: "application/json" }));
   lien.download = `atable-${aujourdhui()}.json`;
   lien.click();
+  if (typeof marquerSauvegarde === "function") marquerSauvegarde();
   URL.revokeObjectURL(lien.href);
 }
 
