@@ -74,6 +74,21 @@ async function preparerImage(fichier) {
   return { dataUrl, base64: dataUrl.split(",")[1] };
 }
 
+// Ticket numérique (séance 25) : un PDF est envoyé tel quel à l'IA, qui sait le lire.
+const LIMITE_PDF = 20 * 1024 * 1024;
+async function preparerPdf(fichier) {
+  if (fichier.size > LIMITE_PDF) throw new Error("Ce PDF dépasse 20 Mo : il est trop lourd pour être lu.");
+  const base64 = await new Promise((resolu, rejete) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resolu(String(lecteur.result).split(",")[1]);
+    lecteur.onerror = () => rejete(new Error("Impossible de lire ce fichier."));
+    lecteur.readAsDataURL(fichier);
+  });
+  const nom = (fichier.name || "ticket.pdf").replace(/[<>&"]/g, "");
+  const dataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="90"><rect width="320" height="90" fill="#fbf9f1" stroke="#cfc8b2"/><text x="16" y="40" font-family="monospace" font-size="22" font-weight="bold" fill="#0e4d2f">Ticket PDF</text><text x="16" y="68" font-family="monospace" font-size="14" fill="#4b5f54">${nom.slice(0, 34)}</text></svg>`);
+  return { dataUrl, base64 };
+}
+
 // ---------- Lecture par l'IA ----------
 
 const SCHEMA = {
@@ -151,7 +166,7 @@ La photo montre un ticket de caisse. Renvoie une ligne par article acheté :
 - Pour rayon, propose celui qui convient le mieux parmi les rayons existants (ou un nouveau si aucun ne va) : le même produit doit toujours tomber dans le même rayon.`;
 }
 
-async function lireAvecIA(base64, type) {
+async function lireAvecIA(base64, type, mediaType = "image/jpeg") {
   const { Anthropic, client: c } = await client();
   const requete = {
     model: modele(),
@@ -160,7 +175,9 @@ async function lireAvecIA(base64, type) {
     messages: [{
       role: "user",
       content: [
-        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
+        mediaType === "application/pdf"
+          ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
+          : { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
         { type: "text", text: type === "etiquette" ? "Lis cette étiquette de prix." : "Lis ce ticket de caisse." },
       ],
     }],
@@ -221,9 +238,10 @@ async function photoSuivante() {
   const suffixe = totalPhotos > 1 ? ` (photo ${numeroPhoto} sur ${totalPhotos})` : "";
   try {
     etat(`Préparation de la photo${suffixe}…`);
-    const image = await preparerImage(suivante.fichier);
+    const estPdf = suivante.fichier.type === "application/pdf" || /\.pdf$/i.test(suivante.fichier.name || "");
+    const image = estPdf ? await preparerPdf(suivante.fichier) : await preparerImage(suivante.fichier);
     etat(`Lecture en cours${suffixe}… Ça prend 10 à 30 secondes.`, "attente");
-    const resultat = await lireAvecIA(image.base64, suivante.type);
+    const resultat = await lireAvecIA(image.base64, suivante.type, estPdf ? "application/pdf" : "image/jpeg");
     etat("");
     ouvrirVerification(resultat, image.dataUrl, suivante.type, suffixe);
   } catch (err) {
@@ -450,7 +468,7 @@ function valider() {
 function demarrerLecture() {
   afficherReglages();
 
-  for (const id of ["#photo-camera", "#photo-galerie"]) {
+  for (const id of ["#photo-camera", "#photo-galerie", "#photo-fichier"]) {
     document.querySelector(id).addEventListener("change", (e) => {
       recevoirPhotos(e.target.files);
       e.target.value = "";

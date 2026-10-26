@@ -56,6 +56,9 @@
         <label class="bouton-secondaire" for="photo-galerie">Choisir dans mes photos</label>
         <input id="photo-galerie" type="file" accept="image/*" multiple hidden>
 
+        <label class="bouton-secondaire" for="photo-fichier">Importer un ticket numérique (PDF ou image)</label>
+        <input id="photo-fichier" type="file" accept="application/pdf,image/*" multiple hidden>
+
         <label class="choix-modele">Lecture avec
           <select id="photo-modele"></select>
         </label>
@@ -258,8 +261,10 @@
           <p class="aide">Tes données sont gardées dans ce navigateur, sur cet appareil. Télécharge-les de temps en temps : si tu vides les données du navigateur ou si tu changes de téléphone, ce fichier te permet de tout retrouver.</p>
           <div class="actions">
             <button type="button" id="exporter">Télécharger mes données</button>
-            <label class="bouton-secondaire" for="importer">Importer un fichier</label>
+            <label class="bouton-secondaire" for="importer">Remplacer par un fichier</label>
             <input id="importer" type="file" accept="application/json,.json" hidden>
+            <label class="bouton-secondaire" for="fusionner">Fusionner avec un fichier</label>
+            <input id="fusionner" type="file" accept="application/json,.json" hidden>
           </div>
           <p id="sauvegarde-message" class="message" role="status"></p>
         </div>
