@@ -94,8 +94,6 @@ async function chercherMagasins(centre, rayon) {
     .sort((a, b) => a.distance - b.distance);
 }
 
-const dejaAjoute = (m) => MAGASINS.some((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
-
 // Le magasin de ma liste qui correspond à un résultat de recherche, s'il y en a un.
 const magasinConnu = (m) => MAGASINS.find((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
 

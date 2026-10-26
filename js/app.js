@@ -8,12 +8,10 @@ const echapper = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;
 
 const CLE = {
   coches: "atable.coches",
-  reference: "atable.reference",
   releves: "atable.releves",
   produits: "atable.produits", // produits ajoutés depuis les photos
   magasins: "atable.magasins", // ancien format (séances 6 et avant) : magasins ajoutés depuis les photos
   magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
-  vu: "atable.magasinVu", // magasin affiché dans Ma course (séance 9)
   compares: "atable.compares", // magasins dont la colonne de prix est affichée dans Ma course ; null = les deux premiers du classement (séance 30)
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
@@ -58,8 +56,6 @@ const produitsActifs = () => PANIER.map((p, i) => i).filter((i) => !PANIER[i].ma
 }
 
 let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
-let reference = lire(CLE.reference, "intermarche");
-let magasinVu = lire(CLE.vu, null);
 let compares = lire(CLE.compares, null);
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
@@ -80,8 +76,6 @@ function produitsCourse() {
 
 function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
-  ecrire(CLE.reference, reference);
-  ecrire(CLE.vu, magasinVu);
   ecrire(CLE.compares, compares);
   ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.relevesReplies, [...relevesReplies]);
@@ -233,14 +227,6 @@ function totalDe(m) {
   const indices = produitsCourse().filter((i) => coches.has(i));
   const prix = indices.map((i) => prixDe(i, m.id).prix).filter((p) => p !== null);
   return { total: prix.reduce((a, b) => a + b, 0), connus: prix.length, coches: indices.length };
-}
-
-// Magasin le moins cher : seulement parmi ceux qui connaissent au moins 80 % des prix cochés,
-// sinon un magasin aux prix manquants paraîtrait faussement moins cher (décision D13).
-function moinsCher() {
-  const candidats = visibles().map((m) => ({ m, ...totalDe(m) })).filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches);
-  if (candidats.length < 2) return null;
-  return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
 }
 
 // Indice de prix d'un magasin : sur les produits dont au moins deux magasins connaissent le prix, moyenne du rapport
@@ -543,7 +529,6 @@ function exporter() {
     magasins: MAGASINS,
     paniers,
     coches: [...coches],
-    reference,
     modifs,
   };
   const lien = document.createElement("a");
@@ -572,7 +557,6 @@ async function importer(fichier) {
       else MAGASINS.push(...(donnees.magasinsAjoutes || []).filter((m) => !MAGASINS.some((x) => x.id === m.id)));
       releves = donnees.releves.filter((r) => r.produit < PANIER.length);
       coches = new Set(donnees.coches || PANIER.map((_, i) => i));
-      reference = donnees.reference || reference;
       paniers = Array.isArray(donnees.paniers) ? donnees.paniers : [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
       for (const p of paniers) p.produits = p.produits.filter((i) => i < PANIER.length);
       message.textContent = `Import terminé : ${releves.length} relevés.`;
