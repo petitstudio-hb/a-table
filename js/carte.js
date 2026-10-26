@@ -11,6 +11,8 @@ let carte = null; // objet Leaflet
 let couchePoints = null;
 let pointsCarte = []; // points affichés, dans l'ordre des numéros
 let chargementLeaflet = null;
+let positionTentee = false; // la position n'est demandée qu'une fois par ouverture de la page
+let centrerSurPosition = false;
 
 function chargerLeaflet() {
   if (window.L) return Promise.resolve();
@@ -89,7 +91,8 @@ async function majCarte() {
     L.circleMarker([centreRecherche.lat, centreRecherche.lon], { radius: 8, color: "#fff", weight: 3, fillColor: "#2b6cb0", fillOpacity: 1 }).addTo(couchePoints);
     bornes.push([centreRecherche.lat, centreRecherche.lon]);
   }
-  if (bornes.length > 1) carte.fitBounds(bornes, { padding: [30, 30], maxZoom: 16 });
+  if (centrerSurPosition && centreRecherche) { carte.setView([centreRecherche.lat, centreRecherche.lon], 15, { animate: false }); centrerSurPosition = false; }
+  else if (bornes.length > 1) carte.fitBounds(bornes, { padding: [30, 30], maxZoom: 16 });
   else if (bornes.length === 1) carte.setView(bornes[0], 15);
   document.querySelector("#carte-fiche").hidden = true;
   const sansPlace = MAGASINS.filter((m) => typeof m.lat !== "number").length;
@@ -107,7 +110,7 @@ function majModeMagasins() {
     b.classList.toggle("actif", actif);
     b.setAttribute("aria-pressed", String(actif));
   }
-  if (carteOuverte) majCarte();
+  if (carteOuverte) majCarte().then(localiserAuto);
 }
 
 document.querySelector("#mag-liste").addEventListener("click", () => { modeMagasins = "liste"; majModeMagasins(); });
@@ -117,3 +120,17 @@ document.querySelector("#carte-fiche").addEventListener("click", (e) => {
   const b = e.target.closest("[data-ajouter-trouve]");
   if (b) ajouterTrouve(Number(b.dataset.ajouterTrouve));
 });
+
+// À l'ouverture de la carte, on montre la position actuelle (point bleu) si aucune recherche n'a déjà un centre.
+// Elle reste en mémoire seulement (D9) ; refusée, la carte s'ouvre quand même.
+async function localiserAuto() {
+  if (centreRecherche || positionTentee) return;
+  positionTentee = true;
+  try {
+    centreRecherche = await positionGps();
+    centrerSurPosition = true;
+    majCarte();
+  } catch (e) {
+    document.querySelector("#carte-etat").textContent = e.message;
+  }
+}
