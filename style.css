@@ -774,3 +774,11 @@ input, select, textarea { font-size: 16px !important; }
 .choix-mag input { width: 22px; height: 22px; accent-color: var(--vert); flex: none; }
 .choix-mag span { display: flex; flex-direction: column; font-weight: 500; }
 .choix-mag small { font-weight: 400; font-size: 0.75rem; color: var(--discret); }
+
+/* ---------- Séance 24 : lecture du ticket (marque, poids, promo) ---------- */
+.pkg { grid-column: 1 / -1; margin: 0; font-family: var(--mono); font-size: 0.82rem; color: var(--discret); }
+.promo-bouton { grid-column: 1 / -1; min-height: 44px; border: 1.5px dashed var(--rouge); border-radius: 3px; background: none; color: var(--rouge); font: inherit; font-weight: 700; cursor: pointer; }
+.promo-bouton.actif { border-style: solid; background: var(--rouge); color: #fff; }
+.ligne-verif:has(.promo-bouton.actif) { border-left: 5px solid var(--rouge); }
+.badge-promo { display: inline-block; margin-left: 6px; padding: 0 5px; background: var(--rouge); color: #fff; font-family: var(--mono); font-weight: 700; font-size: 0.62rem; letter-spacing: 0.04em; vertical-align: 2px; }
+.ligne-duel .lc-prix .badge-promo { display: block; margin: 2px 0 0; text-align: center; }

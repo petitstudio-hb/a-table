@@ -19,6 +19,7 @@ function afficherListe() {
       return `<li class="modif" data-i="${i}">
         <div class="formulaire">
           <label class="large">Nom<input type="text" data-champ="nom" value="${echapper(p.nom)}"></label>
+          <label class="large">Marque<input type="text" data-champ="marque" value="${echapper(p.marque || "")}" placeholder="ex. Lustucru"></label>
           <label>Format<input type="text" data-champ="format" value="${echapper(p.format)}" placeholder="500 g, 1 L…"></label>
           <label>Rayon<input type="text" data-champ="rayon" list="liste-rayons" value="${echapper(p.rayon)}"></label>
         </div>
@@ -35,7 +36,7 @@ function afficherListe() {
         <div class="actions"><button type="button" data-annuler-liste>Annuler</button><button type="button" class="principal" data-fusionner-liste="${i}">Fusionner</button></div>
       </li>`;
     }
-    return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${echapper(p.format)}</span>
+    return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${echapper(p.format)}</span>
       <span class="date">${nbReleves(i)} prix</span></span>
       <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button>${FUSION_ACTIVE ? `<button type="button" data-fusion-liste="${i}">Fusionner</button>` : ""}<button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
   };
@@ -78,6 +79,7 @@ function enregistrerProduit(i, zone) {
   if (!nom) { alert("Le produit a besoin d'un nom."); return false; }
   const changes = {
     nom,
+    marque: zone.querySelector('[data-champ="marque"]').value.trim(),
     format: zone.querySelector('[data-champ="format"]').value.trim(),
     rayon: zone.querySelector('[data-champ="rayon"]').value.trim() || "Ajoutés",
   };

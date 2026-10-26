@@ -91,10 +91,11 @@ const SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["libelle", "nom", "quantite", "prix_unitaire", "prix_total", "prix_kg", "poids", "promo", "association", "produit_index", "prix_reference", "rayon"],
+        required: ["libelle", "nom", "marque", "quantite", "prix_unitaire", "prix_total", "prix_kg", "poids", "promo", "association", "produit_index", "prix_reference", "rayon"],
         properties: {
           libelle: { type: "string", description: "Texte exact de la ligne." },
-          nom: { type: "string", description: "Nom lisible en français, sans abréviation (ex. « Purée de tomates »)." },
+          nom: { type: "string", description: "Nom lisible en français, sans abréviation et sans la marque (ex. « Purée de tomates », « Gnocchi à poêler »)." },
+          marque: { type: "string", description: "Marque commerciale du produit si on la reconnaît (ex. « Lustucru », « Alvalle »), sinon chaîne vide (vrac, fruits et légumes, marque de distributeur)." },
           quantite: { type: "number", description: "Nombre d'articles (2 pour « 2 x 0,49 »), ou poids en kg pour le vrac." },
           prix_unitaire: { type: "number", description: "Prix d'un article, en euros. Pour le vrac : le prix payé." },
           prix_total: { type: "number", description: "Montant de la ligne, en euros." },
@@ -144,7 +145,10 @@ La photo montre un ticket de caisse. Renvoie une ligne par article acheté :
 - « 2 x 0,49 € » : quantite 2, prix_unitaire 0,49, prix_total 0,98.
 - Vrac « 0,736 kg x 1,99 €/kg » : quantite 0,736, prix_kg 1,99, prix_unitaire et prix_total 1,46.
 - Une remise sous un article (ex. « REMISE -0,50 ») s'applique à cet article : déduis-la du prix et mets promo à vrai. Ne crée pas de ligne pour la remise.
-- Ignore les totaux, la TVA, les moyens de paiement, les points fidélité et la consigne.`;
+- Ignore les totaux, la TVA, les moyens de paiement, les points fidélité et la consigne.
+- Ignore aussi tout ce qui n'est pas un article avec un prix : messages publicitaires, notes et mentions en bas de ticket, coupons, numéro de carte, horaires, adresses de contact, monnaie rendue. N'invente pas de ligne pour eux.
+- Sépare toujours la marque du nom : « GNOCCHI A POELER LUSTUCRU » donne nom « Gnocchi à poêler » et marque « Lustucru ».
+- Pour rayon, propose celui qui convient le mieux parmi les rayons existants (ou un nouveau si aucun ne va) : le même produit doit toujours tomber dans le même rayon.`;
 }
 
 async function lireAvecIA(base64, type) {
@@ -249,6 +253,7 @@ function ligneBrouillon(l) {
   return {
     libelle: l.libelle,
     nom: l.nom,
+    marque: (l.marque || "").trim(),
     quantite: l.quantite,
     prixUnitaire: l.prix_unitaire,
     prixKg: l.prix_kg,
@@ -272,7 +277,8 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
     magasinNom: resultat.magasin_nom || "",
     magasinAdresse: resultat.magasin_adresse || "",
     date: /^\d{4}-\d{2}-\d{2}$/.test(resultat.date) ? resultat.date : aujourdhui(),
-    lignes: resultat.lignes.map(ligneBrouillon),
+    // Les lignes sans prix (notes, messages en bas de ticket) ne servent à rien : on les écarte (séance 24).
+    lignes: resultat.lignes.filter((l) => l.prix_total > 0 || l.prix_unitaire > 0).map(ligneBrouillon),
   };
   document.querySelector("#verif-titre").textContent = `Vérifier ${type === "ticket" ? "le ticket" : "l'étiquette"}${suffixe}`;
   document.querySelector("#verif-image").src = dataUrl;
@@ -302,7 +308,9 @@ function afficherVerification() {
   const options = (choisi) => `<option value="-1" ${choisi === -1 ? "selected" : ""}>Nouveau produit (ajouté à ma liste)</option>`
     + produitsActifs().map((i) => `<option value="${i}" ${i === choisi ? "selected" : ""}>${echapper(PANIER[i].nom)}${PANIER[i].format ? ` (${echapper(PANIER[i].format)})` : ""}</option>`).join("");
 
-  document.querySelector("#verif-lignes").innerHTML = brouillon.lignes.length
+  const rayonsExistants = [...new Set(produitsActifs().map((i) => PANIER[i].rayon))];
+  document.querySelector("#verif-lignes").innerHTML = `<datalist id="verif-rayons">${rayonsExistants.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>`
+    + (brouillon.lignes.length
     ? brouillon.lignes.map((l, k) => {
       const detail = [
         l.libelle ? `« ${echapper(l.libelle)} »` : "",
@@ -333,17 +341,36 @@ function afficherVerification() {
             <label class="large" data-bloc="nom" ${l.produit >= 0 ? "hidden" : ""}>Nom du nouveau produit
               <input type="text" data-champ="nom" value="${echapper(l.nom)}">
             </label>
+            <label data-bloc="marque" ${l.produit >= 0 ? "hidden" : ""}>Marque
+              <input type="text" data-champ="marque" value="${echapper(l.marque)}" placeholder="ex. Lustucru">
+            </label>
+            <label data-bloc="format" ${l.produit >= 0 ? "hidden" : ""}>Poids ou volume
+              <input type="text" data-champ="poids" value="${echapper(l.poids)}" placeholder="500 g, 1 L…">
+            </label>
+            <label class="large" data-bloc="rayon" ${l.produit >= 0 ? "hidden" : ""}>Rayon proposé
+              <input type="text" data-champ="rayon" list="verif-rayons" value="${echapper(l.rayon)}">
+            </label>
             <label>Prix retenu (€)
               <input type="text" inputmode="decimal" data-champ="prix" value="${l.prix.toFixed(2).replace(".", ",")}">
             </label>
             <label>Quantité
               <input type="text" inputmode="decimal" data-champ="quantite" value="${String(l.quantite ?? 1).replace(".", ",")}">
             </label>
-            <label class="case"><input type="checkbox" data-champ="promo" ${l.promo ? "checked" : ""}> Promo</label>
+            <p class="pkg" data-pkg>${echapper(texteKg(l))}</p>
+            <button type="button" class="promo-bouton ${l.promo ? "actif" : ""}" data-promo aria-pressed="${Boolean(l.promo)}">${l.promo ? "En promo ✓" : "En promo ?"}</button>
           </div>
         </div>`;
     }).join("")
-    : `<p class="encart">Aucun produit trouvé sur cette photo. Ajoute une ligne à la main, ou annule.</p>`;
+    : `<p class="encart">Aucun produit trouvé sur cette photo. Ajoute une ligne à la main, ou annule.</p>`);
+}
+
+// Prix au kilo ou au litre d'une ligne : d'après le format du produit associé, ou le poids saisi pour un nouveau produit.
+function texteKg(l) {
+  const format = l.produit >= 0 ? PANIER[l.produit].format : l.poids;
+  const kg = prixAuKilo(format, l.prix > 0 ? l.prix : null);
+  if (kg) return `Soit ${kg}`;
+  if (l.prixKg > 0) return `${euros(l.prixKg)}/kg indiqué sur le ticket`;
+  return l.produit >= 0 ? "" : "Ajoute le poids ou le volume pour voir le prix au kilo.";
 }
 
 function majChamp(e) {
@@ -355,7 +382,7 @@ function majChamp(e) {
     l.produit = Number(e.target.value);
     l.avertissement = "";
     bloc.querySelector(".avertissement")?.remove();
-    bloc.querySelector('[data-bloc="nom"]').hidden = l.produit >= 0;
+    for (const b of ["nom", "marque", "format", "rayon"]) bloc.querySelector(`[data-bloc="${b}"]`).hidden = l.produit >= 0;
     bloc.querySelector('[data-bloc="lien"]').hidden = l.produit < 0;
     bloc.querySelector('[data-bloc="variante"]').hidden = l.produit < 0 || l.lien !== "variante";
   } else if (champ === "lien") {
@@ -365,9 +392,13 @@ function majChamp(e) {
     bloc.querySelector('[data-champ="variante"]').value = l.variante;
   } else if (champ === "variante") l.variante = e.target.value;
   else if (champ === "nom") l.nom = e.target.value;
+  else if (champ === "marque") l.marque = e.target.value;
+  else if (champ === "poids") l.poids = e.target.value;
+  else if (champ === "rayon") l.rayon = e.target.value;
   else if (champ === "prix") l.prix = lirePrix(e.target.value);
   else if (champ === "quantite") l.quantite = lirePrix(e.target.value) || 1;
-  else if (champ === "promo") l.promo = e.target.checked;
+  const pkg = bloc.querySelector("[data-pkg]");
+  if (pkg) pkg.textContent = texteKg(l);
 }
 
 function valider() {
@@ -389,7 +420,7 @@ function valider() {
 
   const panierChoisi = paniers.find((p) => p.id === document.querySelector("#verif-panier").value);
   for (const l of lignes) {
-    const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon });
+    const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon, marque: l.marque });
     if (panierChoisi && !panierChoisi.produits.includes(produit)) { panierChoisi.produits.push(produit); coches.add(produit); }
     releves.push({
       produit,
@@ -399,6 +430,7 @@ function valider() {
       promo: Boolean(l.promo),
       quantite: l.quantite ?? 1,
       libelle: l.libelle || null,
+      marque: (l.marque || "").trim() || null,
       variante: l.produit >= 0 && l.lien === "variante" && l.variante.trim() ? l.variante.trim() : null,
       source: brouillon.type,
       code: null,
@@ -428,13 +460,22 @@ function demarrerLecture() {
   document.querySelector("#verif-lignes").addEventListener("input", majChamp);
   document.querySelector("#verif-lignes").addEventListener("change", majChamp);
   document.querySelector("#verif-lignes").addEventListener("click", (e) => {
+    const promo = e.target.closest("[data-promo]");
+    if (promo) {
+      const l = brouillon.lignes[Number(promo.closest(".ligne-verif").dataset.k)];
+      l.promo = !l.promo;
+      promo.classList.toggle("actif", l.promo);
+      promo.setAttribute("aria-pressed", String(l.promo));
+      promo.textContent = l.promo ? "En promo ✓" : "En promo ?";
+      return;
+    }
     const b = e.target.closest("[data-supprimer-ligne]");
     if (!b) return;
     brouillon.lignes.splice(Number(b.dataset.supprimerLigne), 1);
     afficherVerification();
   });
   document.querySelector("#verif-ajouter").addEventListener("click", () => {
-    brouillon.lignes.push({ libelle: "", nom: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, lien: "meme", variante: "", avertissement: "", suggestion: -1, prix: 0, rayon: "Ajoutés" });
+    brouillon.lignes.push({ libelle: "", nom: "", marque: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, lien: "meme", variante: "", avertissement: "", suggestion: -1, prix: 0, rayon: "Ajoutés" });
     afficherVerification();
   });
   document.querySelector("#verif-magasin").addEventListener("change", (e) => {

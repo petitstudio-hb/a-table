@@ -90,8 +90,8 @@ function sauvegarder() {
   ecrire(CLE.magasins2, MAGASINS);
 }
 
-function ajouterProduit({ nom, format, rayon }) {
-  PANIER.push({ nom: nom || "Produit sans nom", format: format || "", rayon: rayon || "Ajoutés", prix: {} });
+function ajouterProduit({ nom, format, rayon, marque }) {
+  PANIER.push({ nom: nom || "Produit sans nom", marque: (marque || "").trim(), format: format || "", rayon: rayon || "Ajoutés", prix: {} });
   const i = PANIER.length - 1;
   coches.add(i);
   panierHabituel()?.produits.push(i); // un nouveau produit rejoint le panier habituel
@@ -115,8 +115,8 @@ function prixDe(i, magasin) {
   for (const r of releves) {
     if (r.produit === i && r.magasin === magasin && (!dernier || r.date >= dernier.date)) dernier = r;
   }
-  if (dernier) return { prix: dernier.prix, saisi: true, variante: dernier.variante || "" };
-  return { prix: PANIER[i].prix[magasin] ?? null, saisi: false, variante: "" };
+  if (dernier) return { prix: dernier.prix, saisi: true, variante: dernier.variante || "", promo: Boolean(dernier.promo) };
+  return { prix: PANIER[i].prix[magasin] ?? null, saisi: false, variante: "", promo: false };
 }
 
 // ---------- Formats et prix au kilo (séances 16 et 17) ----------
@@ -328,14 +328,14 @@ function afficherCourse() {
         const cellules = colonnes.map((m, k) => {
           const { prix: q, saisi } = prix[k];
           const meilleur = unique && Math.abs(q - mini) < 0.005;
-          return `<button type="button" class="cellule lc-prix ${q === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${m.id}" title="Saisir le prix chez ${echapper(m.nom)}">${q === null ? "+ prix" : `<span class="etiquette ${meilleur ? "" : "simple"}">${euros(q).replace(" €", "")}</span>`}</button>`;
+          return `<button type="button" class="cellule lc-prix ${q === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${m.id}" title="Saisir le prix chez ${echapper(m.nom)}">${q === null ? "+ prix" : `<span class="etiquette ${meilleur ? "" : "simple"}">${euros(q).replace(" €", "")}</span>${prix[k].promo ? `<span class="badge-promo">PROMO</span>` : ""}`}</button>`;
         }).join("");
         return `
           <div class="ligne-course ligne-duel ${coches.has(i) ? "" : "decoche"}" style="--cols:${colonnes.length}">
             <label>
               <input type="checkbox" data-index="${i}" ${coches.has(i) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
-                <span class="lc-format">${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
+                <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
             </label>${cellules}
           </div>`;
       }).join("");
@@ -488,8 +488,8 @@ function ligneReleves(groupe) {
       }
       return `
         <li>
-          <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <em>promo</em>" : ""}
-          <span class="date">${r.variante ? `variante : ${echapper(r.variante)} · ` : ""}${prixAuKilo(p.format, r.prix) ? `${prixAuKilo(p.format, r.prix)} · ` : ""}${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
+          <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <span class=\"badge-promo\">PROMO</span>" : ""}
+          <span class="date">${r.marque ? `${echapper(r.marque)} · ` : ""}${r.variante ? `variante : ${echapper(r.variante)} · ` : ""}${prixAuKilo(p.format, r.prix) ? `${prixAuKilo(p.format, r.prix)} · ` : ""}${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
           <span class="boutons"><button type="button" data-modifier="${k}">Modifier</button><button type="button" data-supprimer="${k}" aria-label="Supprimer">✕</button></span>
         </li>`;
     })
