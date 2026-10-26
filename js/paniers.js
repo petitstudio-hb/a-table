@@ -12,7 +12,6 @@ const MAX_RESULTATS = 150;
 const rayonsRepliesPanier = new Set(); // rayons repliés dans la composition d'un panier (R7)
 
 const texteNb = (n) => `${n} produit${n > 1 ? "s" : ""}`;
-const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 function afficherPaniers() {
   if (panierOuvert && !paniers.some((p) => p.id === panierOuvert)) panierOuvert = null;

@@ -5,6 +5,14 @@ const euros = (n) => n.toFixed(2).replace(".", ",") + " €";
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const dateFr = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
 const echapper = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// Distance à vol d'oiseau en mètres entre deux points { lat, lon }, et son texte (« 450 m », « 1,2 km »).
+const distanceM = (a, b) => {
+  const rad = (x) => (x * Math.PI) / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+};
+const distanceTexte = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} m` : `${(d / 1000).toFixed(1).replace(".", ",")} km`);
 
 const CLE = {
   coches: "atable.coches",
