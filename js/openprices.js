@@ -27,12 +27,12 @@ async function chargerPrixMagasins() {
       }).join("");
       return `
         <details class="op-magasin">
-          <summary><strong>${m.nom}</strong> <span>${donnees.total} prix sur Open Prices</span></summary>
+          <summary><strong>${echapper(m.nom)}</strong> <span>${donnees.total} prix sur Open Prices</span></summary>
           ${donnees.total ? `<ul class="releves">${lignes}</ul>` : `<p class="aide">Aucun prix pour l'instant : tes relevés seront les premiers.</p>`}
           ${donnees.total ? `<a href="https://prices.openfoodfacts.org/locations/${donnees.items[0].location_id}" target="_blank" rel="noopener">Voir sur Open Prices</a>` : ""}
         </details>`;
     } catch (e) {
-      return `<details class="op-magasin"><summary><strong>${m.nom}</strong> <span>indisponible</span></summary><p class="aide">Open Prices ne répond pas pour l'instant.</p></details>`;
+      return `<details class="op-magasin"><summary><strong>${echapper(m.nom)}</strong> <span>indisponible</span></summary><p class="aide">Open Prices ne répond pas pour l'instant.</p></details>`;
     }
   }));
   zone.innerHTML = blocs.join("");
@@ -105,7 +105,7 @@ function afficherEnvoi() {
     liste.innerHTML = candidats.map(({ r }) => {
       const p = PANIER[r.produit];
       const statut = envoyable(r) ? "" : ` <em>code-barres manquant, ne sera pas envoyé</em>`;
-      return `<li><span>${p.nom} : ${euros(r.prix)}${statut}</span></li>`;
+      return `<li><span>${echapper(p.nom)} : ${euros(r.prix)}${statut}</span></li>`;
     }).join("");
   }
   document.querySelector("#op-envoyer").disabled = !candidats.some(({ r }) => envoyable(r));
@@ -181,7 +181,7 @@ async function envoyer(e) {
 
 function demarrerOpenPrices() {
   const choix = document.querySelector("#op-magasin");
-  for (const m of MAGASINS) choix.insertAdjacentHTML("beforeend", `<option value="${m.id}">${m.nom}</option>`);
+  for (const m of MAGASINS) choix.insertAdjacentHTML("beforeend", `<option value="${m.id}">${echapper(m.nom)}</option>`);
   choix.value = "aldi";
   document.querySelector("#op-date").value = new Date().toISOString().slice(0, 10);
 

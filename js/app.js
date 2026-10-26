@@ -34,8 +34,12 @@ function lire(cle, defaut) {
     return v === null ? defaut : v;
   } catch (e) { return defaut; }
 }
+let avertiStockage = false;
 function ecrire(cle, valeur) {
-  try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) {}
+  try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) {
+    // Stockage plein ou refusé : on le dit une seule fois, sinon les données ne seraient pas gardées sans que personne le sache.
+    if (!avertiStockage) { avertiStockage = true; notifier("Les données ne peuvent pas être enregistrées sur cet appareil. Télécharge une sauvegarde."); }
+  }
 }
 
 // ---------- État ----------
