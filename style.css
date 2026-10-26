@@ -902,3 +902,9 @@ input, select, textarea { font-size: 16px !important; }
 #liste-paniers .ouvrir .fleche { width: 32px; height: 32px; background: none; color: var(--accent); }
 #liste-paniers .ouvrir .fleche::before { left: 8px; top: 9px; width: 14px; height: 14px; border-width: 4px; border-color: currentColor; }
 .releves .ouvrir .fleche { font-size: 0; }
+
+/* Bouton « Choisir les magasins affichés » (option A) : texte à gauche, petit chevron à droite qui se retourne à l'ouverture. */
+.lien-fleche { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; border-bottom: 1px solid var(--ligne); }
+.lien-fleche span { text-decoration: underline; }
+.fleche-lien { flex: none; width: 9px; height: 9px; margin: 0 6px 4px 0; border-right: 3px solid currentColor; border-bottom: 3px solid currentColor; transform: rotate(45deg); transition: transform 0.15s; }
+.lien-fleche[aria-expanded="true"] .fleche-lien { transform: rotate(-135deg); margin-bottom: -2px; }

@@ -282,6 +282,7 @@ let choixMagasinsOuvert = false;
 function afficherChoixMagasins() {
   const zone = document.querySelector("#liste-choix-magasins");
   document.querySelector("#choix-magasins").setAttribute("aria-expanded", String(choixMagasinsOuvert));
+  document.querySelector("#choix-magasins-texte").textContent = choixMagasinsOuvert ? "Masquer la liste des magasins affichés" : "Choisir les magasins affichés";
   zone.hidden = !choixMagasinsOuvert;
   if (!choixMagasinsOuvert) return;
   zone.innerHTML = MAGASINS.map((m) => `<label class="choix-mag"><input type="checkbox" data-affiche="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>${echapper(m.nom)}${m.adresse ? `<small>${echapper(m.adresse)}</small>` : ""}</span></label>`).join("")
