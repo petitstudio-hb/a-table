@@ -14,6 +14,7 @@ const CLE = {
   magasins: "atable.magasins", // ancien format (séances 6 et avant) : magasins ajoutés depuis les photos
   magasins2: "atable.magasins2", // liste complète des magasins, modifiable (séance 7)
   vu: "atable.magasinVu", // magasin affiché dans Ma course (séance 9)
+  compares: "atable.compares", // magasins dont la colonne de prix est affichée dans Ma course ; null = les deux premiers du classement (séance 30)
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
   paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
@@ -59,6 +60,7 @@ const produitsActifs = () => PANIER.map((p, i) => i).filter((i) => !PANIER[i].ma
 let coches = new Set(lire(CLE.coches, PANIER.map((_, i) => i)));
 let reference = lire(CLE.reference, "intermarche");
 let magasinVu = lire(CLE.vu, null);
+let compares = lire(CLE.compares, null);
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
 let detailsOuverts = new Set(); // produits dont « voir les autres » est ouvert dans Ma course (non mémorisé)
@@ -80,6 +82,7 @@ function sauvegarder() {
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.reference, reference);
   ecrire(CLE.vu, magasinVu);
+  ecrire(CLE.compares, compares);
   ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
@@ -264,21 +267,14 @@ function classerMagasins(mags) {
   return { infos, ind, classes: modeIndice ? parIndice : complets, modeIndice };
 }
 
-// Les deux magasins comparés (séance 23) : A est le magasin affiché (magasinVu), B celui auquel on le compare (reference).
-function garantirDuel() {
-  const mags = visibles();
-  // Par défaut, le duel oppose les deux magasins les moins chers (ceux qui connaissent assez de prix passent d'abord).
-  const { infos, classes } = classerMagasins(mags);
-  const ordre = [...classes, ...infos.filter((x) => !classes.includes(x)).sort((a, b) => b.connus - a.connus)].map((x) => x.m);
-  if (!mags.some((m) => m.id === magasinVu)) magasinVu = ordre[0]?.id ?? null;
-  if (!mags.some((m) => m.id === reference) || reference === magasinVu) reference = ordre.find((m) => m.id !== magasinVu)?.id ?? null;
-  // Si les deux magasins n'ont aucun produit en commun, la comparaison ne dirait rien : on prend le premier magasin qui en a.
-  const communs = (a, b) => produitsCourse().filter((i) => coches.has(i) && prixDe(i, a).prix !== null && prixDe(i, b).prix !== null).length;
-  if (magasinVu && reference && communs(magasinVu, reference) === 0) {
-    const autre = ordre.find((m) => m.id !== magasinVu && communs(magasinVu, m.id) > 0);
-    if (autre) reference = autre.id;
+// Les magasins dont la colonne de prix est affichée dans la liste (séance 30). `compares` est le choix de l'utilisateur ;
+// tant qu'il n'a rien choisi (null), ce sont les deux premiers du classement. Une liste vide est permise : aucune colonne.
+function magasinsCompares(mags) {
+  if (compares === null) {
+    const { infos, classes } = classerMagasins(mags);
+    return [...classes, ...infos.filter((x) => !classes.includes(x)).sort((a, b) => b.connus - a.connus)].map((x) => x.m).slice(0, 2);
   }
-  return { mags, A: mags.find((m) => m.id === magasinVu) || null, B: mags.find((m) => m.id === reference) || null };
+  return mags.filter((m) => compares.includes(m.id));
 }
 
 // Cases à cocher pour choisir les magasins affichés dans Ma course (le même réglage que dans l'onglet Magasins).
@@ -289,15 +285,14 @@ function afficherChoixMagasins() {
   zone.hidden = !choixMagasinsOuvert;
   if (!choixMagasinsOuvert) return;
   zone.innerHTML = MAGASINS.map((m) => `<label class="choix-mag"><input type="checkbox" data-affiche="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>${echapper(m.nom)}${m.adresse ? `<small>${echapper(m.adresse)}</small>` : ""}</span></label>`).join("")
-    + `<p class="aide">Décochez un magasin pour le retirer du classement et du duel. Il reste dans l'onglet Magasins.</p>`;
+    + `<p class="aide">Décochez un magasin pour le retirer du classement. Il reste dans l'onglet Magasins.</p>`;
 }
 
-// Classement des magasins pour le panier, duel entre les deux magasins choisis, puis la liste en deux colonnes.
+// Classement des magasins pour le panier, puis la liste avec une colonne de prix par magasin choisi dans le classement.
 function afficherCourse() {
-  const { mags, A, B } = garantirDuel();
+  const mags = visibles();
+  const colonnes = magasinsCompares(mags);
   const classement = document.querySelector("#classement");
-  const duel = document.querySelector("#duel");
-  const bilan = document.querySelector("#duel-bilan");
   const liste = document.querySelector("#liste-course");
   document.querySelector("#course-comparaison").hidden = MAGASINS.length === 0;
   afficherChoixMagasins();
@@ -309,43 +304,20 @@ function afficherCourse() {
   const autres = infos.filter((x) => !classes.includes(x));
   classement.innerHTML = [...classes, ...autres].map((x) => {
     const pos = classes.indexOf(x);
-    const repere = x.m.id === magasinVu ? "A" : x.m.id === reference ? "B" : "";
+    const repere = colonnes.some((c) => c.id === x.m.id) ? "✓" : "";
     const i0 = ind.get(x.m.id);
     const ecart = pos > 0 ? (modeIndice ? `+${Math.round((i0.indice / ind.get(classes[0].m.id).indice - 1) * 100)} % que ${echapper(nomCourt(classes[0].m))}` : `+${euros(x.total - classes[0].total)} que ${echapper(nomCourt(classes[0].m))}`) : "";
     const sous = pos === 0 ? (classes.length > 1 ? "LE MOINS CHER" : "") : pos > 0 ? ecart : "pas assez de prix";
     const principal = pos < 0 ? "—" : modeIndice ? `${i0.n} produits` : euros(x.total);
-    return `<button type="button" class="rang ${repere ? "choisi" : ""}" data-duel="${x.m.id}" aria-pressed="${Boolean(repere)}">
+    return `<button type="button" class="rang ${repere ? "choisi" : ""}" data-compare="${x.m.id}" aria-pressed="${Boolean(repere)}">
       <span class="num ${pos < 0 ? "off" : ""}">${pos < 0 ? "–" : pos + 1}</span>
       <span class="rang-nom">${echapper(x.m.nom)}<small>${x.connus} prix sur ${x.coches}</small></span>
       <span class="rang-prix">${principal}<small>${sous}</small></span>
       <span class="repere ${repere ? "" : "vide"}">${repere}</span></button>`;
   }).join("");
 
-  if (!A) { duel.innerHTML = ""; bilan.textContent = ""; liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
-
-  // 2. Le duel : les totaux ne portent que sur les produits cochés connus dans les deux magasins (décision D13).
-  const colonnes = B ? [A, B] : [A];
-  const cochesPanier = produitsCourse().filter((i) => coches.has(i));
-  if (B) {
-    const communs = cochesPanier.filter((i) => prixDe(i, A.id).prix !== null && prixDe(i, B.id).prix !== null);
-    const tA = communs.reduce((s, i) => s + prixDe(i, A.id).prix, 0);
-    const tB = communs.reduce((s, i) => s + prixDe(i, B.id).prix, 0);
-    const gagneA = communs.length && tA < tB - 0.004;
-    const gagneB = communs.length && tB < tA - 0.004;
-    const n = communs.length;
-    const carte = (m, t, gagne) => `<div class="duel-mag ${gagne ? "gagne" : ""}"><b>${echapper(m.nom)}</b><span class="mono">${n ? euros(t) : "—"}</span><small>${n} produit${n > 1 ? "s" : ""} commun${n > 1 ? "s" : ""}</small></div>`;
-    duel.innerHTML = `<div class="duel-tete">${carte(A, tA, gagneA)}<span class="duel-vs">VS</span>${carte(B, tB, gagneB)}</div>`;
-    const ecart = Math.abs(tA - tB);
-    bilan.innerHTML = !n ? `Aucun produit coché n'a de prix dans les deux magasins : ajoutez des prix pour comparer.`
-      : ecart < 0.005 ? `Même total chez ${echapper(A.nom)} et ${echapper(B.nom)}.`
-      : `<b>${echapper((gagneA ? A : B).nom)}</b> coûte <b class="mono">${euros(ecart)} de moins</b> que ${echapper((gagneA ? B : A).nom)} sur ${n > 1 ? `ces ${n} produits` : "ce produit"}.`;
-    bilan.hidden = false;
-  } else {
-    duel.innerHTML = `<p class="aide">Un seul magasin est affiché. Activez-en un autre dans l'onglet <a href="#magasins">Magasins</a> pour comparer.</p>`;
-    bilan.hidden = true;
-  }
-
-  // 3. La liste : une colonne de prix par magasin comparé, le moins cher de la ligne en étiquette jaune.
+  // La liste : une colonne de prix par magasin choisi dans le classement, le moins cher de la ligne en étiquette jaune.
+  if (!mags.length) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
   const rayons = [...new Set(produitsCourse().map((i) => PANIER[i].rayon))];
   const tete = `<div class="liste-tete" style="--cols:${colonnes.length}"><span>${echapper(paniers.find((p) => p.id === panierCourse)?.nom || "")}</span>${colonnes.map((m) => `<span>${echapper(nomCourt(m)).toUpperCase()}</span>`).join("")}</div>`;
   liste.innerHTML = rayons.length ? tete + rayons
@@ -708,14 +680,13 @@ function brancherEvenements() {
     sauvegarder();
     toutAfficher();
   });
-  // Un magasin touché dans le classement rejoint le duel ; le plus ancien des deux en sort.
+  // Un magasin touché dans le classement affiche ou masque sa colonne de prix ; on peut tous les masquer.
   document.querySelector("#classement").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-duel]");
+    const b = e.target.closest("[data-compare]");
     if (!b) return;
-    const id = b.dataset.duel;
-    if (id === magasinVu || id === reference) return;
-    magasinVu = reference;
-    reference = id;
+    const id = b.dataset.compare;
+    const actuels = magasinsCompares(visibles()).map((m) => m.id);
+    compares = actuels.includes(id) ? actuels.filter((x) => x !== id) : [...actuels, id];
     sauvegarder();
     calculer();
   });

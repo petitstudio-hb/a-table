@@ -874,3 +874,7 @@ input, select, textarea { font-size: 16px !important; }
 .point-carte span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1px #5f6b63; font: 700 0.85rem var(--mono, monospace); }
 .carte-fiche { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; padding: 10px; background: var(--carte); border: 1.5px solid var(--accent); }
 .carte-fiche .date { display: block; }
+
+/* Séance 30 : Ma course sans duel ; aucune colonne de prix possible. */
+.ligne-duel[style*="--cols:0"], .liste-tete[style*="--cols:0"] { grid-template-columns: 1fr; }
+.repere { font-size: 15px; }
