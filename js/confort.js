@@ -28,11 +28,10 @@ const CLE_NOTIFS = "atable.notifs";
 const JOURS_RAPPEL = 7;
 
 function lireNotifs() {
-  try { return { rappel: true, derniere: null, ...JSON.parse(localStorage.getItem(CLE_NOTIFS) || "{}") }; } catch { return { rappel: true, derniere: null }; }
+  const v = lire(CLE_NOTIFS, {});
+  return { rappel: true, derniere: null, ...(v && typeof v === "object" ? v : {}) };
 }
-function ecrireNotifs(n) {
-  try { localStorage.setItem(CLE_NOTIFS, JSON.stringify(n)); } catch { /* stockage indisponible */ }
-}
+const ecrireNotifs = (n) => ecrire(CLE_NOTIFS, n);
 
 // Appelée par exporter() : on retient le jour de la dernière sauvegarde.
 function marquerSauvegarde() {

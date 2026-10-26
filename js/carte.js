@@ -31,7 +31,6 @@ function chargerLeaflet() {
   return chargementLeaflet;
 }
 
-const distanceTexte = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} m` : `${(d / 1000).toFixed(1).replace(".", ",")} km`);
 
 // Les points à montrer : mes magasins qui ont un emplacement, puis les résultats de recherche qui n'y sont pas.
 function calculerPoints() {

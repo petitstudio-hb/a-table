@@ -14,11 +14,6 @@ let trouves = []; // résultats de la dernière recherche
 let nbAffiches = 30; // nombre de résultats montrés (le reste derrière « Afficher plus »)
 let centreRecherche = null; // centre de la dernière recherche, gardé en mémoire seulement (jamais enregistré, D9)
 
-const distanceM = (a, b) => {
-  const rad = (x) => (x * Math.PI) / 180;
-  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
-  return 2 * 6371000 * Math.asin(Math.sqrt(h));
-};
 
 function etatTrouver(texte, erreur = false) {
   const p = document.querySelector("#trouver-etat");
@@ -94,8 +89,6 @@ async function chercherMagasins(centre, rayon) {
     .sort((a, b) => a.distance - b.distance);
 }
 
-const dejaAjoute = (m) => MAGASINS.some((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
-
 // Le magasin de ma liste qui correspond à un résultat de recherche, s'il y en a un.
 const magasinConnu = (m) => MAGASINS.find((x) => (x.osm && x.osm.id === m.osm.id) || (x.nom.toLowerCase() === m.nom.toLowerCase() && (x.adresse || "").toLowerCase() === m.rue.toLowerCase()));
 
@@ -114,7 +107,6 @@ function niveauPrix(magasin) {
 
 function afficherTrouves() {
   const liste = document.querySelector("#trouver-liste");
-  const dist = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} m` : `${(d / 1000).toFixed(1).replace(".", ",")} km`);
   liste.innerHTML = trouves
     .slice(0, nbAffiches)
     .map((m, k) => {
@@ -123,7 +115,7 @@ function afficherTrouves() {
       const niveau = connu ? niveauPrix(connu) : null;
       const pastille = niveau ? `<span class="niveau ${niveau.classe}" title="${niveau.texte} pour le panier habituel"><i></i>${niveau.texte}</span>` : (connu ? `<span class="niveau gris"><i></i>Prix inconnus</span>` : "");
       return `<li>
-        <span><strong>${echapper(m.nom)}</strong> ${pastille}<span class="date">${echapper(m.rue) || "Rue non renseignée"} · ${dist(m.distance)}</span></span>
+        <span><strong>${echapper(m.nom)}</strong> ${pastille}<span class="date">${echapper(m.rue) || "Rue non renseignée"} · ${distanceTexte(m.distance)}</span></span>
         <span class="boutons">${ajoute ? `<em class="envoye">Déjà ajouté</em>` : `<button type="button" data-ajouter-trouve="${k}">+ Ajouter</button>`}</span>
       </li>`;
     })
