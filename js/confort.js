@@ -65,3 +65,15 @@ document.querySelector("#rappel-fermer").addEventListener("click", () => {
   document.querySelector("#rappel-sauvegarde").hidden = true;
 });
 majNotifs();
+
+// ---------- Hors connexion (E11) ----------
+// Un bandeau le dit tant qu'il n'y a pas de réseau : les prix et les paniers restent disponibles (ils sont dans le téléphone).
+const bandeauHorsLigne = document.createElement("p");
+bandeauHorsLigne.id = "hors-ligne";
+bandeauHorsLigne.setAttribute("role", "status");
+bandeauHorsLigne.textContent = "Hors connexion : tes prix et tes paniers restent disponibles. La lecture de tickets, la recherche de magasins, les adresses et la carte ont besoin du réseau.";
+document.querySelector("main")?.prepend(bandeauHorsLigne) || document.body.prepend(bandeauHorsLigne);
+const majReseau = () => { bandeauHorsLigne.hidden = navigator.onLine; };
+window.addEventListener("online", () => { majReseau(); notifier("De nouveau en ligne."); });
+window.addEventListener("offline", majReseau);
+majReseau();

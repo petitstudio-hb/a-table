@@ -418,5 +418,9 @@
     <script src="js/ouialler.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
+  <script>
+      // Mode hors connexion (E11) : voir sw.js.
+      if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    </script>
   </body>
 </html>

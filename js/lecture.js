@@ -167,6 +167,7 @@ La photo montre un ticket de caisse. Renvoie une ligne par article acheté :
 }
 
 async function lireAvecIA(base64, type, mediaType = "image/jpeg") {
+  if (!navigator.onLine) throw new Error("Pas de réseau : la lecture par l'IA en a besoin. Réessaie quand tu auras du réseau.");
   const { Anthropic, client: c } = await client();
   const requete = {
     model: modele(),

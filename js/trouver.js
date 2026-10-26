@@ -130,6 +130,7 @@ async function lancerRecherche(source) {
   const bouton = document.querySelectorAll("#trouver button");
   bouton.forEach((b) => (b.disabled = true));
   try {
+    if (!navigator.onLine) throw new Error("Pas de réseau : la recherche de magasins en a besoin. Ta liste et tes prix restent disponibles.");
     etatTrouver("Recherche en cours…");
     patience = setTimeout(() => etatTrouver("Le serveur est lent en ce moment, ça peut prendre jusqu'à une minute…"), 8000);
     const adresse = document.querySelector("#trouver-adresse").value.trim();

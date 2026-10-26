@@ -5,6 +5,7 @@
 !index.html
 !style.css
 !manifest.json
+!sw.js
 !js/
 !js/*.js
 !icones/
