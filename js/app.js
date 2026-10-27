@@ -581,10 +581,26 @@ function exporter() {
   URL.revokeObjectURL(lien.href);
 }
 
+// Contrôle d'un fichier avant import ou fusion (lot 4) : refuse un fichier abîmé ou d'une version future avec un message clair ;
+// un fichier valide est rendu tel quel (seuls les relevés illisibles sont écartés, avec avertissement).
+function lireSauvegardeSure(texte) {
+  if (typeof DonneesSures === "undefined") return { donnees: JSON.parse(texte), avertissements: [] };
+  const res = DonneesSures.lireTexte(texte);
+  if (!res.ok) throw new Error(res.erreurs.join(" "));
+  const donnees = JSON.parse(texte);
+  if (res.avertissements.length) {
+    const liste = Array.isArray(donnees) ? donnees : donnees.releves;
+    const filtres = liste.filter((r) => DonneesSures.releveValide(r).length === 0);
+    if (Array.isArray(donnees)) return { donnees: filtres, avertissements: res.avertissements };
+    donnees.releves = filtres;
+  }
+  return { donnees, avertissements: res.avertissements };
+}
+
 async function importer(fichier) {
   const message = document.querySelector("#sauvegarde-message");
   try {
-    const donnees = JSON.parse(await fichier.text());
+    const { donnees, avertissements } = lireSauvegardeSure(await fichier.text());
     if (Array.isArray(donnees)) {
       // Ancien format (séance 3) : une simple liste de relevés, ajoutée aux relevés actuels.
       const valides = donnees.filter((r) => Number.isInteger(r.produit) && r.produit < PANIER.length && typeof r.prix === "number");
@@ -606,10 +622,11 @@ async function importer(fichier) {
       throw new Error("format inconnu");
     }
     message.className = "message ok";
+    if (avertissements.length) message.textContent += " " + avertissements.join(" ");
     sauvegarder();
     toutAfficher();
   } catch (e) {
-    message.textContent = `Ce fichier ne peut pas être importé (${e.message}).`;
+    message.textContent = e.message.endsWith(".") ? `Ce fichier ne peut pas être importé. ${e.message}` : `Ce fichier ne peut pas être importé (${e.message}).`;
     message.className = "message erreur";
   }
 }
@@ -660,15 +677,16 @@ function fusionnerSauvegarde(donnees) {
 async function fusionner(fichier) {
   const message = document.querySelector("#sauvegarde-message");
   try {
-    const donnees = JSON.parse(await fichier.text());
+    const { donnees, avertissements } = lireSauvegardeSure(await fichier.text());
     if (!((donnees.application === "Cabasito" || donnees.application === "A table") && Array.isArray(donnees.releves))) throw new Error("format inconnu");
     const r = fusionnerSauvegarde(donnees);
     sauvegarder();
     toutAfficher();
     message.textContent = `Fusion terminée : ${r.relevesAjoutes} relevé${r.relevesAjoutes > 1 ? "s" : ""}, ${r.produitsAjoutes} produit${r.produitsAjoutes > 1 ? "s" : ""} et ${r.magasinsAjoutes} magasin${r.magasinsAjoutes > 1 ? "s" : ""} ajoutés. Rien n'a été effacé.`;
     message.className = "message ok";
+    if (avertissements.length) message.textContent += " " + avertissements.join(" ");
   } catch (e) {
-    message.textContent = `Ce fichier ne peut pas être fusionné (${e.message}).`;
+    message.textContent = e.message.endsWith(".") ? `Ce fichier ne peut pas être fusionné. ${e.message}` : `Ce fichier ne peut pas être fusionné (${e.message}).`;
     message.className = "message erreur";
   }
 }
