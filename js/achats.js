@@ -88,7 +88,7 @@ function ticketHtml(t, exclu) {
     : `<button type="button" class="ticket-croix" data-exclure="${echapper(t.cle)}" aria-label="Exclure ce ticket de Mes achats">×</button>`;
   return `
     <details class="ticket">
-      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b><small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span>${action}</summary>
+      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b>${adresseMagasin(t.magasin) ? `<small>${echapper(adresseMagasin(t.magasin))}</small>` : ""}<small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span>${action}</summary>
       <ul>${t.lignes.map((r) => {
         const p = PANIER[r.produit];
         return `<li><span>${echapper(p?.nom || "Produit supprimé")}${r.marque ? ` <small>${echapper(r.marque)}</small>` : ""}${r.promo ? ` <span class="badge-promo">PROMO</span>` : ""}${r.quantite && r.quantite !== 1 ? ` <small>× ${String(r.quantite).replace(".", ",")}</small>` : ""}</span><b class="mono">${euros(montantDe(r))}</b></li>`;
@@ -130,3 +130,8 @@ function majModeReleves() {
 
 document.querySelector("#mode-rayon").addEventListener("click", () => { modeReleves = "rayon"; majModeReleves(); });
 document.querySelector("#mode-ticket").addEventListener("click", () => { modeReleves = "ticket"; majModeReleves(); });
+
+// Adresse du magasin d'un ticket, affichée sous son nom dans Mes achats (vide si elle n'est pas connue).
+function adresseMagasin(id) {
+  return MAGASINS.find((m) => m.id === id)?.adresse || "";
+}
