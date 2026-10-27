@@ -405,7 +405,6 @@ button.principal:hover { filter: brightness(1.08); }
 .message.ok { color: var(--vert); }
 .message.erreur { color: var(--accent); }
 
-.sous-titre { margin: 24px 0 8px; font-size: 1rem; }
 .releves { list-style: none; padding: 0; margin: 0 0 12px; }
 .releves li {
   display: flex;
@@ -824,10 +823,6 @@ input, select, textarea { font-size: 16px !important; }
 #liste-paniers > li.ouvert .ouvrir .fleche::before { transform: rotate(135deg); left: 6px; top: 6px; }
 .detail-deplie { margin-top: 8px; padding-top: 10px; border-top: 1.5px dashed var(--ligne); }
 .detail-deplie .pleine { width: 100%; min-height: 48px; }
-.actions-centre { display: flex; justify-content: center; gap: 10px; margin: 8px 0 12px; }
-.actions-centre button { flex: 1; max-width: 160px; min-height: 44px; }
-.detail-deplie .sous-titre { margin: 14px 0 4px; }
-.lien-supprimer { display: block; margin: 16px auto 4px; padding: 10px; border: none; background: none; color: var(--discret); text-decoration: underline; font: inherit; font-size: 0.85rem; cursor: pointer; }
 #liste-paniers > li.ouvert { flex-direction: column; align-items: stretch; }
 
 /* E11 : bandeau hors connexion */
@@ -956,3 +951,13 @@ input, select, textarea { font-size: 16px !important; }
 .choix-magasin { display: block; width: 100%; text-align: left; padding: 12px; margin-bottom: 6px; border: 1.5px solid var(--accent); background: #fff; font: inherit; font-weight: 700; color: var(--accent); cursor: pointer; }
 .choix-magasin small { display: block; font-weight: 400; color: var(--discret); }
 #aj-autour { margin-top: 8px; }
+
+/* Séance 37 : Mes paniers plus simple (une liste à cases, « ⋯ » pour dupliquer, renommer, supprimer) */
+.outils-panier { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.outils-panier .champ-recherche { flex: 1; }
+.plus-panier { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; padding: 8px; background: var(--carte); border: 1.5px dashed var(--discret); }
+.plus-panier[hidden] { display: none; }
+.plus-panier button { flex: 1 1 30%; padding: 10px 6px; border: 1.5px solid var(--accent); background: #fff; color: var(--accent); font: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.plus-panier button.danger { color: var(--rouge); border-color: var(--rouge); }
+.ligne-case { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 4px; cursor: pointer; }
+.ligne-case input { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }

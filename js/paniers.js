@@ -8,8 +8,6 @@ let panierOuvert = null; // id du panier déplié (un seul à la fois)
 let recherchePanier = ""; // texte de la recherche de produits dans le panier déplié
 
 const SUGGESTIONS_PANIERS = ["Ménage", "Protéines", "Apéro", "Petit-déjeuner"];
-const MAX_RESULTATS = 150;
-const rayonsRepliesPanier = new Set(); // rayons repliés dans la composition d'un panier (R7)
 
 const texteNb = (n) => `${n} produit${n > 1 ? "s" : ""}`;
 
@@ -82,52 +80,41 @@ function blocTotaux(panier) {
 
 // ---------- Panier déplié : composer sur place ----------
 
-const ligneProduit = (i, bouton) => {
+// Une seule liste de tous les produits, regroupés par rayon, avec une case : cochée = dans le panier (même geste pour ajouter et retirer).
+// Un rayon est déplié s'il contient au moins un produit du panier ; on peut le replier ou le déplier à la main ; une recherche déplie tout.
+const rayonsOuvertsPanier = new Set(); // rayons dépliés à la main
+const rayonsRepliesPanier = new Set(); // rayons repliés à la main
+
+const ligneProduit = (i, dedans) => {
   const p = PANIER[i];
-  return `<li class="ligne-panier">
+  return `<li class="ligne-panier"><label class="ligne-case">
+    <input type="checkbox" data-produit-panier="${i}" ${dedans ? "checked" : ""}>
     <span><strong>${echapper(p.nom)}</strong>${p.format ? ` <span class="lc-format">${echapper(p.format)}</span>` : ""}
       ${p.marque ? `<span class="date">${echapper(p.marque)}</span>` : ""}</span>
-    <span class="boutons">${bouton}</span>
-  </li>`;
+  </label></li>`;
 };
 
-// Les produits regroupés par rayon, avec un bandeau vert par rayon qu'on peut replier (comme dans Ma course).
-function lignesParRayon(indices, boutonDe) {
-  let html = "";
-  let courant = null;
-  for (const i of indices) {
-    const rayon = PANIER[i].rayon;
-    if (rayon !== courant) {
-      courant = rayon;
-      const replie = rayonsRepliesPanier.has(rayon);
-      html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${!replie}"><span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`;
-    }
-    if (!rayonsRepliesPanier.has(rayon)) html += ligneProduit(i, boutonDe(i));
-  }
-  return html;
-}
-
-// Le bloc sous la ligne du panier : actions, recherche, produits dans le panier, produits à ajouter.
+// Le bloc sous la ligne du panier : « Faire mes courses », recherche + « ⋯ » (dupliquer, renommer, supprimer), liste des produits.
 function detailHtml(panier) {
   return `<div class="detail-deplie">
     <button type="button" class="principal pleine" data-courses-panier>Faire mes courses</button>
-    <div class="actions-centre">
+    <div class="outils-panier">
+      <div class="champ-recherche">
+        <input class="recherche" data-recherche-panier type="search" value="${echapper(recherchePanier)}" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
+        <button type="button" class="recherche-croix" data-effacer-recherche-panier aria-label="Effacer la recherche" ${recherchePanier ? "" : "hidden"}>×</button>
+      </div>
+      <button type="button" class="bouton-plus" data-plus-panier aria-expanded="false" aria-label="Plus d'options">⋯</button>
+    </div>
+    <div class="plus-panier" data-plus-zone hidden>
       <button type="button" data-dupliquer-panier>Dupliquer</button>
       <button type="button" data-renommer-panier="${panier.id}">Renommer</button>
+      ${panier.id === "habituel" ? "" : `<button type="button" class="danger" data-supprimer-panier="${panier.id}">Supprimer</button>`}
     </div>
-    <div class="champ-recherche">
-      <input class="recherche" data-recherche-panier type="search" value="${echapper(recherchePanier)}" placeholder="Rechercher un produit" autocomplete="off" aria-label="Rechercher un produit">
-      <button type="button" class="recherche-croix" data-effacer-recherche-panier aria-label="Effacer la recherche" ${recherchePanier ? "" : "hidden"}>×</button>
-    </div>
-    <h3 class="sous-titre">Dans ce panier</h3>
-    <ul class="releves" data-dedans></ul>
-    <h3 class="sous-titre">Ajouter des produits</h3>
-    <ul class="releves" data-ajout></ul>
-    ${panier.id === "habituel" ? "" : `<button type="button" class="lien-supprimer" data-supprimer-panier="${panier.id}">Supprimer ce panier</button>`}
+    <ul class="releves" data-produits></ul>
   </div>`;
 }
 
-// Met à jour les deux listes du panier déplié, sans toucher au champ de recherche (pour ne pas perdre le curseur).
+// Met à jour la liste du panier déplié, sans toucher au champ de recherche (pour ne pas perdre le curseur).
 function majListesDetail() {
   const panier = paniers.find((p) => p.id === panierOuvert);
   const li = document.querySelector(`#liste-paniers li[data-id="${panierOuvert}"]`);
@@ -135,20 +122,18 @@ function majListesDetail() {
   const dedans = new Set(panier.produits);
   const requete = sansAccent(recherchePanier.trim());
   const correspond = (i) => !requete || sansAccent(PANIER[i].nom + " " + PANIER[i].rayon + " " + PANIER[i].format).includes(requete);
-  const rayons = [...new Set(PANIER.map((p) => p.rayon))];
-  const parRayon = (a, b) => rayons.indexOf(PANIER[a].rayon) - rayons.indexOf(PANIER[b].rayon) || a - b;
   li.querySelector(".ouvrir .date").textContent = panier.produits.length ? texteNb(panier.produits.length) : "Vide : touche pour y ajouter des produits";
 
-  const tries = [...dedans].filter(correspond).sort(parRayon);
-  li.querySelector("[data-dedans]").innerHTML = tries.length
-    ? lignesParRayon(tries, (i) => `<button type="button" data-retirer-produit="${i}" aria-label="Retirer ${echapper(PANIER[i].nom)} du panier">Retirer</button>`)
-    : `<li class="vide">${requete && dedans.size ? "Aucun produit du panier ne correspond." : "Ce panier est vide. Ajoute des produits ci-dessous."}</li>`;
-
-  const candidats = produitsActifs().filter((i) => !dedans.has(i)).filter(correspond).sort(parRayon);
-  let html = lignesParRayon(candidats.slice(0, MAX_RESULTATS), (i) => `<button type="button" class="ajout" data-ajouter-produit="${i}" aria-label="Ajouter ${echapper(PANIER[i].nom)} au panier">+ Ajouter</button>`);
-  if (!candidats.length) html = `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Tous les produits de ta liste sont déjà dans ce panier."}</li>`;
-  else if (candidats.length > MAX_RESULTATS) html += `<li class="vide">${candidats.length - MAX_RESULTATS} autres produits : affine ta recherche.</li>`;
-  li.querySelector("[data-ajout]").innerHTML = html;
+  let html = "";
+  for (const rayon of [...new Set(PANIER.map((p) => p.rayon))]) {
+    const produits = produitsActifs().filter((i) => PANIER[i].rayon === rayon && correspond(i));
+    if (!produits.length) continue;
+    const n = produits.filter((i) => dedans.has(i)).length;
+    const ouvert = requete ? true : rayonsOuvertsPanier.has(rayon) ? true : rayonsRepliesPanier.has(rayon) ? false : n > 0;
+    html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${ouvert}"><span>${echapper(rayon)} · ${n}/${produits.length}</span><span class="fleche">${ouvert ? "▾" : "▸"}</span></button></li>`;
+    if (ouvert) html += produits.map((i) => ligneProduit(i, dedans.has(i))).join("");
+  }
+  li.querySelector("[data-produits]").innerHTML = html || `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Ta liste ne contient aucun produit."}</li>`;
   // Les totaux de la ligne suivent les ajouts et les retraits.
   const totaux = li.querySelector(".totaux-panier");
   const neuf = blocTotaux(panier);
@@ -161,6 +146,8 @@ function ouvrirPanier(id) {
   panierOuvert = panierOuvert === id ? null : id;
   panierEnModification = null;
   recherchePanier = "";
+  rayonsOuvertsPanier.clear();
+  rayonsRepliesPanier.clear();
   afficherPaniers();
   if (panierOuvert) document.querySelector(`#liste-paniers li[data-id="${panierOuvert}"]`)?.scrollIntoView({ block: "start" });
 }
@@ -237,7 +224,7 @@ document.querySelector("#liste-paniers").addEventListener("click", (e) => {
   const rayon = e.target.closest("[data-rayon-panier]");
   if (rayon) {
     const nom = rayon.dataset.rayonPanier;
-    rayonsRepliesPanier.has(nom) ? rayonsRepliesPanier.delete(nom) : rayonsRepliesPanier.add(nom);
+    if (rayon.getAttribute("aria-expanded") === "true") { rayonsOuvertsPanier.delete(nom); rayonsRepliesPanier.add(nom); } else { rayonsRepliesPanier.delete(nom); rayonsOuvertsPanier.add(nom); }
     majListesDetail();
     return;
   }
@@ -251,15 +238,26 @@ document.querySelector("#liste-paniers").addEventListener("click", (e) => {
     majListesDetail();
     return;
   }
-  const ajout = e.target.closest("[data-ajouter-produit]");
-  if (ajout) {
-    const i = Number(ajout.dataset.ajouterProduit);
-    panier.produits.push(i);
-    coches.add(i); // un produit ajouté à un panier est à acheter
+  const plus = e.target.closest("[data-plus-panier]");
+  if (plus) {
+    const zone = plus.closest(".detail-deplie").querySelector("[data-plus-zone]");
+    zone.hidden = !zone.hidden;
+    plus.setAttribute("aria-expanded", String(!zone.hidden));
   }
-  const retrait = e.target.closest("[data-retirer-produit]");
-  if (retrait) panier.produits = panier.produits.filter((i) => i !== Number(retrait.dataset.retirerProduit));
-  if (ajout || retrait) { sauvegarder(); majListesDetail(); }
+});
+
+// La case d'un produit l'ajoute au panier déplié ou l'en retire.
+document.querySelector("#liste-paniers").addEventListener("change", (e) => {
+  if (!e.target.matches("[data-produit-panier]")) return;
+  const panier = paniers.find((p) => p.id === panierOuvert);
+  if (!panier) return;
+  const i = Number(e.target.dataset.produitPanier);
+  if (e.target.checked) {
+    if (!panier.produits.includes(i)) panier.produits.push(i);
+    coches.add(i); // un produit ajouté à un panier est à acheter
+  } else panier.produits = panier.produits.filter((x) => x !== i);
+  sauvegarder();
+  majListesDetail();
 });
 
 // Recherche dans le panier déplié : filtre les deux listes.
