@@ -1062,3 +1062,8 @@ button:not(.bascule):not(.recherche-croix):not(.rayon-titre):not(.rayon-bande-bo
 input[type=text], input[type=search], input[type=date], select, textarea, .recherche { border-radius: var(--rayon); }
 input[type=checkbox]:not(.bascule) { border-radius: calc(var(--rayon) / 2); }
 .pastille-format, .etiquette { border-radius: 999px; }
+
+/* Accessibilité (lot 5) : anneau de focus au clavier (invisible au toucher) et zone tactile de 44 px sans changer l'apparence. */
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bascule::before, #profil-bouton::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+#profil-bouton { position: relative; }
