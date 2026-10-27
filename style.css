@@ -996,4 +996,18 @@ input, select, textarea { font-size: 16px !important; }
 .vue.anim-gauche { animation: vue-depuis-gauche 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
 .vue.anim-bas { animation: vue-depuis-bas 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
 main.en-transition { overflow-x: clip; } /* pendant un glissement, on coupe ce qui dépasse sans créer de zone de défilement */
-@media (prefers-reduced-motion: reduce) { .vue, .vue[class*="anim-"] { animation: none !important; } }
+
+
+/* Séance 37 : micro-animations (choisies par Hugo avec la variante D) : appui d'un bouton, ouverture d'une ligne dépliable, fiche de la carte.
+   Seuls opacity et transform bougent. */
+button:not(:disabled):active, .bouton-secondaire:active, .onglets a:active { transform: scale(0.97); transition: transform 80ms ease-out; }
+@keyframes ouvre-ligne { from { opacity: 0; transform: translateY(-6px); } }
+details[open] > :not(summary) { animation: ouvre-ligne 200ms ease-out backwards; }
+.carte-fiche { opacity: 0; transition: transform 0.2s, opacity 0.2s; }
+.carte-fiche.ouverte { opacity: 1; }
+
+/* Mouvement réduit (réglage « Réduire les animations » de l'iPhone) : aucune animation. */
+@media (prefers-reduced-motion: reduce) {
+  .vue, .vue[class*="anim-"], .carte-fiche, details > * { animation: none !important; transition: none !important; }
+  button:active, .bouton-secondaire:active, .onglets a:active { transform: none !important; transition: none !important; }
+}
