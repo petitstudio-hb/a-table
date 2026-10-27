@@ -134,7 +134,9 @@
             <button type="button" id="course-deplier">Tout déplier</button>
           </div>
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
+          <div id="recherche-course"><input type="search" class="recherche" id="recherche-course-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
           <div id="liste-course"></div>
+          <section id="nettoyage" class="carte-nettoyage" hidden></section>
           <p id="course-total" class="course-total"></p>
           <p class="aide">Un trait orange signale un prix relevé par toi. Le classement compare les magasins sur les produits cochés.</p>
           <button type="button" id="tout-comparer-bouton" class="bouton-secondaire">Tout comparer</button>
@@ -433,6 +435,13 @@
       </a>
     </nav>
 
+    <div class="feuille-assoc" id="feuille-assoc" hidden>
+      <button type="button" class="assoc-fermer" id="assoc-fermer" aria-label="Fermer">×</button>
+      <h3>Associer cette ligne à…</h3>
+      <p class="aide" id="assoc-libelle"></p>
+      <input type="search" class="recherche" id="assoc-q" placeholder="Chercher dans ma liste" autocomplete="off">
+      <ul id="assoc-res"></ul>
+    </div>
     <script src="js/donnees.js"></script>
     <script src="js/app.js"></script>
     <script src="js/lecture.js"></script>
@@ -443,6 +452,7 @@
     <script src="js/carte.js"></script>
     <script src="js/ouialler.js"></script>
     <script src="js/courses.js"></script>
+    <script src="js/formats.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->
   <script>

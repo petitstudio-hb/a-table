@@ -77,6 +77,7 @@ const cabas = new Set(lire(CLE.cabas, []));
 let cabasLibres = lire(CLE.cabasLibres, []); // { nom, i (numéro de produit connu, ou null), pris }
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
+let rechercheCourse = ""; // texte cherché dans Ma course (sans accent, non mémorisé)
 let detailsOuverts = new Set(); // produits dont « voir les autres » est ouvert dans Ma course (non mémorisé)
 // Relevé : { produit, magasin, prix, date, promo, quantite, libelle, source, code, envoye }
 let releves = lire(CLE.releves, []);
@@ -109,6 +110,9 @@ function sauvegarder() {
 }
 
 function ajouterProduit({ nom, format, rayon, marque }) {
+  // Un poids ou un volume dans le nom passe dans le contenu (format), sauf si le contenu saisi est lisible et le contredit.
+  const a = nom ? propositionProduit({ nom, format }) : null;
+  if (a) { nom = a.nom; format = a.format; }
   PANIER.push({ nom: nom || "Produit sans nom", marque: (marque || "").trim(), format: format || "", rayon: rayon || "Ajoutés", prix: {} });
   const i = PANIER.length - 1;
   coches.add(i);
@@ -145,7 +149,9 @@ function contenance(texte) {
   const m = t.match(/(?:(\d+)\s*x\s*)?(\d+(?:\.\d+)?)\s*(kg|g|cl|ml|l)\b/);
   if (!m) return null;
   const facteur = { kg: 1000, g: 1, l: 1000, cl: 10, ml: 1 }[m[3]];
-  return { qte: (m[1] ? Number(m[1]) : 1) * Number(m[2]) * facteur, type: m[3] === "kg" || m[3] === "g" ? "g" : "ml" };
+  // « 50 cl x 12 » : le nombre de pièces peut aussi suivre la taille.
+  const apres = m[1] ? null : t.slice(m.index + m[0].length).match(/^\s*x\s*(\d+)\b/);
+  return { qte: (m[1] ? Number(m[1]) : apres ? Number(apres[1]) : 1) * Number(m[2]) * facteur, type: m[3] === "kg" || m[3] === "g" ? "g" : "ml" };
 }
 
 // Deux formats sont « proches » s'ils sont de même nature et à moins de 25 % d'écart. Si l'un est illisible, on ne conclut pas.
@@ -333,12 +339,13 @@ function afficherCourse() {
   // La liste : une colonne de prix par magasin choisi dans le classement, le moins cher de la ligne en étiquette jaune.
   if (!mags.length) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
   // En mode courses, seulement ce qu'il y a à acheter (les produits cochés dans Ma course).
-  const aListe = (i) => !modeCourses || coches.has(i);
+  const correspond = (i) => !rechercheCourse || sansAccent(`${PANIER[i].nom} ${PANIER[i].marque || ""} ${PANIER[i].format || ""}`).includes(rechercheCourse);
+  const aListe = (i) => (!modeCourses || coches.has(i)) && correspond(i);
   const rayons = [...new Set(produitsCourse().filter(aListe).map((i) => PANIER[i].rayon))];
   const tete = `<div class="liste-tete" style="--cols:${colonnes.length}"><span>${echapper(paniers.find((p) => p.id === panierCourse)?.nom || "")}</span>${colonnes.map((m) => `<span>${echapper(nomCourt(m)).toUpperCase()}</span>`).join("")}</div>`;
   liste.innerHTML = rayons.length ? tete + rayons
     .map((rayon) => {
-      const replie = rayonsReplies.has(rayon);
+      const replie = !rechercheCourse && rayonsReplies.has(rayon); // pendant une recherche, tout est déplié
       const produits = produitsCourse().filter(aListe).map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
         const prix = colonnes.map((m) => prixDe(i, m.id));
@@ -357,7 +364,7 @@ function afficherCourse() {
             <label>
               <input type="checkbox" data-index="${i}" ${(modeCourses ? cabas.has(i) : coches.has(i)) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
-                <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${echapper(p.format)}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` · ${kg}` : ""}</span></span>
+                <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${p.format ? `<span class="pastille-format">${echapper(p.format)}</span>` : `<span class="pastille-format vide">contenu à préciser</span>`}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` <span class="prix-kg">${kg}</span>` : ""}</span></span>
             </label>${cellules}
           </div>`;
       }).join("");
@@ -365,13 +372,15 @@ function afficherCourse() {
         <button type="button" class="rayon-titre" data-rayon="${echapper(rayon)}" aria-expanded="${!replie}">
           <span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button>${lignes}</div>`;
     })
-    .join("") : `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
+    .join("") : rechercheCourse ? `<p class="encart">Aucun produit « ${echapper(document.querySelector("#recherche-course-champ").value.trim())} » dans ce panier.</p>`
+      : `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
 
   document.querySelector("#course-total").innerHTML = colonnes.map((m) => {
     const t = totalDe(m);
     return `<span>Total ${echapper(m.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
   }).join("");
   if (typeof majCourses === "function") majCourses();
+  if (typeof majNettoyage === "function") majNettoyage();
 }
 
 function afficherTableau() {
@@ -749,6 +758,7 @@ function brancherEvenements() {
     sauvegarder();
     toutAfficher();
   };
+  document.querySelector("#recherche-course-champ").addEventListener("input", (e) => { rechercheCourse = sansAccent(e.target.value.trim()); afficherCourse(); });
   document.querySelector("#tout").addEventListener("click", () => toutCocher(true));
   document.querySelector("#rien").addEventListener("click", () => toutCocher(false));
 

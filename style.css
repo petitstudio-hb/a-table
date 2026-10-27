@@ -885,3 +885,33 @@ input, select, textarea { font-size: 16px !important; }
 .mode-courses .ligne-duel label input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; flex: none; border: 2.5px solid var(--accent); background: #fff; border-radius: 0; }
 .mode-courses .ligne-duel.pris .lc-texte { text-decoration: line-through; opacity: 0.5; }
 .mode-courses .ligne-duel.pris .lc-prix { opacity: 0.4; }
+
+/* Séance 37 : grammage et litrage, recherche dans Ma course */
+#recherche-course { margin: 8px 0; }
+.pastille-format { display: inline-block; padding: 1px 7px; margin-right: 4px; border: 1.5px solid var(--accent); border-radius: 10px; font-size: 0.74rem; font-weight: 700; color: var(--accent); background: #fff; white-space: nowrap; }
+.pastille-format.vide { border-style: dashed; color: #9a6b00; border-color: #c89a1c; background: #fff8dc; }
+.prix-kg { font-family: var(--mono); font-weight: 700; font-size: 0.8rem; }
+.carte-nettoyage { margin: 14px 0; padding: 12px; background: var(--carte); border: 1.5px solid var(--ligne); }
+.carte-nettoyage h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.carte-nettoyage[hidden] { display: none; }
+.net-ligne { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed #a9b3a6; }
+.net-ligne input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); }
+.net-avant { font-size: 0.8rem; color: var(--discret); text-decoration: line-through; }
+.net-apres { font-weight: 700; }
+.net-apres span { font-weight: 400; }
+.net-actions { display: flex; gap: 8px; margin-top: 12px; }
+.net-actions button { flex: 1; padding: 13px 6px; font: inherit; font-weight: 700; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+.net-actions button.plein { background: var(--accent); color: #fff; }
+.net-actions button:disabled { opacity: 0.4; }
+.bouton-produit { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 13px 12px; border: 2px solid var(--accent); background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.bouton-produit small { display: block; color: var(--discret); }
+.bouton-produit .ch { color: var(--accent); font-weight: 800; }
+.feuille-assoc { position: fixed; inset: 0; z-index: 80; background: var(--fond, #f6f1e3); padding: 12px 16px; overflow: auto; }
+.feuille-assoc[hidden] { display: none; }
+.feuille-assoc h3 { margin: 4px 0 8px; font-size: 1.1rem; }
+.feuille-assoc ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.feuille-assoc li button { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 14px 6px; border: none; border-bottom: 1px dashed #a9b3a6; background: none; font: inherit; text-align: left; cursor: pointer; }
+.feuille-assoc li button small { color: var(--discret); }
+.feuille-assoc li.sug button { background: #fff8dc; }
+.feuille-assoc li.nouveau button { color: var(--accent); font-weight: 800; }
+.assoc-fermer { float: right; border: none; background: none; font-size: 1.5rem; cursor: pointer; }

@@ -109,7 +109,7 @@ const SCHEMA = {
         required: ["libelle", "nom", "marque", "quantite", "prix_unitaire", "prix_total", "prix_kg", "poids", "promo", "association", "produit_index", "prix_reference", "rayon"],
         properties: {
           libelle: { type: "string", description: "Texte exact de la ligne." },
-          nom: { type: "string", description: "Nom lisible en français, sans abréviation et sans la marque (ex. « Purée de tomates », « Gnocchi à poêler »)." },
+          nom: { type: "string", description: "Nom lisible en français, sans abréviation, sans la marque et SANS poids ni volume (le poids va dans « poids »), ex. « Purée de tomates », « Gnocchi à poêler »." },
           marque: { type: "string", description: "Marque commerciale du produit si on la reconnaît (ex. « Lustucru », « Alvalle »), sinon chaîne vide (vrac, fruits et légumes, marque de distributeur)." },
           quantite: { type: "number", description: "Nombre d'articles (2 pour « 2 x 0,49 »), ou poids en kg pour le vrac." },
           prix_unitaire: { type: "number", description: "Prix d'un article, en euros. Pour le vrac : le prix payé." },
@@ -345,9 +345,10 @@ function afficherVerification() {
             <button type="button" class="supprimer" data-supprimer-ligne="${k}" aria-label="Supprimer la ligne">✕</button>
           </div>
           <div class="formulaire">
-            <label class="large">Produit associé
-              <select data-champ="produit">${options(l.produit)}</select>
-            </label>
+            <div class="large">Produit associé
+              <select data-champ="produit" hidden>${options(l.produit)}</select>
+              <button type="button" class="bouton-produit" data-assoc="${k}">${texteAssoc(l.produit, l.suggestion)}</button>
+            </div>
             ${l.avertissement ? `<p class="avertissement">${echapper(l.avertissement)}</p>` : ""}
             <label class="large" data-bloc="lien" ${l.produit >= 0 ? "" : "hidden"}>C'est…
               <select data-champ="lien">
@@ -392,6 +393,52 @@ function texteKg(l) {
   if (l.prixKg > 0) return `${euros(l.prixKg)}/kg indiqué sur le ticket`;
   return l.produit >= 0 ? "" : "Ajoute le poids ou le volume pour voir le prix au kilo.";
 }
+
+// ---------- Associer une ligne à un produit : feuille avec recherche (séance 37) ----------
+// Le menu déroulant reste dans la ligne (masqué) : c'est lui que lit majChamp ; la feuille ne fait que le remplir.
+function texteAssoc(i) {
+  return i >= 0 && PANIER[i]
+    ? `<span>${echapper(PANIER[i].nom)}<small>${echapper(PANIER[i].format || "")}</small></span><span class="ch">Chercher</span>`
+    : `<span>Nouveau produit<small>ajouté à ma liste</small></span><span class="ch">Chercher</span>`;
+}
+
+const feuilleAssoc = document.querySelector("#feuille-assoc");
+const champAssoc = document.querySelector("#assoc-q");
+const resAssoc = document.querySelector("#assoc-res");
+let ligneAssoc = null;
+
+function ouvrirAssociation(k) {
+  ligneAssoc = k;
+  const l = brouillon.lignes[k];
+  document.querySelector("#assoc-libelle").textContent = l.libelle ? `« ${l.libelle} » lu sur le ticket` : (l.nom || "Ligne ajoutée");
+  champAssoc.value = "";
+  remplirAssociation();
+  feuilleAssoc.hidden = false;
+  champAssoc.focus();
+}
+
+function remplirAssociation() {
+  const t = sansAccent(champAssoc.value.trim());
+  const propose = brouillon.lignes[ligneAssoc]?.suggestion ?? -1;
+  const trouves = produitsActifs().filter((i) => !t || sansAccent(`${PANIER[i].nom} ${PANIER[i].marque || ""}`).includes(t));
+  // Sans recherche, le produit deviné par la lecture passe en tête.
+  if (!t && propose >= 0 && trouves.includes(propose)) trouves.splice(trouves.indexOf(propose), 1), trouves.unshift(propose);
+  resAssoc.innerHTML = trouves.slice(0, 15).map((i) => `<li class="${!t && i === propose ? "sug" : ""}"><button type="button" data-i="${i}"><span>${echapper(PANIER[i].nom)}<br><small>${echapper(PANIER[i].format || "")} · ${echapper(PANIER[i].rayon)}</small></span>${!t && i === propose ? "<small>proposé</small>" : ""}</button></li>`).join("")
+    + `<li class="nouveau"><button type="button" data-i="-1">+ Nouveau produit${champAssoc.value.trim() ? ` « ${echapper(champAssoc.value.trim())} »` : ""}</button></li>`;
+}
+
+champAssoc.addEventListener("input", remplirAssociation);
+document.querySelector("#assoc-fermer").addEventListener("click", () => { feuilleAssoc.hidden = true; });
+resAssoc.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b || ligneAssoc === null) return;
+  const bloc = document.querySelector(`#verif-lignes .ligne-verif[data-k="${ligneAssoc}"]`);
+  const select = bloc.querySelector('[data-champ="produit"]');
+  select.value = b.dataset.i;
+  select.dispatchEvent(new Event("change", { bubbles: true })); // majChamp met la ligne à jour
+  bloc.querySelector("[data-assoc]").innerHTML = texteAssoc(Number(b.dataset.i));
+  feuilleAssoc.hidden = true;
+});
 
 function majChamp(e) {
   const bloc = e.target.closest(".ligne-verif");
@@ -483,6 +530,8 @@ function demarrerLecture() {
   document.querySelector("#verif-lignes").addEventListener("input", majChamp);
   document.querySelector("#verif-lignes").addEventListener("change", majChamp);
   document.querySelector("#verif-lignes").addEventListener("click", (e) => {
+    const assoc = e.target.closest("[data-assoc]");
+    if (assoc) { ouvrirAssociation(Number(assoc.dataset.assoc)); return; }
     const promo = e.target.closest("[data-promo]");
     if (promo) {
       const l = brouillon.lignes[Number(promo.closest(".ligne-verif").dataset.k)];
