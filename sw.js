@@ -5,7 +5,7 @@
 // Les appels à des services (IA, adresses, recherche de magasins) ne sont jamais gardés.
 // Pour forcer un nettoyage complet des copies, changer VERSION.
 
-const VERSION = "cabasito-v1";
+const VERSION = "cabasito-v2-piste2";
 const CACHE_SITE = `${VERSION}-site`;
 const CACHE_CARTE = `${VERSION}-carte`;
 const MAX_TUILES = 600;
@@ -13,7 +13,7 @@ const DELAI_RESEAU = 4000; // au-delà, on préfère la copie gardée
 
 const FICHIERS = [
   "./", "index.html", "style.css", "manifest.json",
-  "js/donnees.js", "js/prix.js", "js/outils.js", "js/donnees-sures.js", "js/app.js", "js/lecture.js", "js/trouver.js", "js/paniers.js", "js/liste.js", "js/achats.js",
+  "js/donnees.js", "js/prix.js", "js/outils.js", "js/donnees-sures.js", "js/app.js", "js/association.js", "js/lecture.js", "js/verif-cartes.js","js/trouver.js", "js/paniers.js", "js/liste.js", "js/achats.js",
   "js/carte.js", "js/ouialler.js", "js/courses.js", "js/formats.js", "js/confort.js",
   "icones/icone-180.png", "icones/icone-192.png", "icones/icone-512.png", "icones/logo.svg",
   "polices/bricolage.woff2", "polices/courierprime-400.woff2", "polices/courierprime-700.woff2",

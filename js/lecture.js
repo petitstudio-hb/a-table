@@ -304,6 +304,7 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   remarque.textContent = resultat.remarque || "";
   remarque.hidden = !resultat.remarque;
   afficherVerification();
+  if (typeof VerifCartes !== "undefined") VerifCartes.demarrer(); // piste 2 : une carte à la fois pour les lignes douteuses
   window.verificationEnCours = true;
   location.hash = "#verif";
 }

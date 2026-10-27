@@ -1067,3 +1067,32 @@ input[type=checkbox]:not(.bascule) { border-radius: calc(var(--rayon) / 2); }
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bascule::before, #profil-bouton::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 #profil-bouton { position: relative; }
+
+/* ---------- Vérification piste 2 : une carte à la fois (branche photo-piste2) ---------- */
+.verif-p2 { margin-bottom: 12px; }
+.verif-detail { margin: 12px 0; }
+.verif-detail > summary { cursor: pointer; padding: 10px 0; color: var(--discret); }
+.p2-progression { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: var(--discret); font-size: 0.85rem; }
+.p2-points { display: flex; gap: 6px; }
+.p2-points i { width: 9px; height: 9px; border-radius: 50%; background: var(--ligne); }
+.p2-points i.fait { background: var(--vert); }
+.p2-points i.en-cours { background: var(--jaune); outline: 1px solid var(--texte); }
+.p2-lu { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: var(--jaune); border-radius: var(--rayon, 14px); margin-bottom: 12px; }
+.p2-carte { text-align: center; padding: 20px 12px; border: 1px solid var(--ligne); border-radius: var(--rayon, 14px); }
+.p2-picto { font-size: 3rem; line-height: 1.2; }
+.p2-question { font-size: 1.15rem; margin: 10px 0 18px; }
+.p2-boutons { display: flex; gap: 10px; justify-content: center; }
+.p2-boutons button { min-height: 48px; min-width: 120px; }
+.p2-retour { min-height: 44px; min-width: 44px; margin-bottom: 8px; }
+.p2-choix { list-style: none; padding: 0; margin: 10px 0; }
+.p2-choix li button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; text-align: left; margin-bottom: 6px; }
+.p2-picto-p { font-size: 1.6rem; }
+.p2-nouveau { border: 1px dashed var(--discret); border-radius: var(--rayon, 14px); padding: 6px 12px; margin: 12px 0; }
+.p2-nouveau-titre { width: 100%; min-height: 44px; text-align: left; background: none; border: 0; }
+.p2-rayons { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.p2-rayons button { min-width: 48px; min-height: 48px; font-size: 1.5rem; }
+.p2-rayons button.choisi { outline: 3px solid var(--texte); }
+.p2-ignorer { display: block; margin: 8px auto; min-height: 44px; background: none; border: 0; color: var(--discret); text-decoration: underline; }
+.p2-pret { text-align: center; padding: 20px 0; }
+.p2-coche { font-size: 3rem; color: var(--vert); }
+.p2-voir { min-height: 44px; background: none; border: 0; color: var(--discret); text-decoration: underline; }
