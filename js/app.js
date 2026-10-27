@@ -1,18 +1,6 @@
 // Cœur de l'application : données, navigation, « Ma course », saisie manuelle,
 // « Mes relevés », export et import. La lecture des photos est dans lecture.js.
 
-const euros = (n) => n.toFixed(2).replace(".", ",") + " €";
-const aujourdhui = () => new Date().toISOString().slice(0, 10);
-const dateFr = (iso) => (iso ? iso.split("-").reverse().join("/") : "");
-const echapper = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const sansAccent = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-// Distance à vol d'oiseau en mètres entre deux points { lat, lon }, et son texte (« 450 m », « 1,2 km »).
-const distanceM = (a, b) => {
-  const rad = (x) => (x * Math.PI) / 180;
-  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
-  return 2 * 6371000 * Math.asin(Math.sqrt(h));
-};
-const distanceTexte = (d) => (d < 1000 ? `${Math.round(d / 10) * 10} m` : `${(d / 1000).toFixed(1).replace(".", ",")} km`);
 
 const CLE = {
   coches: "atable.coches",
@@ -94,6 +82,7 @@ function produitsCourse() {
 }
 
 function sauvegarder() {
+  invaliderIndexPrix();
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.compares, compares);
   ecrire(CLE.modeCourses, modeCourses);
@@ -132,43 +121,25 @@ const visibles = () => MAGASINS.filter((m) => m.affiche !== false);
 const nomMagasin = (id) => MAGASINS.find((m) => m.id === id)?.nom || "Magasin inconnu";
 
 // Prix à utiliser : le relevé le plus récent, sinon celui de donnees.js.
-function prixDe(i, magasin) {
-  let dernier = null;
+// Index (produit, magasin) → dernier relevé, reconstruit quand la liste des relevés change (lot 2, résultats identiques).
+let indexPrix = null, indexRef = null, indexLong = -1;
+const invaliderIndexPrix = () => { indexPrix = null; };
+const cleIndexPrix = (p, m) => typeof p + p + "|" + typeof m + m;
+function indexerPrix() {
+  if (indexPrix && indexRef === releves && indexLong === releves.length) return indexPrix;
+  indexPrix = new Map();
   for (const r of releves) {
-    if (r.produit === i && r.magasin === magasin && (!dernier || r.date >= dernier.date)) dernier = r;
+    const k = cleIndexPrix(r.produit, r.magasin);
+    const d = indexPrix.get(k);
+    if (!d || r.date >= d.date) indexPrix.set(k, r);
   }
+  indexRef = releves; indexLong = releves.length;
+  return indexPrix;
+}
+function prixDe(i, magasin) {
+  const dernier = indexerPrix().get(cleIndexPrix(i, magasin));
   if (dernier) return { prix: dernier.prix, saisi: true, variante: dernier.variante || "", promo: Boolean(dernier.promo) };
   return { prix: PANIER[i].prix[magasin] ?? null, saisi: false, variante: "", promo: false };
-}
-
-// ---------- Formats et prix au kilo (séances 16 et 17) ----------
-
-// « 500 g », « 1 L », « 6 × 25 cl » → { qte, type } en grammes ou en millilitres, ou null si illisible.
-function contenance(texte) {
-  const t = String(texte || "").toLowerCase().replace(",", ".").replace(/×/g, "x");
-  const m = t.match(/(?:(\d+)\s*x\s*)?(\d+(?:\.\d+)?)\s*(kg|g|cl|ml|l)\b/);
-  if (!m) return null;
-  const facteur = { kg: 1000, g: 1, l: 1000, cl: 10, ml: 1 }[m[3]];
-  // « 50 cl x 12 » : le nombre de pièces peut aussi suivre la taille.
-  const apres = m[1] ? null : t.slice(m.index + m[0].length).match(/^\s*x\s*(\d+)\b/);
-  return { qte: (m[1] ? Number(m[1]) : apres ? Number(apres[1]) : 1) * Number(m[2]) * facteur, type: m[3] === "kg" || m[3] === "g" ? "g" : "ml" };
-}
-
-// Deux formats sont « proches » s'ils sont de même nature et à moins de 25 % d'écart. Si l'un est illisible, on ne conclut pas.
-function formatsProches(a, b) {
-  const ca = contenance(a);
-  const cb = contenance(b);
-  if (!ca || !cb) return true;
-  if (ca.type !== cb.type) return false;
-  const rapport = ca.qte / cb.qte;
-  return rapport >= 0.8 && rapport <= 1.25;
-}
-
-// Prix au kilo ou au litre d'un produit, d'après son format ; chaîne vide si le format n'est pas un poids ou un volume.
-function prixAuKilo(texteFormat, prix) {
-  const c = contenance(texteFormat);
-  if (!c || prix === null || prix === undefined) return "";
-  return `${euros((prix / c.qte) * 1000)}/${c.type === "g" ? "kg" : "L"}`;
 }
 
 // Dernier code-barres connu pour ce produit dans ce magasin (utile pour Open Prices).
@@ -303,7 +274,7 @@ function indicesPrix(mags, produits) {
 // sinon, avec un grand panier, par indice de prix sur les produits connus de plusieurs magasins (au moins 3).
 function classerMagasins(mags) {
   const infos = mags.map((m) => ({ m, ...totalDe(m) }));
-  const complets = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const complets = infos.filter((x) => Prix.estComplet(x.connus, x.coches)).sort((a, b) => a.total - b.total);
   const ind = indicesPrix(mags, produitsCourse().filter((i) => coches.has(i)));
   const parIndice = infos.filter((x) => ind.get(x.m.id).n >= 3).sort((a, b) => ind.get(a.m.id).indice - ind.get(b.m.id).indice);
   const modeIndice = complets.length < 2 && parIndice.length >= 2;
