@@ -115,31 +115,30 @@
         <label class="choix-panier">Panier
           <select id="choix-panier"></select>
         </label>
-
         <div id="course-comparaison" class="carte-blanche comparaison">
-          <p id="classement-etiq" class="etiq">OÙ CE PANIER COÛTE LE MOINS ?</p>
+          <p id="classement-etiq" class="etiq" hidden>OÙ CE PANIER COÛTE LE MOINS ?</p>
           <div id="classement"></div>
-          <button type="button" id="choix-magasins" class="lien-discret lien-fleche" aria-expanded="false"><span id="choix-magasins-texte">Choisir les magasins affichés</span><i class="fleche-lien" aria-hidden="true"></i></button>
-          <div id="liste-choix-magasins" class="choix-magasins" hidden></div>
-          <p class="aide">Touchez un magasin pour afficher ou masquer sa colonne de prix dans la liste ci-dessous.</p>
         </div>
         <div class="carte-blanche">
-          <h2>Ma course</h2>
-          <p class="aide">Coche les produits dont tu as besoin. Touche un prix pour le modifier.</p>
-          <div class="actions">
+          <div class="outils-course">
+            <div id="recherche-course"><input type="search" class="recherche" id="recherche-course-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
+            <button type="button" id="plus-options" class="bouton-plus" aria-expanded="false" aria-label="Plus d'options">⋯</button>
+          </div>
+          <div id="plus-course" class="plus-course" hidden>
             <span id="nb-coches"></span>
             <button type="button" id="tout">Tout cocher</button>
             <button type="button" id="rien">Tout décocher</button>
             <button type="button" id="course-replier">Tout replier</button>
             <button type="button" id="course-deplier">Tout déplier</button>
+            <button type="button" id="tout-comparer-bouton">Tout comparer</button>
+            <button type="button" id="saisie-ouvrir">Saisir un prix</button>
+            <button type="button" id="choix-magasins" class="pleine-largeur" aria-expanded="false"><span id="choix-magasins-texte">Choisir les magasins affichés</span><i class="fleche-lien" aria-hidden="true"></i></button>
+            <div id="liste-choix-magasins" class="choix-magasins" hidden></div>
           </div>
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
-          <div id="recherche-course"><input type="search" class="recherche" id="recherche-course-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
           <div id="liste-course"></div>
           <section id="nettoyage" class="carte-nettoyage" hidden></section>
           <p id="course-total" class="course-total"></p>
-          <p class="aide">Un trait orange signale un prix relevé par toi. Le classement compare les magasins sur les produits cochés.</p>
-          <button type="button" id="tout-comparer-bouton" class="bouton-secondaire">Tout comparer</button>
         </div>
 
         <div id="libre-carte" class="carte-blanche">
@@ -176,7 +175,7 @@
           </div>
         </div>
 
-        <div class="carte-blanche">
+        <div class="carte-blanche" id="saisie-carte" hidden>
           <h2>Saisir un prix à la main</h2>
           <form id="saisie" class="formulaire">
             <label class="large">Produit

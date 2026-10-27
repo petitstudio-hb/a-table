@@ -550,6 +550,7 @@ function ouvrirSaisie(produit, magasin) {
   const champ = document.querySelector("#saisie-prix");
   champ.value = actuel === null ? "" : actuel.toFixed(2).replace(".", ",");
   document.querySelector("#saisie-code").value = dernierCode(Number(produit), magasin) || "";
+  document.querySelector("#saisie-carte").hidden = false; // le formulaire est replié sous « ⋯ » tant qu'on ne s'en sert pas
   document.querySelector("#saisie").scrollIntoView({ behavior: "smooth", block: "center" });
   champ.focus();
 }
@@ -743,6 +744,17 @@ function brancherEvenements() {
     }
     const b = e.target.closest("button.cellule");
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
+  });
+  // Le bouton « ⋯ » range les actions rares de Ma course (tout cocher, tout replier, tout comparer, saisir un prix, magasins affichés).
+  document.querySelector("#plus-options").addEventListener("click", (e) => {
+    const panneau = document.querySelector("#plus-course");
+    panneau.hidden = !panneau.hidden;
+    e.currentTarget.setAttribute("aria-expanded", String(!panneau.hidden));
+  });
+  document.querySelector("#saisie-ouvrir").addEventListener("click", () => {
+    const carte = document.querySelector("#saisie-carte");
+    carte.hidden = !carte.hidden;
+    if (!carte.hidden) carte.scrollIntoView({ behavior: "smooth", block: "start" });
   });
   document.querySelector("#tout-comparer-bouton").addEventListener("click", (e) => {
     const bloc = document.querySelector("#tout-comparer");

@@ -5,7 +5,7 @@
 
 const MAPLIBRE = { css: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css", js: "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js" };
 const FOND_CARTE = "https://tiles.openfreemap.org/styles/positron";
-const COULEURS_POINTS = { vert: "#1f8a4c", orange: "#e08a1e", rouge: "#c0392b", gris: "#9aa39c", neuf: "#faf8f0" };
+const COULEURS_POINTS = { vert: "#1d7a3f", orange: "#e08a1e", rouge: "#c0392b", gris: "#4b5f54", neuf: "#fbf9f1" };
 
 let modeMagasins = "liste"; // "liste" ou "carte"
 let carte = null; // objet MapLibre
@@ -50,7 +50,7 @@ function calculerPoints() {
 
 function elementPoint(p, numero) {
   const fond = COULEURS_POINTS[p.classe];
-  const texte = p.classe === "neuf" ? "#1b2a22" : "#fff";
+  const texte = p.classe === "neuf" ? "#13392a" : "#fff";
   const el = document.createElement("div");
   el.className = "point-carte";
   el.innerHTML = `<span style="background:${fond};color:${texte};border-color:${p.classe === "neuf" ? "#0e4d2f" : "#fff"}">${numero}</span>`;
