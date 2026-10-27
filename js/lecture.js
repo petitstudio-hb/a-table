@@ -27,10 +27,6 @@ function afficherReglages() {
   const choix = document.querySelector("#modele");
   choix.innerHTML = MODELES.map((m) => `<option value="${m.id}">${m.nom} (${m.cout})</option>`).join("");
   choix.value = modele();
-  // Même choix, en version courte, sur l'écran Photo.
-  const rapide = document.querySelector("#photo-modele");
-  rapide.innerHTML = MODELES.map((m) => `<option value="${m.id}">${m.court}</option>`).join("");
-  rapide.value = modele();
   document.querySelector("#cle-api").value = cleApi();
   document.querySelector("#photo-sans-cle").hidden = Boolean(cleApi());
   // Sous-titre de la ligne « Lecture des photos » : la clé n'est jamais affichée.
@@ -522,7 +518,7 @@ function valider() {
 function demarrerLecture() {
   afficherReglages();
 
-  for (const id of ["#photo-camera", "#photo-galerie", "#photo-fichier"]) {
+  for (const id of ["#photo-import"]) {
     document.querySelector(id).addEventListener("change", (e) => {
       recevoirPhotos(e.target.files);
       e.target.value = "";
@@ -576,12 +572,7 @@ function demarrerLecture() {
   });
   document.querySelector("#modele").addEventListener("change", (e) => {
     ecrire(CLE_MODELE, e.target.value);
-    document.querySelector("#photo-modele").value = e.target.value;
     messageCle("Modèle enregistré.", "ok");
-  });
-  document.querySelector("#photo-modele").addEventListener("change", (e) => {
-    ecrire(CLE_MODELE, e.target.value);
-    document.querySelector("#modele").value = e.target.value;
   });
   document.querySelector("#cle-effacer").addEventListener("click", () => {
     try { localStorage.removeItem(CLE_API); } catch (e) {}

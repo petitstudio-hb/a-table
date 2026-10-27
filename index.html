@@ -40,20 +40,10 @@
           <label><input type="radio" name="type-photo" value="etiquette"><span>Prix en rayon</span></label>
         </div>
 
-        <label class="gros-bouton" for="photo-camera" aria-label="Prendre une photo">
+        <label class="gros-bouton" for="photo-import" aria-label="Ajouter une photo ou un fichier">
           <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true"><path fill="currentColor" d="M9.4 4h5.2l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.9l1.5-2ZM12 17.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
         </label>
-        <input id="photo-camera" type="file" accept="image/*" capture="environment" hidden>
-
-        <label class="bouton-secondaire" for="photo-galerie">Choisir dans mes photos</label>
-        <input id="photo-galerie" type="file" accept="image/*" multiple hidden>
-
-        <label class="bouton-secondaire" for="photo-fichier">Importer un ticket numérique (PDF ou image)</label>
-        <input id="photo-fichier" type="file" accept="application/pdf,image/*" multiple hidden>
-
-        <label class="choix-modele">Lecture avec
-          <select id="photo-modele"></select>
-        </label>
+        <input id="photo-import" type="file" accept="image/*,application/pdf" multiple hidden>
 
         <p id="photo-etat" class="message" role="status"></p>
         <p id="photo-sans-cle" class="encart" hidden>Pour lire les photos, ajoute d'abord ta clé d'API Claude dans les <a href="#reglages">Réglages</a>.</p>
