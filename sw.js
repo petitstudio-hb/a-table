@@ -1,14 +1,14 @@
 // Mode hors connexion de Cabasito (E11) : un « service worker » garde les fichiers de l'appli dans le téléphone.
 // - Avec du réseau : on prend toujours la version la plus récente du site (et on la garde pour plus tard).
 // - Sans réseau, ou réseau trop lent : on sert la copie gardée. Les données (prix, paniers) sont déjà dans le téléphone.
-// - La carte (Leaflet et fond OpenStreetMap) est gardée au fur et à mesure qu'on la voit.
+// - La carte (MapLibre et fond OpenFreeMap) est gardée au fur et à mesure qu'on la voit.
 // Les appels à des services (IA, adresses, recherche de magasins) ne sont jamais gardés.
 // Pour forcer un nettoyage complet des copies, changer VERSION.
 
 const VERSION = "cabasito-v1";
 const CACHE_SITE = `${VERSION}-site`;
 const CACHE_CARTE = `${VERSION}-carte`;
-const MAX_TUILES = 300;
+const MAX_TUILES = 600;
 const DELAI_RESEAU = 4000; // au-delà, on préfère la copie gardée
 
 const FICHIERS = [
@@ -18,7 +18,7 @@ const FICHIERS = [
   "icones/icone-180.png", "icones/icone-192.png", "icones/icone-512.png", "icones/logo.svg",
   "polices/bricolage.woff2", "polices/courierprime-400.woff2", "polices/courierprime-700.woff2",
 ];
-const HOTES_CARTE = ["cdnjs.cloudflare.com", "tile.openstreetmap.org"];
+const HOTES_CARTE = ["cdnjs.cloudflare.com", "tile.openstreetmap.org", "tiles.openfreemap.org"];
 
 self.addEventListener("install", (e) => {
   // Un fichier introuvable ne doit pas empêcher d'installer les autres.
@@ -66,7 +66,12 @@ self.addEventListener("fetch", (e) => {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE_CARTE);
       const copie = await cache.match(req);
-      if (copie) return copie;
+      // Le style et la description des tuiles (OpenFreeMap) changent de temps en temps : réseau d'abord, copie si hors connexion.
+      const vivant = url.hostname === "tiles.openfreemap.org" && (url.pathname.startsWith("/styles/") || url.pathname === "/planet");
+      if (copie && !vivant) return copie;
+      if (vivant) {
+        try { const rep = await fetch(req); if (rep.ok) cache.put(req, rep.clone()); return rep; } catch (err) { if (copie) return copie; throw err; }
+      }
       const rep = await fetch(req);
       if (rep.ok || rep.type === "opaque") { cache.put(req, rep.clone()); limiter(cache, MAX_TUILES); }
       return rep;
