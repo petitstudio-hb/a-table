@@ -123,7 +123,7 @@ async function majCarte() {
   const sansPlace = MAGASINS.filter((m) => typeof m.lat !== "number").length;
   etat.textContent = pointsCarte.length
     ? (sansPlace ? `${sansPlace} magasin${sansPlace > 1 ? "s" : ""} de ta liste ${sansPlace > 1 ? "n'ont" : "n'a"} pas encore d'emplacement : une recherche plus bas les place sur la carte.` : "Touche un point pour voir le magasin.")
-    : "Aucun magasin placé pour l'instant. Lance une recherche plus bas (« Ma position » ou une adresse) : les magasins trouvés apparaissent ici.";
+    : "Aucun magasin placé pour l'instant. Ajoute un magasin avec « + Ajouter un magasin » : il apparaît ici.";
 }
 
 function majModeMagasins() {

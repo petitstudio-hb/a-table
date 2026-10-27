@@ -189,6 +189,14 @@ let centreChoisi = null; // adresse choisie dans la liste : { texte, lat, lon }
 let suggestionsAdresses = [];
 let minuteurAdresse;
 
+// Adresses proposées par la Base Adresse Nationale : { texte (complète), rue (numéro et rue), lat, lon }.
+async function chercherAdresses(q) {
+  const rep = await fetch(`${BAN}?q=${encodeURIComponent(q)}&limit=5&autocomplete=1`);
+  if (!rep.ok) return [];
+  const { features } = await rep.json();
+  return (features || []).map((f) => ({ texte: f.properties.label, rue: f.properties.name || f.properties.label, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }));
+}
+
 function afficherSuggestions() {
   const liste = document.querySelector("#trouver-suggestions");
   liste.hidden = suggestionsAdresses.length === 0;
@@ -202,11 +210,9 @@ document.querySelector("#trouver-adresse").addEventListener("input", (e) => {
   if (q.length < 3) { suggestionsAdresses = []; afficherSuggestions(); return; }
   minuteurAdresse = setTimeout(async () => {
     try {
-      const rep = await fetch(`${BAN}?q=${encodeURIComponent(q)}&limit=5&autocomplete=1`);
-      if (!rep.ok) return;
-      const { features } = await rep.json();
+      const trouvees = await chercherAdresses(q);
       if (document.querySelector("#trouver-adresse").value.trim() !== q) return; // le champ a changé entre-temps
-      suggestionsAdresses = (features || []).map((f) => ({ texte: f.properties.label, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] }));
+      suggestionsAdresses = trouvees;
       afficherSuggestions();
     } catch (err) { /* sans suggestions, la recherche par « Chercher » reste possible */ }
   }, 300);
@@ -237,3 +243,109 @@ function placerMagasinsConnus() {
   }
   if (change) sauvegarder();
 }
+
+// ---------- Ajouter un magasin : l'adresse d'abord (séance 37) ----------
+// On tape l'adresse (liste de la Base Adresse Nationale) ; l'adresse choisie propose les supermarchés qui s'y trouvent (OpenStreetMap)
+// et le nom se remplit tout seul. Si aucun n'est connu, on tape le nom. « Autour de moi » ouvre la recherche par position.
+const panneauAjout = document.querySelector("#ajout-magasin");
+const champAjoutAdresse = document.querySelector("#aj-adresse");
+const champAjoutNom = document.querySelector("#aj-nom");
+let ajoutChoisi = null; // { rue, lat, lon, osm } de l'adresse choisie, ou du magasin choisi dans la liste
+let ajoutSuggestions = [];
+let ajoutTrouves = [];
+let minuteurAjout;
+
+function ouvrirAjoutMagasin() {
+  document.querySelector("#trouver").hidden = true;
+  panneauAjout.hidden = false;
+  document.querySelector("#ajouter-magasin").hidden = true;
+  champAjoutAdresse.value = "";
+  champAjoutNom.value = "";
+  ajoutChoisi = null;
+  ajoutSuggestions = [];
+  ajoutTrouves = [];
+  document.querySelector("#aj-suggestions").hidden = true;
+  document.querySelector("#aj-trouves").hidden = true;
+  panneauAjout.scrollIntoView({ behavior: "smooth", block: "start" });
+  champAjoutAdresse.focus();
+}
+
+function fermerAjoutMagasin() {
+  panneauAjout.hidden = true;
+  document.querySelector("#ajouter-magasin").hidden = false;
+}
+
+champAjoutAdresse.addEventListener("input", () => {
+  ajoutChoisi = null;
+  document.querySelector("#aj-trouves").hidden = true;
+  clearTimeout(minuteurAjout);
+  const q = champAjoutAdresse.value.trim();
+  const liste = document.querySelector("#aj-suggestions");
+  if (q.length < 3) { liste.hidden = true; return; }
+  minuteurAjout = setTimeout(async () => {
+    try {
+      const trouvees = await chercherAdresses(q);
+      if (champAjoutAdresse.value.trim() !== q) return;
+      ajoutSuggestions = trouvees;
+      liste.hidden = !trouvees.length;
+      liste.innerHTML = trouvees.map((s, k) => `<li><button type="button" data-aj-adresse="${k}">${echapper(s.texte)}</button></li>`).join("");
+    } catch (err) { /* sans suggestions, le nom et l'adresse peuvent être tapés à la main */ }
+  }, 300);
+});
+
+document.querySelector("#aj-suggestions").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-aj-adresse]");
+  if (!b) return;
+  const s = ajoutSuggestions[Number(b.dataset.ajAdresse)];
+  champAjoutAdresse.value = s.texte;
+  document.querySelector("#aj-suggestions").hidden = true;
+  ajoutChoisi = { rue: s.rue, lat: s.lat, lon: s.lon, osm: null };
+  const zone = document.querySelector("#aj-trouves");
+  const etiq = document.querySelector("#aj-trouves-etiq");
+  const liste = document.querySelector("#aj-trouves-liste");
+  zone.hidden = false;
+  liste.innerHTML = "";
+  etiq.textContent = "Recherche des magasins à cette adresse…";
+  try {
+    if (!navigator.onLine) throw new Error("Pas de réseau : tape le nom du magasin ci-dessous.");
+    ajoutTrouves = (await chercherMagasins({ lat: s.lat, lon: s.lon }, 120)).slice(0, 5);
+  } catch (err) {
+    ajoutTrouves = [];
+    etiq.textContent = err.message.startsWith("Pas de réseau") ? err.message : "Recherche indisponible : tape le nom du magasin ci-dessous.";
+    return;
+  }
+  etiq.textContent = ajoutTrouves.length ? "Magasins à cette adresse" : "Aucun supermarché connu à cette adresse : tape son nom ci-dessous.";
+  liste.innerHTML = ajoutTrouves.map((m, k) => `<button type="button" class="choix-magasin" data-aj-choix="${k}">${echapper(m.nom)}<small>${echapper(m.rue || s.rue)}</small></button>`).join("");
+  if (ajoutTrouves.length === 1) choisirMagasinAjout(0);
+  else if (!ajoutTrouves.length) champAjoutNom.focus();
+});
+
+function choisirMagasinAjout(k) {
+  const m = ajoutTrouves[k];
+  champAjoutNom.value = m.nom;
+  ajoutChoisi = { rue: m.rue || ajoutChoisi?.rue || "", lat: m.lat, lon: m.lon, osm: m.osm };
+}
+document.querySelector("#aj-trouves-liste").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-aj-choix]");
+  if (b) choisirMagasinAjout(Number(b.dataset.ajChoix));
+});
+
+document.querySelector("#aj-enregistrer").addEventListener("click", () => {
+  const nom = champAjoutNom.value.trim();
+  if (!nom) { notifier("Donne un nom au magasin."); return; }
+  if (ajoutChoisi?.osm && magasinConnu({ nom, rue: ajoutChoisi.rue, osm: ajoutChoisi.osm })) { notifier(`${nom} est déjà dans ta liste.`); return; }
+  const id = ajouterMagasin(nom, ajoutChoisi?.rue || champAjoutAdresse.value.trim());
+  if (ajoutChoisi && typeof ajoutChoisi.lat === "number") Object.assign(MAGASINS.find((x) => x.id === id), { lat: ajoutChoisi.lat, lon: ajoutChoisi.lon, ...(ajoutChoisi.osm ? { osm: ajoutChoisi.osm } : {}) });
+  sauvegarder();
+  fermerAjoutMagasin();
+  toutAfficher();
+  notifier(`${nom} ajouté.`);
+  if (typeof majCarte === "function") majCarte();
+});
+document.querySelector("#aj-annuler").addEventListener("click", fermerAjoutMagasin);
+document.querySelector("#aj-autour").addEventListener("click", () => {
+  fermerAjoutMagasin();
+  const bloc = document.querySelector("#trouver");
+  bloc.hidden = false;
+  bloc.scrollIntoView({ behavior: "smooth", block: "start" });
+});

@@ -945,3 +945,14 @@ input, select, textarea { font-size: 16px !important; }
 .plus-course > button.pleine-largeur { flex: 1 1 100%; display: flex; justify-content: space-between; align-items: center; }
 .plus-course .choix-magasins { flex: 1 1 100%; }
 .pleine-largeur[aria-expanded="true"] .fleche-lien { transform: rotate(-135deg); margin-bottom: -2px; }
+
+/* Séance 37 : Magasins plus simple (Où aller ? sur une ligne, ligne = toucher pour modifier, ajout par l'adresse d'abord) */
+#ou-aller { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px; }
+#ou-aller select { flex: 1; min-width: 0; }
+#ou-aller-resultat { flex: 1 1 100%; }
+#liste-magasins > li:not(.modif) { cursor: pointer; }
+#liste-magasins .fleche { position: relative; flex: none; display: block; width: 32px; height: 32px; font-size: 0; color: var(--accent); }
+#liste-magasins .fleche::before { content: ""; position: absolute; left: 8px; top: 9px; width: 14px; height: 14px; border-right: 4px solid currentColor; border-top: 4px solid currentColor; transform: rotate(45deg); }
+.choix-magasin { display: block; width: 100%; text-align: left; padding: 12px; margin-bottom: 6px; border: 1.5px solid var(--accent); background: #fff; font: inherit; font-weight: 700; color: var(--accent); cursor: pointer; }
+.choix-magasin small { display: block; font-weight: 400; color: var(--discret); }
+#aj-autour { margin-top: 8px; }

@@ -203,19 +203,13 @@
       <!-- ========== MAGASINS ========== -->
       <section id="vue-magasins" class="vue" hidden>
         <div id="ou-aller" class="carte-blanche">
-          <h2>Où aller ?</h2>
-          <p class="aide">Le magasin le plus avantageux près de vous pour votre panier de Ma course (produits cochés). Votre position n'est pas enregistrée.</p>
-          <div class="formulaire">
-            <label>Distance maximale
-              <select id="ou-aller-rayon">
-                <option value="1000">1 km</option>
-                <option value="2000" selected>2 km</option>
-                <option value="5000">5 km</option>
-                <option value="20000">20 km</option>
-              </select>
-            </label>
-          </div>
-          <div class="actions"><button type="button" id="ou-aller-bouton" class="principal">Où aller ?</button></div>
+          <select id="ou-aller-rayon" aria-label="Distance maximale">
+            <option value="1000">1 km</option>
+            <option value="2000" selected>2 km</option>
+            <option value="5000">5 km</option>
+            <option value="20000">20 km</option>
+          </select>
+          <button type="button" id="ou-aller-bouton" class="principal">Où aller ?</button>
           <div id="ou-aller-resultat" aria-live="polite"></div>
         </div>
 
@@ -226,9 +220,27 @@
 
         <div class="carte-blanche">
           <h2>Mes supermarchés</h2>
-          <p class="aide">Les magasins que tu compares. Désactive « Affiché » pour masquer un magasin dans « Ma course » sans le supprimer.</p>
           <ul id="liste-magasins" class="releves"></ul>
           <button type="button" id="ajouter-magasin" class="bouton-secondaire">+ Ajouter un magasin</button>
+        </div>
+
+        <div id="ajout-magasin" class="carte-blanche" hidden>
+          <h2>Ajouter un magasin</h2>
+          <div class="formulaire">
+            <label class="large">Adresse
+              <input id="aj-adresse" type="text" placeholder="ex. 10 rue Lepic, Paris" autocomplete="off" aria-controls="aj-suggestions">
+            </label>
+            <ul id="aj-suggestions" class="suggestions-adresses" hidden></ul>
+            <div id="aj-trouves" class="large" hidden>
+              <p id="aj-trouves-etiq" class="etiq"></p>
+              <div id="aj-trouves-liste"></div>
+            </div>
+            <label class="large">Nom du magasin
+              <input id="aj-nom" type="text" placeholder="rempli quand tu choisis un magasin" autocomplete="off">
+            </label>
+          </div>
+          <div class="actions"><button type="button" id="aj-annuler">Annuler</button><button type="button" id="aj-enregistrer" class="principal">Enregistrer</button></div>
+          <button type="button" id="aj-autour" class="lien-discret">Ou chercher autour de moi</button>
         </div>
 
         <div id="carte-magasins" class="carte-blanche" hidden>
@@ -242,9 +254,8 @@
           <p id="carte-etat" class="aide"></p>
         </div>
 
-        <div id="trouver" class="carte-blanche">
-          <h2>Trouver des magasins</h2>
-          <p class="aide">Cherche les supermarchés autour de toi (données OpenStreetMap). Ta position sert seulement à la recherche : elle n'est pas enregistrée.</p>
+        <div id="trouver" class="carte-blanche" hidden>
+          <h2>Autour de moi</h2>
           <div class="formulaire">
             <label>Rayon
               <select id="trouver-rayon">

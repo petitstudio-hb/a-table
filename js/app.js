@@ -443,7 +443,7 @@ function calculer() {
 
 // ---------- Magasins ----------
 
-let magasinEnModification = null; // identifiant du magasin en cours de modification ("__nouveau" pour un ajout)
+let magasinEnModification = null; // identifiant du magasin en cours de modification
 
 function afficherMagasins() {
   const liste = document.querySelector("#liste-magasins");
@@ -454,6 +454,7 @@ function afficherMagasins() {
         <label>Rue<input type="text" data-champ="adresse" value="${echapper(m.adresse)}" placeholder="ex. 12 rue de Clignancourt"></label>
       </div>
       <div class="actions"><button type="button" data-annuler-magasin>Annuler</button><button type="button" class="principal" data-enregistrer-magasin="${m.id}">Enregistrer</button></div>
+      <button type="button" class="lien-discret" data-supprimer-magasin="${m.id}">Supprimer ce magasin</button>
     </li>`;
   let html = MAGASINS.map((m) => {
     if (m.id === magasinEnModification) return formulaire(m);
@@ -464,15 +465,12 @@ function afficherMagasins() {
           <span class="date">${echapper(m.adresse) || "Rue non renseignée"} · ${n} relevé${n > 1 ? "s" : ""}</span></span>
         <span class="boutons">
           <label class="interrupteur" title="Afficher dans Ma course"><input type="checkbox" data-afficher="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>Affiché</span></label>
-          <button type="button" data-modifier-magasin="${m.id}">Modifier</button>
-          <button type="button" data-supprimer-magasin="${m.id}" aria-label="Supprimer ${echapper(m.nom)}">✕</button>
+          <span class="fleche" aria-hidden="true">›</span>
         </span>
       </li>`;
   }).join("");
-  if (magasinEnModification === "__nouveau") html += formulaire({ id: "__nouveau", nom: "", adresse: "" });
   if (!html) html = `<li class="vide">Aucun magasin. Ajoute-en un avec le bouton ci-dessous.</li>`;
   liste.innerHTML = html;
-  document.querySelector("#ajouter-magasin").hidden = magasinEnModification === "__nouveau";
 }
 
 // ---------- Mes relevés ----------
@@ -849,8 +847,9 @@ function brancherEvenements() {
     toutAfficher();
   });
   listeMagasins.addEventListener("click", (e) => {
-    const mod = e.target.closest("[data-modifier-magasin]");
-    if (mod) { magasinEnModification = mod.dataset.modifierMagasin; afficherMagasins(); return; }
+    // Toucher une ligne ouvre sa modification (la suppression s'y trouve) ; l'interrupteur « Affiché » reste un geste à part.
+    const ligne = e.target.closest("li[data-id]:not(.modif)");
+    if (ligne && !e.target.closest(".interrupteur")) { magasinEnModification = ligne.dataset.id; afficherMagasins(); return; }
     if (e.target.closest("[data-annuler-magasin]")) { magasinEnModification = null; afficherMagasins(); return; }
     const enr = e.target.closest("[data-enregistrer-magasin]");
     if (enr) {
@@ -858,8 +857,7 @@ function brancherEvenements() {
       const nom = li.querySelector('[data-champ="nom"]').value.trim();
       const adresse = li.querySelector('[data-champ="adresse"]').value.trim();
       if (!nom) { notifier("Donne un nom au magasin."); return; }
-      if (enr.dataset.enregistrerMagasin === "__nouveau") ajouterMagasin(nom, adresse);
-      else Object.assign(MAGASINS.find((m) => m.id === enr.dataset.enregistrerMagasin), { nom, adresse });
+      Object.assign(MAGASINS.find((m) => m.id === enr.dataset.enregistrerMagasin), { nom, adresse });
       magasinEnModification = null;
       sauvegarder();
       toutAfficher();
@@ -879,11 +877,7 @@ function brancherEvenements() {
       toutAfficher();
     }
   });
-  document.querySelector("#ajouter-magasin").addEventListener("click", () => {
-    magasinEnModification = "__nouveau";
-    afficherMagasins();
-    listeMagasins.querySelector('[data-champ="nom"]')?.focus();
-  });
+  document.querySelector("#ajouter-magasin").addEventListener("click", () => ouvrirAjoutMagasin()); // voir trouver.js
 
   // Tout replier / tout déplier, dans Mes relevés et dans Ma course.
   const rayonsDe = () => [...new Set(PANIER.map((p) => p.rayon))];
