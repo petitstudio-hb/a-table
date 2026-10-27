@@ -303,15 +303,17 @@
             <button type="button" id="mode-ticket" aria-pressed="false">Mes achats</button>
           </div>
           <div id="releves-rayons">
-            <p class="aide">Tous les prix enregistrés, classés par rayon, du plus récent au plus ancien.</p>
-            <div class="actions">
+            <div class="outils-releves">
+              <div id="recherche-releves"><input type="search" class="recherche" id="recherche-releves-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
+              <button type="button" id="plus-releves" class="bouton-plus" aria-expanded="false" aria-label="Plus d'options">⋯</button>
+            </div>
+            <div id="plus-releves-zone" class="plus-panier" hidden>
               <button type="button" id="releves-replier">Tout replier</button>
               <button type="button" id="releves-deplier">Tout déplier</button>
             </div>
             <ul id="liste-releves" class="releves"></ul>
           </div>
           <div id="achats" hidden>
-            <p class="aide">Vos achats lus sur tickets : combien vous dépensez, et le détail de chaque ticket.</p>
             <div id="achats-kpi" class="kpi"></div>
             <div id="achats-semaines"></div>
             <div id="achats-liste"></div>

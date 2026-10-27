@@ -476,6 +476,7 @@ function afficherMagasins() {
 // ---------- Mes relevés ----------
 
 let enModification = null; // indice du relevé en cours de modification
+let rechercheReleves = ""; // texte cherché dans Mes relevés (sans accent, non mémorisé)
 
 function afficherReleves() {
   const liste = document.querySelector("#liste-releves");
@@ -486,16 +487,17 @@ function afficherReleves() {
   }
   const lignes = releves
     .map((r, k) => ({ r, k }))
+    .filter(({ r }) => !rechercheReleves || sansAccent(`${PANIER[r.produit].nom} ${r.marque || ""} ${nomMagasin(r.magasin)}`).includes(rechercheReleves))
     .sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k);
   // Regroupés par rayon, dans l'ordre des rayons de la liste ; chaque rayon se replie.
   const rayons = [...new Set(PANIER.map((p) => p.rayon))].filter((rayon) => lignes.some(({ r }) => PANIER[r.produit].rayon === rayon));
   liste.innerHTML = rayons.map((rayon) => {
     const groupe = lignes.filter(({ r }) => PANIER[r.produit].rayon === rayon);
-    const replie = relevesReplies.has(rayon);
+    const replie = !rechercheReleves && relevesReplies.has(rayon); // pendant une recherche, tout est déplié
     return `<li class="rayon-releve"><button type="button" class="rayon-titre" data-rayon-releve="${echapper(rayon)}" aria-expanded="${!replie}">
       <span>${echapper(rayon)} · ${groupe.length}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`
       + (replie ? "" : ligneReleves(groupe));
-  }).join("");
+  }).join("") || `<li class="vide">Aucun relevé ne correspond à « ${echapper(document.querySelector("#recherche-releves-champ").value.trim())} ».</li>`;
 }
 
 function ligneReleves(groupe) {
@@ -514,13 +516,14 @@ function ligneReleves(groupe) {
               <label class="case"><input type="checkbox" data-champ="promo" ${r.promo ? "checked" : ""}> En promo</label>
             </div>
             <div class="actions"><button type="button" data-annuler>Annuler</button><button type="button" class="principal" data-enregistrer="${k}">Enregistrer</button></div>
+            <button type="button" class="lien-discret" data-supprimer="${k}">Supprimer ce relevé</button>
           </li>`;
       }
       return `
-        <li>
+        <li data-k="${k}">
           <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <span class=\"badge-promo\">PROMO</span>" : ""}
           <span class="date">${r.marque ? `${echapper(r.marque)} · ` : ""}${r.variante ? `variante : ${echapper(r.variante)} · ` : ""}${prixAuKilo(p.format, r.prix) ? `${prixAuKilo(p.format, r.prix)} · ` : ""}${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
-          <span class="boutons"><button type="button" data-modifier="${k}">Modifier</button><button type="button" data-supprimer="${k}" aria-label="Supprimer">✕</button></span>
+          <span class="fleche" aria-hidden="true">›</span>
         </li>`;
     })
     .join("");
@@ -820,8 +823,9 @@ function brancherEvenements() {
       toutAfficher();
       return;
     }
-    const mod = e.target.closest("[data-modifier]");
-    if (mod) { enModification = Number(mod.dataset.modifier); afficherReleves(); return; }
+    // Toucher une ligne ouvre sa modification (la suppression s'y trouve).
+    const ligne = e.target.closest("li[data-k]:not(.modif)");
+    if (ligne) { enModification = Number(ligne.dataset.k); afficherReleves(); return; }
     if (e.target.closest("[data-annuler]")) { enModification = null; afficherReleves(); return; }
     const enr = e.target.closest("[data-enregistrer]");
     if (enr) {
@@ -878,6 +882,14 @@ function brancherEvenements() {
     }
   });
   document.querySelector("#ajouter-magasin").addEventListener("click", () => ouvrirAjoutMagasin()); // voir trouver.js
+
+  // Mes relevés : recherche, et « ⋯ » qui range Tout replier / Tout déplier.
+  document.querySelector("#recherche-releves-champ").addEventListener("input", (e) => { rechercheReleves = sansAccent(e.target.value.trim()); afficherReleves(); });
+  document.querySelector("#plus-releves").addEventListener("click", (e) => {
+    const zone = document.querySelector("#plus-releves-zone");
+    zone.hidden = !zone.hidden;
+    e.currentTarget.setAttribute("aria-expanded", String(!zone.hidden));
+  });
 
   // Tout replier / tout déplier, dans Mes relevés et dans Ma course.
   const rayonsDe = () => [...new Set(PANIER.map((p) => p.rayon))];

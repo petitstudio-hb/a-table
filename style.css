@@ -790,8 +790,6 @@ input, select, textarea { font-size: 16px !important; }
 
 /* Séance 31 : exclure un ticket de Mes achats */
 .ticket summary .etiquette { margin-left: auto; }
-.ticket-croix { flex: none; width: 36px; height: 36px; border: none; background: none; color: var(--discret); font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0 0 3px; }
-.ticket-action { flex: none; min-height: 36px; padding: 0 10px; border: 1.5px solid var(--accent); background: var(--carte); color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; }
 .exclus { margin-top: 16px; border-top: 2px solid var(--accent); }
 .exclus[hidden] { display: none; }
 .exclus > summary { padding: 12px 2px; font-weight: 800; color: var(--accent); cursor: pointer; }
@@ -961,3 +959,16 @@ input, select, textarea { font-size: 16px !important; }
 .plus-panier button.danger { color: var(--rouge); border-color: var(--rouge); }
 .ligne-case { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 4px; cursor: pointer; }
 .ligne-case input { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }
+
+/* Séance 37 : Mes relevés plus simple (lignes à toucher, recherche + ⋯, tickets dépliés) */
+.outils-releves { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; }
+.outils-releves #recherche-releves { flex: 1; }
+#liste-releves > li[data-k]:not(.modif) { cursor: pointer; align-items: center; }
+#liste-releves > li[data-k]:not(.modif) .fleche { position: relative; flex: none; display: block; width: 32px; height: 32px; font-size: 0; color: var(--accent); }
+#liste-releves > li[data-k]:not(.modif) .fleche::before { content: ""; position: absolute; left: 8px; top: 9px; width: 14px; height: 14px; border-right: 4px solid currentColor; border-top: 4px solid currentColor; transform: rotate(45deg); }
+#liste-releves .modif > .lien-discret { display: block; margin: 6px auto 0; }
+.ticket > .lien-discret { display: block; margin: 8px auto 10px; }
+.ticket > summary, .exclus > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; list-style: none; cursor: pointer; }
+.ticket > summary::-webkit-details-marker, .exclus > summary::-webkit-details-marker { display: none; }
+.ticket > summary::after, .exclus > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin: 0 8px 4px 4px; border-right: 3px solid var(--accent); border-bottom: 3px solid var(--accent); transform: rotate(45deg); }
+.ticket[open] > summary::after, .exclus[open] > summary::after { transform: rotate(-135deg); margin-bottom: -2px; }

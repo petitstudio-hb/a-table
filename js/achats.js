@@ -4,6 +4,7 @@
 // qui n'en ont pas, on regroupe ceux d'un même magasin, d'un même jour, lus sur ticket.
 
 let modeReleves = "rayon"; // "rayon" ou "ticket"
+let semainesOuvertes = false; // la dépense par semaine est repliée au départ
 
 // Ce qui a été payé pour la ligne : le montant lu sur le ticket ; pour les anciens relevés, prix × quantité (le prix seul pour le vrac, dont la quantité est un poids).
 const montantDe = (r) => (typeof r.montant === "number" ? r.montant : Math.round(r.prix * (Number.isInteger(r.quantite) ? r.quantite || 1 : 1) * 100) / 100);
@@ -47,7 +48,6 @@ function afficherAchats() {
 
   const zoneExclus = `<details class="exclus" ${exclus.length ? "" : "hidden"}>
       <summary>Tickets exclus (${exclus.length})</summary>
-      <p class="aide">Ces tickets ne comptent plus dans les dépenses, mais leurs prix restent dans l'appli.</p>
       ${exclus.map((t) => ticketHtml(t, true)).join("")}
     </details>`;
 
@@ -75,24 +75,28 @@ function afficherAchats() {
     d.setUTCDate(d.getUTCDate() - 7);
   }
   const max = Math.max(...semaines.map((s) => s.total), 1);
-  document.querySelector("#achats-semaines").innerHTML = `<p class="etiq">DÉPENSE PAR SEMAINE</p>` + semaines.map((s) => `
-    <div class="barre-sem"><span>sem. du ${dateFr(s.iso).slice(0, 5)}</span><i style="width:${Math.round((s.total / max) * 100)}%"></i><b class="mono">${s.total ? euros(s.total) : "—"}</b></div>`).join("");
+  // Les barres sont repliées derrière « Dépense par semaine » (les trois cases du haut suffisent d'un coup d'œil).
+  document.querySelector("#achats-semaines").innerHTML = `<button type="button" class="lien-fleche" id="semaines-bouton" aria-expanded="${semainesOuvertes}"><span>Dépense par semaine</span><i class="fleche-lien" aria-hidden="true"></i></button>
+    <div id="semaines-detail" ${semainesOuvertes ? "" : "hidden"}>` + semaines.map((s) => `
+    <div class="barre-sem"><span>sem. du ${dateFr(s.iso).slice(0, 5)}</span><i style="width:${Math.round((s.total / max) * 100)}%"></i><b class="mono">${s.total ? euros(s.total) : "—"}</b></div>`).join("") + `</div>`;
 
   document.querySelector("#achats-liste").innerHTML = `<p class="etiq">MES TICKETS</p>` + tickets.map((t) => ticketHtml(t, false)).join("") + zoneExclus;
 }
 
-// Un ticket déplié : ses lignes. La croix l'exclut de Mes achats (repère `exclu` sur ses relevés, rien n'est supprimé) ; « Remettre » le ramène.
+// Un ticket déplié : ses lignes, puis « Exclure ce ticket des dépenses » (repère `exclu` sur ses relevés, rien n'est supprimé) ou « Remettre dans mes achats ».
 function ticketHtml(t, exclu) {
+  // Exclure ou remettre : dans le ticket déplié (un geste à risque ne doit pas être sous le doigt dans la liste).
   const action = exclu
-    ? `<button type="button" class="ticket-action" data-remettre="${echapper(t.cle)}">Remettre</button>`
-    : `<button type="button" class="ticket-croix" data-exclure="${echapper(t.cle)}" aria-label="Exclure ce ticket de Mes achats">×</button>`;
+    ? `<button type="button" class="lien-discret" data-remettre="${echapper(t.cle)}">Remettre dans mes achats</button>`
+    : `<button type="button" class="lien-discret" data-exclure="${echapper(t.cle)}">Exclure ce ticket des dépenses</button>`;
   return `
     <details class="ticket">
-      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b>${adresseMagasin(t.magasin) ? `<small>${echapper(adresseMagasin(t.magasin))}</small>` : ""}<small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span>${action}</summary>
+      <summary><span><b>${echapper(nomMagasin(t.magasin))}</b>${adresseMagasin(t.magasin) ? `<small>${echapper(adresseMagasin(t.magasin))}</small>` : ""}<small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span></summary>
       <ul>${t.lignes.map((r) => {
         const p = PANIER[r.produit];
         return `<li><span>${echapper(p?.nom || "Produit supprimé")}${r.marque ? ` <small>${echapper(r.marque)}</small>` : ""}${r.promo ? ` <span class="badge-promo">PROMO</span>` : ""}${r.quantite && r.quantite !== 1 ? ` <small>× ${String(r.quantite).replace(".", ",")}</small>` : ""}</span><b class="mono">${euros(montantDe(r))}</b></li>`;
       }).join("")}</ul>
+      ${action}
     </details>`;
 }
 
@@ -135,3 +139,11 @@ document.querySelector("#mode-ticket").addEventListener("click", () => { modeRel
 function adresseMagasin(id) {
   return MAGASINS.find((m) => m.id === id)?.adresse || "";
 }
+
+document.querySelector("#achats-semaines").addEventListener("click", (e) => {
+  const bouton = e.target.closest("#semaines-bouton");
+  if (!bouton) return;
+  semainesOuvertes = !semainesOuvertes;
+  bouton.setAttribute("aria-expanded", String(semainesOuvertes));
+  document.querySelector("#semaines-detail").hidden = !semainesOuvertes;
+});
