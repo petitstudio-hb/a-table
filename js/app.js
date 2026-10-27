@@ -194,11 +194,15 @@ function notifier(texte) {
 
 // ---------- Navigation ----------
 
-const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "liste", "sauvegarde", "notifications", "apropos", "reglages"];
+const VUES = ["photo", "verif", "course", "magasins", "paniers", "releves", "liste", "reglages"];
+// Les anciens écrans Sauvegarde, Notifications et À propos sont des sections de Réglages : leurs liens ouvrent la bonne section.
+const SECTIONS_REGLAGES = { sauvegarde: "sauvegarde", notifications: "sauvegarde", apropos: "aide" };
 // Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
-const VUES_PROFIL = ["releves", "liste", "sauvegarde", "notifications", "apropos", "reglages"];
+const VUES_PROFIL = ["releves", "liste", "reglages"];
 
 function montrer(vue) {
+  const section = SECTIONS_REGLAGES[vue];
+  if (section) vue = "reglages";
   if (!VUES.includes(vue)) vue = "photo";
   if (vue === "verif" && !window.verificationEnCours) vue = "photo";
   for (const v of VUES) document.querySelector(`#vue-${v}`).hidden = v !== vue;
@@ -207,6 +211,7 @@ function montrer(vue) {
   fermerProfil();
   if (vue !== "paniers" && typeof fermerPanier === "function") fermerPanier();
   if (vue === "liste" && typeof afficherListe === "function") afficherListe();
+  if (vue === "reglages" && typeof ouvrirReglage === "function") ouvrirReglage(section);
   if (vue === "course" && typeof majNotifs === "function") majNotifs();
   window.scrollTo(0, 0);
 }
@@ -903,7 +908,6 @@ function brancherEvenements() {
   document.addEventListener("click", (e) => { if (!e.target.closest("#profil-menu")) fermerProfil(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") fermerProfil(); });
   document.querySelector("#profil-menu").addEventListener("click", (e) => {
-    if (e.target.closest("[data-bientot]")) { notifier("Bientôt disponible."); return; }
     if (e.target.closest("a")) fermerProfil();
   });
 
@@ -913,7 +917,8 @@ function brancherEvenements() {
     e.target.value = "";
   });
   document.querySelector("#importer").addEventListener("change", (e) => {
-    if (e.target.files[0]) importer(e.target.files[0]);
+    // Remplacer efface les données actuelles : on demande confirmation (la fusion, elle, ne supprime rien).
+    if (e.target.files[0] && confirm("Remplacer toutes les données de cet appareil par celles de ce fichier ? Pense à télécharger une sauvegarde avant.")) importer(e.target.files[0]);
     e.target.value = "";
   });
 }

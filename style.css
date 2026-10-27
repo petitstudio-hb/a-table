@@ -547,7 +547,7 @@ input, select, textarea { font-size: 16px !important; }
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
 }
-.profil-menu a, .profil-menu .bientot {
+.profil-menu a {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -560,8 +560,6 @@ input, select, textarea { font-size: 16px !important; }
   font-size: 1rem;
 }
 .profil-menu a:hover, .profil-menu a:focus-visible { background: var(--fond); }
-.profil-menu .bientot { color: var(--discret); cursor: default; }
-.profil-menu .bientot small { padding: 2px 8px; border-radius: 999px; background: var(--ligne); font-size: 0.72rem; white-space: nowrap; }
 .profil-menu hr { border: none; border-top: 1px solid var(--ligne); margin: 6px 4px; }
 
 .releves li.rayon-releve { display: block; padding: 0; border: none; }
@@ -953,9 +951,9 @@ input, select, textarea { font-size: 16px !important; }
 /* Séance 37 : Mes paniers plus simple (une liste à cases, « ⋯ » pour dupliquer, renommer, supprimer) */
 .outils-panier { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
 .outils-panier .champ-recherche { flex: 1; }
-.plus-panier { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; padding: 8px; background: var(--carte); border: 1.5px dashed var(--discret); }
-.plus-panier[hidden] { display: none; }
-.plus-panier button { flex: 1 1 30%; padding: 10px 6px; border: 1.5px solid var(--accent); background: #fff; color: var(--accent); font: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+.plus-panier, .plus-reglage { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; padding: 8px; background: var(--carte); border: 1.5px dashed var(--discret); }
+.plus-panier[hidden], .plus-reglage[hidden] { display: none; }
+.plus-panier button, .plus-reglage button, .plus-reglage label { flex: 1 1 30%; padding: 10px 6px; border: 1.5px solid var(--accent); background: #fff; color: var(--accent); font: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
 .plus-panier button.danger { color: var(--rouge); border-color: var(--rouge); }
 .ligne-case { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 4px; cursor: pointer; }
 .ligne-case input { width: 24px; height: 24px; flex: none; accent-color: var(--accent); }
@@ -972,3 +970,16 @@ input, select, textarea { font-size: 16px !important; }
 .ticket > summary::-webkit-details-marker, .exclus > summary::-webkit-details-marker { display: none; }
 .ticket > summary::after, .exclus > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin: 0 8px 4px 4px; border-right: 3px solid var(--accent); border-bottom: 3px solid var(--accent); transform: rotate(45deg); }
 .ticket[open] > summary::after, .exclus[open] > summary::after { transform: rotate(-135deg); margin-bottom: -2px; }
+
+/* Séance 37 : Réglages en un seul écran (trois lignes à déplier) */
+.reglage { border-bottom: 1px dashed var(--ligne); }
+.reglage-titre { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 14px 4px; border: none; background: none; font: inherit; text-align: left; color: inherit; cursor: pointer; }
+.reglage-titre small { display: block; color: var(--discret); font-weight: 400; font-size: 0.8rem; }
+.reglage-titre .fleche-lien { color: var(--accent); margin: 0 8px 4px 4px; }
+.reglage-titre[aria-expanded="true"] .fleche-lien { transform: rotate(-135deg); margin-bottom: -2px; }
+.reglage-corps { padding: 0 4px 14px; }
+.reglage-corps[hidden] { display: none; }
+.actions-reglage { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.actions-reglage .principal { flex: 1; }
+.plus-reglage { margin-top: 8px; }
+.plus-reglage .bouton-secondaire { display: block; text-align: center; }

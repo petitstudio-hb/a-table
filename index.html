@@ -25,15 +25,7 @@
         <nav id="profil-menu" class="profil-menu" aria-label="Mon profil" hidden>
           <a href="#releves">Mes relevés</a>
           <a href="#liste">Gérer ma liste</a>
-          <a href="#sauvegarde">Sauvegarde et restauration</a>
-          <a href="#reglages">Réglages</a>
-          <hr>
-          <span class="bientot" aria-disabled="true" data-bientot>Apparence <small>Bientôt</small></span>
-          <a href="#notifications">Notifications</a>
-          <span class="bientot" aria-disabled="true" data-bientot>Mes contributions Open Prices <small>Bientôt</small></span>
-          <span class="bientot" aria-disabled="true" data-bientot>Mon compte <small>Bientôt</small></span>
-          <hr>
-          <a href="#apropos">À propos et aide</a>
+          <a href="#reglages">Réglages et sauvegarde</a>
         </nav>
       </div>
     </header>
@@ -321,22 +313,6 @@
         </div>
       </section>
 
-      <!-- ========== SAUVEGARDE ========== -->
-      <section id="vue-sauvegarde" class="vue" hidden>
-        <div class="carte-blanche">
-          <h2>Sauvegarde et restauration</h2>
-          <p class="aide">Tes données sont gardées dans ce navigateur, sur cet appareil. Télécharge-les de temps en temps : si tu vides les données du navigateur ou si tu changes de téléphone, ce fichier te permet de tout retrouver.</p>
-          <div class="actions">
-            <button type="button" id="exporter">Télécharger mes données</button>
-            <label class="bouton-secondaire" for="importer">Remplacer par un fichier</label>
-            <input id="importer" type="file" accept="application/json,.json" hidden>
-            <label class="bouton-secondaire" for="fusionner">Fusionner avec un fichier</label>
-            <input id="fusionner" type="file" accept="application/json,.json" hidden>
-          </div>
-          <p id="sauvegarde-message" class="message" role="status"></p>
-        </div>
-      </section>
-
       <!-- ========== GÉRER MA LISTE ========== -->
       <section id="vue-liste" class="vue" hidden>
         <div class="carte-blanche">
@@ -348,63 +324,91 @@
         </div>
       </section>
 
-      <!-- ========== NOTIFICATIONS ========== -->
-      <section id="vue-notifications" class="vue" hidden>
-        <div class="carte-blanche">
-          <h2>Notifications</h2>
-          <p class="aide">Cabasito n'a pas de serveur : il ne peut pas te prévenir quand l'application est fermée. Pour l'instant, il te rappelle dans l'application quand une sauvegarde est utile.</p>
-          <label class="case-notif"><input id="notif-rappel" type="checkbox"> Me rappeler de télécharger une sauvegarde chaque semaine</label>
-          <p id="notif-etat" class="aide"></p>
-          <p class="aide"><a href="#sauvegarde">Aller à la sauvegarde</a></p>
-        </div>
-      </section>
-
-      <!-- ========== À PROPOS ========== -->
-      <section id="vue-apropos" class="vue" hidden>
-        <div class="carte-blanche">
-          <h2>À propos et aide</h2>
-          <p class="aide">Cabasito compare les prix de tes courses entre les supermarchés. Version du 23 octobre 2026.</p>
-          <details class="explication" open>
-            <summary>Lire un ticket ou une étiquette</summary>
-            <ol>
-              <li>Va dans l'onglet <strong>Photo</strong> et choisis « Ticket de caisse » ou « Prix en rayon ».</li>
-              <li>Prends la photo, puis vérifie les lignes lues par l'IA et corrige si besoin.</li>
-              <li>Valide : les prix arrivent dans <strong>Ma course</strong> et dans <strong>Mes relevés</strong>.</li>
-            </ol>
-          </details>
-          <details class="explication">
-            <summary>Où sont mes données ?</summary>
-            <p class="aide">Uniquement dans ce navigateur, sur cet appareil. Rien n'est envoyé à un serveur de Cabasito. Pense à les télécharger depuis « Sauvegarde et restauration ».</p>
-          </details>
-        </div>
-      </section>
-
-      <!-- ========== RÉGLAGES ========== -->
+      <!-- ========== RÉGLAGES (lecture des photos, sauvegarde, aide) ========== -->
       <section id="vue-reglages" class="vue" hidden>
         <div class="carte-blanche">
-          <h2>Lecture automatique des photos</h2>
-          <p class="aide">Cabasito utilise l'IA Claude pour lire tes photos. Il faut ta propre clé d'API, gardée uniquement dans ce navigateur. Elle n'est jamais publiée ni envoyée ailleurs que chez Anthropic.</p>
-          <form id="form-cle" class="formulaire">
-            <label class="large">Clé d'API Claude
-              <input id="cle-api" type="password" autocomplete="off" placeholder="sk-ant-…">
-            </label>
-            <label class="large">Modèle
-              <select id="modele"></select>
-            </label>
-            <button type="submit" class="principal">Enregistrer</button>
-            <button type="button" id="cle-tester">Tester la clé</button>
-            <button type="button" id="cle-effacer">Effacer la clé</button>
-            <p id="cle-message" class="message" role="status"></p>
-          </form>
-          <details class="explication">
-            <summary>Comment obtenir une clé ?</summary>
-            <ol>
-              <li>Va sur <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> et crée un compte.</li>
-              <li>Dans <strong>Billing</strong>, ajoute un moyen de paiement et quelques euros de crédit (5 € suffisent pour des centaines de photos).</li>
-              <li>Dans <strong>API Keys</strong>, clique sur <strong>Create Key</strong>, copie la clé (elle commence par <code>sk-ant-</code>) et colle-la ici.</li>
-              <li>Conseil : dans <strong>Limits</strong>, fixe une limite de dépense mensuelle.</li>
-            </ol>
-          </details>
+          <h2>Réglages</h2>
+
+          <div class="reglage" data-reglage="photos">
+            <button type="button" class="reglage-titre" aria-expanded="false">
+              <span><strong>Lecture des photos</strong><small id="reglage-photos-sous"></small></span>
+              <i class="fleche-lien" aria-hidden="true"></i>
+            </button>
+            <div class="reglage-corps" hidden>
+              <form id="form-cle" class="formulaire">
+                <label class="large">Clé d'API Claude
+                  <input id="cle-api" type="password" autocomplete="off" placeholder="sk-ant-…">
+                </label>
+                <label class="large">Modèle
+                  <select id="modele"></select>
+                </label>
+                <div class="actions-reglage">
+                  <button type="submit" class="principal">Enregistrer</button>
+                  <button type="button" class="bouton-plus" data-plus-reglage aria-expanded="false" aria-label="Plus d'options">⋯</button>
+                </div>
+                <div class="plus-reglage" data-plus-zone hidden>
+                  <button type="button" id="cle-tester">Tester la clé</button>
+                  <button type="button" id="cle-effacer">Effacer la clé</button>
+                </div>
+                <p id="cle-message" class="message" role="status"></p>
+              </form>
+              <details class="explication">
+                <summary>Comment obtenir une clé ?</summary>
+                <ol>
+                  <li>Va sur <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> et crée un compte.</li>
+                  <li>Dans <strong>Billing</strong>, ajoute un moyen de paiement et quelques euros de crédit (5 € suffisent pour des centaines de photos).</li>
+                  <li>Dans <strong>API Keys</strong>, clique sur <strong>Create Key</strong>, copie la clé (elle commence par <code>sk-ant-</code>) et colle-la ici.</li>
+                  <li>Conseil : dans <strong>Limits</strong>, fixe une limite de dépense mensuelle.</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+
+          <div class="reglage" data-reglage="sauvegarde">
+            <button type="button" class="reglage-titre" aria-expanded="false">
+              <span><strong>Sauvegarde</strong><small id="notif-etat"></small></span>
+              <i class="fleche-lien" aria-hidden="true"></i>
+            </button>
+            <div class="reglage-corps" hidden>
+              <div class="actions-reglage">
+                <button type="button" id="exporter" class="principal">Télécharger mes données</button>
+                <button type="button" class="bouton-plus" data-plus-reglage aria-expanded="false" aria-label="Plus d'options">⋯</button>
+              </div>
+              <div class="plus-reglage" data-plus-zone hidden>
+                <label class="bouton-secondaire" for="importer">Remplacer par un fichier</label>
+                <input id="importer" type="file" accept="application/json,.json" hidden>
+                <label class="bouton-secondaire" for="fusionner">Fusionner avec un fichier</label>
+                <input id="fusionner" type="file" accept="application/json,.json" hidden>
+              </div>
+              <label class="case-notif"><input id="notif-rappel" type="checkbox"> Rappel de sauvegarde chaque semaine</label>
+              <p id="sauvegarde-message" class="message" role="status"></p>
+            </div>
+          </div>
+
+          <div class="reglage" data-reglage="aide">
+            <button type="button" class="reglage-titre" aria-expanded="false">
+              <span><strong>Aide et à propos</strong><small>Version du 23 octobre 2026</small></span>
+              <i class="fleche-lien" aria-hidden="true"></i>
+            </button>
+            <div class="reglage-corps" hidden>
+              <details class="explication">
+                <summary>Lire un ticket ou une étiquette</summary>
+                <ol>
+                  <li>Va dans l'onglet <strong>Photo</strong> et choisis « Ticket de caisse » ou « Prix en rayon ».</li>
+                  <li>Prends la photo, puis vérifie les lignes lues par l'IA et corrige si besoin.</li>
+                  <li>Valide : les prix arrivent dans <strong>Ma course</strong> et dans <strong>Mes relevés</strong>.</li>
+                </ol>
+              </details>
+              <details class="explication">
+                <summary>Où sont mes données ?</summary>
+                <p class="aide">Uniquement dans ce navigateur, sur cet appareil. Rien n'est envoyé à un serveur de Cabasito. Cabasito n'a pas de serveur : il ne peut pas te prévenir quand l'application est fermée, il te rappelle dans l'application quand une sauvegarde est utile. Pense à télécharger tes données de temps en temps (section Sauvegarde).</p>
+              </details>
+              <details class="explication">
+                <summary>La clé d'API, en deux mots</summary>
+                <p class="aide">Cabasito utilise l'IA Claude pour lire tes photos. Il faut ta propre clé d'API, gardée uniquement dans ce navigateur. Elle n'est jamais publiée ni envoyée ailleurs que chez Anthropic.</p>
+              </details>
+            </div>
+          </div>
         </div>
       </section>
 

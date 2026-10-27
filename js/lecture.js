@@ -33,6 +33,8 @@ function afficherReglages() {
   rapide.value = modele();
   document.querySelector("#cle-api").value = cleApi();
   document.querySelector("#photo-sans-cle").hidden = Boolean(cleApi());
+  // Sous-titre de la ligne « Lecture des photos » : la clé n'est jamais affichée.
+  document.querySelector("#reglage-photos-sous").textContent = `${cleApi() ? "Clé enregistrée" : "Pas de clé"} · ${MODELES.find((m) => m.id === modele())?.nom.split(" : ")[0] || ""}`;
 }
 
 function messageCle(texte, classe) {
@@ -605,3 +607,29 @@ function demarrerLecture() {
 }
 
 demarrerLecture();
+
+// ---------- Réglages en un seul écran : trois lignes à déplier, une seule ouverte à la fois ----------
+// Lecture des photos (clé, modèle), Sauvegarde (avec le rappel hebdomadaire), Aide et à propos.
+function ouvrirReglage(nom) {
+  if (!nom) return;
+  for (const r of document.querySelectorAll("#vue-reglages .reglage")) {
+    const ouvert = r.dataset.reglage === nom;
+    r.querySelector(".reglage-corps").hidden = !ouvert;
+    r.querySelector(".reglage-titre").setAttribute("aria-expanded", String(ouvert));
+  }
+}
+
+document.querySelector("#vue-reglages").addEventListener("click", (e) => {
+  const titre = e.target.closest(".reglage-titre");
+  if (titre) {
+    // Toucher une ligne l'ouvre (et referme les autres) ; la toucher de nouveau la referme.
+    ouvrirReglage(titre.getAttribute("aria-expanded") === "true" ? "aucune" : titre.closest(".reglage").dataset.reglage);
+    return;
+  }
+  const plus = e.target.closest("[data-plus-reglage]");
+  if (plus) {
+    const zone = plus.closest(".reglage-corps").querySelector("[data-plus-zone]");
+    zone.hidden = !zone.hidden;
+    plus.setAttribute("aria-expanded", String(!zone.hidden));
+  }
+});
