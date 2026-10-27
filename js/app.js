@@ -200,7 +200,31 @@ const SECTIONS_REGLAGES = { sauvegarde: "sauvegarde", notifications: "sauvegarde
 // Les écrans ouverts depuis le menu « Mon profil » (pas dans la barre du bas).
 const VUES_PROFIL = ["releves", "liste", "reglages"];
 
+
+// ---------- Transitions entre écrans ----------
+const ORDRE_ONGLETS = ["photo", "course", "magasins", "paniers"];
+const CLASSES_ANIM = ["anim-fondu", "anim-droite", "anim-gauche", "anim-bas"];
+const vueVisible = () => document.querySelector("main > .vue:not([hidden])")?.id.slice(4) || "";
+
+// Un écran du menu profil arrive par le bas ; un onglet arrive du côté où il se trouve dans la barre ; sinon fondu.
+function animerVue(avant, apres) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const section = document.querySelector(`#vue-${apres}`);
+  if (!section) return;
+  const i = ORDRE_ONGLETS.indexOf(avant);
+  const j = ORDRE_ONGLETS.indexOf(apres);
+  const classe = VUES_PROFIL.includes(apres) ? "anim-bas" : i < 0 || j < 0 ? "anim-fondu" : j > i ? "anim-droite" : "anim-gauche";
+  const main = document.querySelector("main");
+  section.classList.remove(...CLASSES_ANIM);
+  void section.offsetWidth; // relance l'animation si on retouche vite le même onglet
+  section.classList.add(classe);
+  main.classList.add("en-transition");
+  const fin = () => { section.classList.remove(...CLASSES_ANIM); main.classList.remove("en-transition"); clearTimeout(garde); };
+  const garde = setTimeout(fin, 500); // filet : la classe est toujours retirée
+  section.addEventListener("animationend", fin, { once: true });
+}
 function montrer(vue) {
+  const avant = vueVisible();
   const section = SECTIONS_REGLAGES[vue];
   if (section) vue = "reglages";
   if (!VUES.includes(vue)) vue = "photo";
@@ -214,6 +238,7 @@ function montrer(vue) {
   if (vue === "reglages" && typeof ouvrirReglage === "function") ouvrirReglage(section);
   if (vue === "course" && typeof majNotifs === "function") majNotifs();
   window.scrollTo(0, 0);
+  if (avant && avant !== vue) animerVue(avant, vue);
 }
 
 // ---------- Menu « Mon profil » ----------

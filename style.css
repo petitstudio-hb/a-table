@@ -983,3 +983,17 @@ input, select, textarea { font-size: 16px !important; }
 .actions-reglage .principal { flex: 1; }
 .plus-reglage { margin-top: 8px; }
 .plus-reglage .bouton-secondaire { display: block; text-align: center; }
+
+/* Séance 37 : transitions entre écrans (variante D choisie par Hugo) : l'écran arrive de la droite ou de la gauche selon le sens
+   de l'onglet, ceux du menu profil arrivent par le bas. Seuls opacity et transform sont animés (rien ne force la mise en page),
+   aucun délai (l'écran reste tactile). « backwards » : l'état de départ s'applique dès le premier instant. */
+@keyframes vue-fondu { from { opacity: 0; } }
+@keyframes vue-depuis-droite { from { opacity: 0; transform: translateX(28px); } }
+@keyframes vue-depuis-gauche { from { opacity: 0; transform: translateX(-28px); } }
+@keyframes vue-depuis-bas { from { opacity: 0; transform: translateY(36px); } }
+.vue.anim-fondu { animation: vue-fondu 220ms ease-out backwards; }
+.vue.anim-droite { animation: vue-depuis-droite 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+.vue.anim-gauche { animation: vue-depuis-gauche 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+.vue.anim-bas { animation: vue-depuis-bas 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+main.en-transition { overflow-x: clip; } /* pendant un glissement, on coupe ce qui dépasse sans créer de zone de défilement */
+@media (prefers-reduced-motion: reduce) { .vue, .vue[class*="anim-"] { animation: none !important; } }
