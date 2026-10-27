@@ -303,7 +303,7 @@ function indicesPrix(mags, produits) {
 // sinon, avec un grand panier, par indice de prix sur les produits connus de plusieurs magasins (au moins 3).
 function classerMagasins(mags) {
   const infos = mags.map((m) => ({ m, ...totalDe(m) }));
-  const complets = infos.filter((x) => x.coches > 0 && x.connus >= 0.8 * x.coches).sort((a, b) => a.total - b.total);
+  const complets = infos.filter((x) => Prix.estComplet(x.connus, x.coches)).sort((a, b) => a.total - b.total);
   const ind = indicesPrix(mags, produitsCourse().filter((i) => coches.has(i)));
   const parIndice = infos.filter((x) => ind.get(x.m.id).n >= 3).sort((a, b) => ind.get(a.m.id).indice - ind.get(b.m.id).indice);
   const modeIndice = complets.length < 2 && parIndice.length >= 2;

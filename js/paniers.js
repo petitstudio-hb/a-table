@@ -60,7 +60,7 @@ function totalPanier(panier, magasin) {
 // Le moins cher : seulement parmi les magasins qui connaissent au moins 80 % des prix du panier,
 // sinon un magasin aux prix manquants paraîtrait faussement moins cher (décision D13).
 function magasinMoinsCher(panier) {
-  const candidats = visibles().map((m) => ({ m, ...totalPanier(panier, m) })).filter((x) => x.n > 0 && x.connus >= 0.8 * x.n);
+  const candidats = visibles().map((m) => ({ m, ...totalPanier(panier, m) })).filter((x) => Prix.estComplet(x.connus, x.n));
   if (candidats.length < 2) return null;
   return candidats.reduce((a, b) => (b.total < a.total ? b : a)).m.id;
 }
