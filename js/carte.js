@@ -13,23 +13,28 @@ let marqueursCarte = []; // marqueurs MapLibre des points affichés
 let marqueurMoi = null;
 let pointsCarte = []; // points affichés, dans l'ordre des numéros
 let chargementCarte = null;
-let positionTentee = false; // la position n'est demandée qu'une fois par ouverture de la page
-let centrerSurPosition = false;
 
 function chargerBibliothequeCarte() {
   if (window.maplibregl) return Promise.resolve();
   if (chargementCarte) return chargementCarte;
-  chargementCarte = new Promise((resolu, rejete) => {
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = MAPLIBRE.css;
-    document.head.append(css);
+  // On attend la feuille de style ET le script : sans le style, la carte se crée avec une taille fausse et reste blanche.
+  const echec = () => { chargementCarte = null; return new Error("La carte n'a pas pu se charger. Vérifie ta connexion."); };
+  const css = new Promise((resolu, rejete) => {
+    const lien = document.createElement("link");
+    lien.rel = "stylesheet";
+    lien.href = MAPLIBRE.css;
+    lien.onload = resolu;
+    lien.onerror = () => rejete(echec());
+    document.head.append(lien);
+  });
+  const js = new Promise((resolu, rejete) => {
     const script = document.createElement("script");
     script.src = MAPLIBRE.js;
     script.onload = resolu;
-    script.onerror = () => { chargementCarte = null; rejete(new Error("La carte n'a pas pu se charger. Vérifie ta connexion.")); };
+    script.onerror = () => rejete(echec());
     document.head.append(script);
   });
+  chargementCarte = Promise.all([css, js]);
   return chargementCarte;
 }
 
@@ -81,11 +86,13 @@ function montrerFiche(k) {
 async function majCarte() {
   if (modeMagasins !== "carte") return;
   const etat = document.querySelector("#carte-etat");
+  if (!carte) etat.textContent = "Chargement de la carte…";
   try { await chargerBibliothequeCarte(); } catch (e) { etat.textContent = e.message; return; }
   if (!carte) {
     carte = new maplibregl.Map({ container: "carte-zone", style: FOND_CARTE, center: [2.3522, 48.8566], zoom: 12, attributionControl: { compact: true } });
     carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     carte.on("click", fermerFiche);
+    carte.once("load", () => carte.resize()); // au cas où la taille du cadre a changé pendant le chargement du fond
     carte.on("error", () => { if (!carte.isStyleLoaded()) document.querySelector("#carte-etat").textContent = "Le fond de carte ne s'affiche pas (connexion ?). Les points restent visibles."; });
   }
   carte.resize();
@@ -110,8 +117,7 @@ async function majCarte() {
     bornes.extend([centreRecherche.lon, centreRecherche.lat]);
     nb++;
   }
-  if (centrerSurPosition && centreRecherche) { carte.jumpTo({ center: [centreRecherche.lon, centreRecherche.lat], zoom: 15 }); centrerSurPosition = false; }
-  else if (nb > 1) carte.fitBounds(bornes, { padding: 40, maxZoom: 16, animate: false });
+  if (nb > 1) carte.fitBounds(bornes, { padding: 40, maxZoom: 16, animate: false });
   else if (nb === 1) carte.jumpTo({ center: bornes.getCenter(), zoom: 15 });
   fermerFiche();
   const sansPlace = MAGASINS.filter((m) => typeof m.lat !== "number").length;
@@ -129,7 +135,7 @@ function majModeMagasins() {
     b.classList.toggle("actif", actif);
     b.setAttribute("aria-pressed", String(actif));
   }
-  if (carteOuverte) majCarte().then(localiserAuto);
+  if (carteOuverte) majCarte();
 }
 
 document.querySelector("#mag-liste").addEventListener("click", () => { modeMagasins = "liste"; majModeMagasins(); });
@@ -143,9 +149,10 @@ document.querySelector("#carte-fiche").addEventListener("click", (e) => {
   if (c) { compares = [c.dataset.courseIci]; sauvegarder(); location.hash = "#course"; calculer(); }
 });
 
-// Bouton rond : revenir à ma position (demandée à nouveau si besoin, jamais enregistrée).
+// Bouton rond : c'est le seul endroit où la carte demande la position (jamais à l'ouverture), qui n'est jamais enregistrée (D9).
 document.querySelector("#carte-loc").addEventListener("click", async () => {
   try {
+    document.querySelector("#carte-etat").textContent = "Recherche de ta position…";
     centreRecherche = await positionGps();
     await majCarte();
     carte.flyTo({ center: [centreRecherche.lon, centreRecherche.lat], zoom: 16 });
@@ -154,16 +161,3 @@ document.querySelector("#carte-loc").addEventListener("click", async () => {
   }
 });
 
-// À l'ouverture de la carte, on montre la position actuelle (point bleu) si aucune recherche n'a déjà un centre.
-// Elle reste en mémoire seulement (D9) ; refusée, la carte s'ouvre quand même.
-async function localiserAuto() {
-  if (centreRecherche || positionTentee) return;
-  positionTentee = true;
-  try {
-    centreRecherche = await positionGps();
-    centrerSurPosition = true;
-    majCarte();
-  } catch (e) {
-    document.querySelector("#carte-etat").textContent = e.message;
-  }
-}
