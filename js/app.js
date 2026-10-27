@@ -94,6 +94,7 @@ function produitsCourse() {
 }
 
 function sauvegarder() {
+  invaliderIndexPrix();
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.compares, compares);
   ecrire(CLE.modeCourses, modeCourses);
@@ -132,11 +133,23 @@ const visibles = () => MAGASINS.filter((m) => m.affiche !== false);
 const nomMagasin = (id) => MAGASINS.find((m) => m.id === id)?.nom || "Magasin inconnu";
 
 // Prix à utiliser : le relevé le plus récent, sinon celui de donnees.js.
-function prixDe(i, magasin) {
-  let dernier = null;
+// Index (produit, magasin) → dernier relevé, reconstruit quand la liste des relevés change (lot 2, résultats identiques).
+let indexPrix = null, indexRef = null, indexLong = -1;
+const invaliderIndexPrix = () => { indexPrix = null; };
+const cleIndexPrix = (p, m) => typeof p + p + "|" + typeof m + m;
+function indexerPrix() {
+  if (indexPrix && indexRef === releves && indexLong === releves.length) return indexPrix;
+  indexPrix = new Map();
   for (const r of releves) {
-    if (r.produit === i && r.magasin === magasin && (!dernier || r.date >= dernier.date)) dernier = r;
+    const k = cleIndexPrix(r.produit, r.magasin);
+    const d = indexPrix.get(k);
+    if (!d || r.date >= d.date) indexPrix.set(k, r);
   }
+  indexRef = releves; indexLong = releves.length;
+  return indexPrix;
+}
+function prixDe(i, magasin) {
+  const dernier = indexerPrix().get(cleIndexPrix(i, magasin));
   if (dernier) return { prix: dernier.prix, saisi: true, variante: dernier.variante || "", promo: Boolean(dernier.promo) };
   return { prix: PANIER[i].prix[magasin] ?? null, saisi: false, variante: "", promo: false };
 }

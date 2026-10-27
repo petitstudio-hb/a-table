@@ -58,6 +58,7 @@ function afficherMasques() {
 // Remet un produit dans la liste et dans le panier habituel. Si les prix avaient été fusionnés dessus
 // (ils portent alors son nom en variante), ils lui reviennent.
 function retablirProduit(i) {
+  invaliderIndexPrix();
   PANIER[i].masque = false;
   if (i < NB_PRODUITS_BASE && modifs[i]) { delete modifs[i].masque; if (!Object.keys(modifs[i]).length) delete modifs[i]; }
   if (!panierHabituel().produits.includes(i)) panierHabituel().produits.push(i);
@@ -89,6 +90,7 @@ function enregistrerProduit(i, zone) {
 }
 
 function fusionnerProduits(source, cible) {
+  invaliderIndexPrix();
   for (const r of releves) {
     if (r.produit !== source) continue;
     r.produit = cible;
