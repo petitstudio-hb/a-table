@@ -12,6 +12,7 @@ const CLE = {
   modeCourses: "atable.modeCourses", // mode courses actif (séance 36)
   cabas: "atable.cabas", // produits mis dans le cabas pendant les courses
   cabasLibres: "atable.cabasLibres", // produits en texte libre ajoutés pendant les courses
+  prixRayon: "atable.prixRayon", // prix corrigés en rayon pendant les courses (lot 3), enregistrés en relevés à la fin
   replies: "atable.rayonsReplies", // rayons repliés dans Ma course (séance 9)
   relevesReplies: "atable.relevesReplies", // rayons repliés dans Mes relevés (séance 11)
   paniers: "atable.paniers", // paniers : habituel et paniers libres (séance 12)
@@ -63,6 +64,17 @@ let compares = lire(CLE.compares, null);
 let modeCourses = lire(CLE.modeCourses, false);
 const cabas = new Set(lire(CLE.cabas, []));
 let cabasLibres = lire(CLE.cabasLibres, []); // { nom, i (numéro de produit connu, ou null), pris }
+// Prix vus en rayon et corrigés pendant les courses : { "produit|magasin": prix }. Ils remplacent le prix prévu à l'écran et deviennent
+// des relevés à la fin des courses (js/courses.js). corrigeOuverts : lignes dont le champ de correction est déplié.
+let prixRayon = lire(CLE.prixRayon, {});
+const corrigeOuverts = new Set();
+const cleRayon = (i, m) => `${i}|${m}`;
+// Prix d'un produit pendant les courses : le prix corrigé en rayon s'il existe, sinon le prix prévu (même forme que prixDe).
+function prixCourse(i, m) {
+  const prevu = prixDe(i, m);
+  const k = cleRayon(i, m);
+  return k in prixRayon ? { ...prevu, prix: prixRayon[k], rayon: true, prevu: prevu.prix } : prevu;
+}
 let rayonsReplies = new Set(lire(CLE.replies, []));
 let relevesReplies = new Set(lire(CLE.relevesReplies, []));
 let rechercheCourse = ""; // texte cherché dans Ma course (sans accent, non mémorisé)
@@ -81,6 +93,26 @@ function produitsCourse() {
   return [...paniers.find((p) => p.id === panierCourse).produits].sort((a, b) => a - b);
 }
 
+// Valide le prix vu en rayon d'une ligne : un prix identique au prévu annule la correction.
+function validerPrixRayon(i, magasin) {
+  const champ = document.querySelector(`[data-prix-rayon="${i}"]`);
+  const prix = champ ? lirePrix(champ.value) : NaN;
+  const prevu = prixDe(i, magasin).prix;
+  if (Number.isFinite(prix) && prix > 0 && Math.abs(prix - (prevu ?? -1)) > 0.004) prixRayon[cleRayon(i, magasin)] = Math.round(prix * 100) / 100;
+  else delete prixRayon[cleRayon(i, magasin)];
+  corrigeOuverts.delete(i);
+  sauvegarder();
+  calculer();
+}
+
+// Pendant les courses : bouton « ⋯ » d'une ligne et, déplié, le champ « Prix vu en rayon » (lot 3).
+function htmlCorrectionRayon(i, magasin, prix) {
+  const ouvert = corrigeOuverts.has(i);
+  const valeur = prix && prix.prix !== null ? prix.prix.toFixed(2).replace(".", ",") : "";
+  return `<button type="button" class="plus3" data-corriger="${i}" aria-expanded="${ouvert}" aria-label="Corriger le prix vu en rayon : ${echapper(PANIER[i].nom)}">⋯</button>`
+    + (ouvert ? `<div class="corrige-rayon"><label>Prix vu en rayon<input type="text" inputmode="decimal" data-prix-rayon="${i}" value="${valeur}"></label><button type="button" class="principal" data-ok-rayon="${i}" data-magasin-rayon="${magasin}">Corriger</button></div>` : "");
+}
+
 function sauvegarder() {
   invaliderIndexPrix();
   ecrire(CLE.coches, [...coches]);
@@ -88,6 +120,7 @@ function sauvegarder() {
   ecrire(CLE.modeCourses, modeCourses);
   ecrire(CLE.cabas, [...cabas]);
   ecrire(CLE.cabasLibres, cabasLibres);
+  ecrire(CLE.prixRayon, prixRayon);
   ecrire(CLE.replies, [...rayonsReplies]);
   ecrire(CLE.relevesReplies, [...relevesReplies]);
   ecrire(CLE.releves, releves);
@@ -351,7 +384,7 @@ function afficherCourse() {
       const replie = !rechercheCourse && rayonsReplies.has(rayon); // pendant une recherche, tout est déplié
       const produits = produitsCourse().filter(aListe).map((i) => ({ p: PANIER[i], i })).filter(({ p }) => p.rayon === rayon);
       const lignes = replie ? "" : produits.map(({ p, i }) => {
-        const prix = colonnes.map((m) => prixDe(i, m.id));
+        const prix = colonnes.map((m) => (modeCourses ? prixCourse(i, m.id) : prixDe(i, m.id)));
         const connus = prix.filter((x) => x.prix !== null);
         const mini = connus.length === colonnes.length && colonnes.length > 1 ? Math.min(...prix.map((x) => x.prix)) : null;
         const unique = mini !== null && prix.filter((x) => Math.abs(x.prix - mini) < 0.005).length === 1;
@@ -367,8 +400,8 @@ function afficherCourse() {
             <label>
               <input type="checkbox" data-index="${i}" ${(modeCourses ? cabas.has(i) : coches.has(i)) ? "checked" : ""}>
               <span class="lc-texte"><span class="lc-nom">${echapper(p.nom)}</span>
-                <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${p.format ? `<span class="pastille-format">${echapper(p.format)}</span>` : `<span class="pastille-format vide">contenu à préciser</span>`}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` <span class="prix-kg">${kg}</span>` : ""}</span></span>
-            </label>${cellules}
+                <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${p.format ? `<span class="pastille-format">${echapper(p.format)}</span>` : `<span class="pastille-format vide">contenu à préciser</span>`}${variante ? ` · ${echapper(variante)}` : ""}${kg ? ` <span class="prix-kg">${kg}</span>` : ""}${modeCourses && prix[0]?.rayon ? ` · prévu ${prix[0].prevu === null ? "?" : euros(prix[0].prevu)} · en rayon` : ""}</span></span>
+            </label>${cellules}${modeCourses && colonnes.length === 1 ? htmlCorrectionRayon(i, colonnes[0].id, prix[0]) : ""}
           </div>`;
       }).join("");
       return `<div class="rayon-course">
@@ -503,6 +536,36 @@ function afficherReleves() {
   }).join("") || `<li class="vide">Aucun relevé ne correspond à « ${echapper(document.querySelector("#recherche-releves-champ").value.trim())} ».</li>`;
 }
 
+// Historique du prix d'un produit (lot 3) : courbe dans le magasin du relevé, variation, meilleur prix vu partout. Calculs : js/historique.js.
+function courbeSvg(serie) {
+  const t = serie.map((s) => new Date(s.date).getTime());
+  const prix = serie.map((s) => s.prix);
+  const [t0, t1] = [Math.min(...t), Math.max(...t)], [p0, p1] = [Math.min(...prix), Math.max(...prix)];
+  const x = (i) => (t1 === t0 ? 150 : 10 + ((t[i] - t0) / (t1 - t0)) * 280);
+  const y = (i) => (p1 === p0 ? 45 : 76 - ((prix[i] - p0) / (p1 - p0)) * 62);
+  const points = serie.map((_, i) => `${x(i).toFixed(1)},${y(i).toFixed(1)}`).join(" ");
+  const dernier = serie.length - 1;
+  return `<svg class="courbe" viewBox="0 0 300 90" role="img" aria-label="Prix de ${euros(prix[0])} à ${euros(prix[dernier])}"><polyline fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="${points}"/><circle cx="${x(dernier).toFixed(1)}" cy="${y(dernier).toFixed(1)}" r="5" fill="var(--jaune)" stroke="var(--accent)" stroke-width="2"/></svg>`;
+}
+
+function htmlHistorique(r) {
+  const serie = Historique.serie(releves, r.produit, r.magasin);
+  let corps;
+  if (serie.length < 2) {
+    corps = `<p class="aide">Il faut au moins deux relevés de ce produit dans ce magasin pour tracer l'évolution du prix.</p>`;
+  } else {
+    const v = Historique.variation(serie);
+    const jours = Math.round((new Date(serie[serie.length - 1].date) - new Date(serie[0].date)) / 86400000);
+    const duree = jours >= 45 ? `${Math.round(jours / 30)} mois` : `${jours} jour${jours > 1 ? "s" : ""}`;
+    const pct = v ? `${v.pourcent >= 0 ? "+" : "−"}${String(Math.abs(v.pourcent)).replace(".", ",")} %` : "";
+    corps = courbeSvg(serie) + (v ? `<div class="lg-hist"><span>${v.pourcent >= 0 ? "Hausse" : "Baisse"} sur ${duree}<small>${echapper(nomMagasin(r.magasin))}</small></span><b>${pct}</b></div>` : "");
+  }
+  const tous = releves.filter((x) => x.produit === r.produit && typeof x.prix === "number" && x.prix > 0);
+  const meilleur = tous.reduce((m, x) => (!m || x.prix < m.prix ? x : m), null);
+  if (meilleur && tous.length > 1) corps += `<div class="lg-hist"><span>Meilleur prix vu<small>${echapper(nomMagasin(meilleur.magasin))}, ${dateFr(meilleur.date)}</small></span><b>${euros(meilleur.prix)}</b></div>`;
+  return `<details class="historique"><summary>Historique du prix</summary>${corps}</details>`;
+}
+
 function ligneReleves(groupe) {
   return groupe
     .map(({ r, k }) => {
@@ -518,6 +581,7 @@ function ligneReleves(groupe) {
               <label>Magasin<select data-champ="magasin">${MAGASINS.map((m) => `<option value="${m.id}" ${m.id === r.magasin ? "selected" : ""}>${echapper(m.nom)}</option>`).join("")}</select></label>
               <label class="case"><input type="checkbox" data-champ="promo" ${r.promo ? "checked" : ""}> En promo</label>
             </div>
+            ${htmlHistorique(r)}
             <div class="actions"><button type="button" data-annuler>Annuler</button><button type="button" class="principal" data-enregistrer="${k}">Enregistrer</button></div>
             <button type="button" class="lien-discret" data-supprimer="${k}">Supprimer ce relevé</button>
           </li>`;
@@ -749,6 +813,15 @@ function brancherEvenements() {
     calculer();
   });
   listeCourse.addEventListener("click", (e) => {
+    const corriger = e.target.closest("[data-corriger]");
+    if (corriger) {
+      const i = Number(corriger.dataset.corriger);
+      corrigeOuverts.has(i) ? corrigeOuverts.delete(i) : corrigeOuverts.add(i);
+      afficherCourse();
+      return;
+    }
+    const valide = e.target.closest("[data-ok-rayon]");
+    if (valide) { validerPrixRayon(Number(valide.dataset.okRayon), valide.dataset.magasinRayon); return; }
     const rayon = e.target.closest("[data-rayon]");
     if (rayon) {
       const nom = rayon.dataset.rayon;

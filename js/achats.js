@@ -92,10 +92,16 @@ function ticketHtml(t, exclu) {
   return `
     <details class="ticket">
       <summary><span><b>${echapper(nomMagasin(t.magasin))}</b>${adresseMagasin(t.magasin) ? `<small>${echapper(adresseMagasin(t.magasin))}</small>` : ""}<small>${dateFr(t.date)} · ${t.lignes.length} article${t.lignes.length > 1 ? "s" : ""}</small></span><span class="etiquette">${euros(t.total)}</span></summary>
-      <ul>${t.lignes.map((r) => {
-        const p = PANIER[r.produit];
-        return `<li><span>${echapper(p?.nom || "Produit supprimé")}${r.marque ? ` <small>${echapper(r.marque)}</small>` : ""}${r.promo ? ` <span class="badge-promo">PROMO</span>` : ""}${r.quantite && r.quantite !== 1 ? ` <small>× ${String(r.quantite).replace(".", ",")}</small>` : ""}</span><b class="mono">${euros(montantDe(r))}</b></li>`;
-      }).join("")}</ul>
+      <div class="papier">
+        <div class="l"><b>${echapper(nomMagasin(t.magasin).toUpperCase())}</b><span>${dateFr(t.date)}</span></div><hr>
+        ${t.lignes.map((r) => {
+          const p = PANIER[r.produit];
+          // Comme sur le ticket de caisse : le libellé lu en caisse (en capitales), sinon le nom du produit.
+          const libelle = (r.libelle || p?.nom || "Produit supprimé").toUpperCase();
+          return `<div class="l"><span>${echapper(libelle)}${r.promo ? ` <span class="badge-promo">PROMO</span>` : ""}${r.quantite && r.quantite !== 1 ? ` <small>× ${String(r.quantite).replace(".", ",")}</small>` : ""}</span><span>${euros(montantDe(r)).replace(" €", "")}</span></div>`;
+        }).join("")}
+        <hr><div class="l"><b>TOTAL</b><b>${euros(t.total).replace(" €", "")}</b></div>
+      </div>
       ${action}
     </details>`;
 }

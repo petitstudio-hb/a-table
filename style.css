@@ -1233,3 +1233,31 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 #photo-accueil { width: 100%; text-align: left; }
 #photo-accueil h2 { margin: 6px 0 8px; }
 .ph-lecture, .ph-echec { width: 100%; }
+
+/* ======================================================================================================
+   Lot 3 « suite » (28/10/2026, maquettes validées) : correction du prix vu en rayon (Mode courses), historique des prix, ticket papier.
+   ====================================================================================================== */
+
+/* --- Mode courses : bouton ⋯ et champ « Prix vu en rayon » --- */
+.mode-courses .ligne-duel:not([style*="--cols:0"]) { grid-template-columns: 1fr 66px 44px; }
+.plus3 { width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--ligne); background: var(--carte); color: var(--accent); font-size: 1.4rem; font-weight: 800; line-height: 1; cursor: pointer; }
+.corrige-rayon { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 10px; padding: 6px 0 4px; border-top: 1px dashed var(--ligne); }
+.corrige-rayon label { flex: 1; font-size: 0.8rem; color: var(--discret); }
+.corrige-rayon input { display: block; width: 100%; margin-top: 4px; padding: 10px; border: 1.5px solid var(--ligne); background: var(--blanc); font: inherit; font-size: 1rem; color: var(--texte); }
+#cabas-ecart { text-align: right; }
+#cabas-ecart b { font-family: var(--mono); }
+.plus3, .corrige-rayon input { border-radius: var(--rayon) !important; }
+
+/* --- Historique du prix (dans la modification d'un relevé) --- */
+.historique { margin: 10px 0; }
+.historique > summary { padding: 8px 0; color: var(--accent); font-weight: 700; cursor: pointer; }
+.historique .courbe { display: block; width: 100%; height: 90px; margin: 6px 0; }
+.lg-hist { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px dashed var(--ligne); }
+.lg-hist small { display: block; color: var(--discret); font-family: var(--mono); font-size: 0.74rem; }
+.lg-hist b { font-family: var(--mono); }
+
+/* --- Ticket de caisse en présentation papier (Mes achats) --- */
+.papier { margin: 8px 12px 10px; padding: 12px; border: 1px solid var(--ligne); border-radius: var(--rayon); background: var(--blanc); font-family: var(--mono); font-size: 0.8rem; }
+.papier .l { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; }
+.papier .l > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.papier hr { margin: 6px 0; border: 0; border-top: 1px dashed var(--discret); }
