@@ -211,6 +211,7 @@ function montrer(vue) {
   window.scrollTo(0, 0);
   if (avant && avant !== vue) animerVue(avant, vue);
   if (typeof placerSoulignes === "function") placerSoulignes(); // le trait des bascules se replace dès que l'écran est visible (js/bascules.js)
+  if (vue === "photo" && typeof majPhoto === "function") majPhoto(); // accueil du premier lancement ou écran Photo habituel
 }
 
 // ---------- Menu « Mon profil » ----------

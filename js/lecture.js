@@ -210,6 +210,45 @@ function typeChoisi() {
   return document.querySelector('input[name="type-photo"]:checked').value;
 }
 
+// ---------- Écran Photo : accueil du premier lancement, écran habituel, lecture en cours, lecture impossible ----------
+
+const CLE_ACCUEIL = "atable.accueil-passe";
+let phasePhoto = "repos"; // repos | lecture | echec
+
+// Tant qu'il n'y a aucun relevé (et qu'on n'a pas touché « Passer »), l'écran Photo montre l'accueil en trois étapes.
+// Pour le revoir à la main : ajouter ?accueil à l'adresse.
+function premierLancement() {
+  if (new URLSearchParams(location.search).has("accueil")) return true;
+  return releves.length === 0 && lire(CLE_ACCUEIL, false) !== true;
+}
+
+function majPhoto() {
+  const accueil = phasePhoto === "repos" && premierLancement();
+  document.querySelector("#photo-accueil").hidden = !accueil;
+  document.querySelector("#photo-classique").hidden = phasePhoto !== "repos" || accueil;
+  document.querySelector("#photo-lecture").hidden = phasePhoto !== "lecture";
+  document.querySelector("#photo-echec").hidden = phasePhoto !== "echec";
+}
+
+function afficherLecture(dataUrl, suffixe) {
+  phasePhoto = "lecture";
+  const image = document.querySelector("#photo-lecture-image");
+  if (dataUrl) image.src = dataUrl; else image.removeAttribute("src");
+  document.querySelector("#photo-lecture-titre").textContent = `Lecture en cours${suffixe || ""}…`;
+  majPhoto();
+}
+
+function afficherEchec(texte) {
+  phasePhoto = "echec";
+  document.querySelector("#photo-echec-texte").textContent = texte;
+  majPhoto();
+}
+
+function revenirPhoto() {
+  phasePhoto = "repos";
+  majPhoto();
+}
+
 function recevoirPhotos(fichiers) {
   if (!fichiers.length) return;
   if (!cleApi()) {
@@ -217,6 +256,7 @@ function recevoirPhotos(fichiers) {
     document.querySelector("#photo-sans-cle").hidden = false;
     return;
   }
+  document.querySelector("#photo-sans-cle").hidden = true;
   file = [...fichiers].map((f) => ({ fichier: f, type: typeChoisi() }));
   numeroPhoto = 0;
   totalPhotos = file.length;
@@ -228,6 +268,7 @@ async function photoSuivante() {
   if (!suivante) {
     window.verificationEnCours = false;
     brouillon = null;
+    revenirPhoto();
     location.hash = "#course";
     return;
   }
@@ -236,16 +277,22 @@ async function photoSuivante() {
   if (location.hash !== "#photo") location.hash = "#photo";
   const suffixe = totalPhotos > 1 ? ` (photo ${numeroPhoto} sur ${totalPhotos})` : "";
   try {
-    etat(`Préparation de la photo${suffixe}…`);
+    etat("");
+    afficherLecture(null, suffixe);
     const estPdf = suivante.fichier.type === "application/pdf" || /\.pdf$/i.test(suivante.fichier.name || "");
     const image = estPdf ? await preparerPdf(suivante.fichier) : await preparerImage(suivante.fichier);
-    etat(`Lecture en cours${suffixe}… Ça prend 10 à 30 secondes.`, "attente");
+    afficherLecture(estPdf ? null : image.dataUrl, suffixe);
     const resultat = await lireAvecIA(image.base64, suivante.type, estPdf ? "application/pdf" : "image/jpeg");
-    etat("");
+    revenirPhoto();
     ouvrirVerification(resultat, image.dataUrl, suivante.type, suffixe);
   } catch (err) {
-    etat(`${err.message}${file.length ? " Photo suivante…" : ""}`, "erreur");
-    if (file.length) setTimeout(photoSuivante, 2500);
+    if (file.length) {
+      revenirPhoto();
+      etat(`${err.message} Photo suivante…`, "erreur");
+      setTimeout(photoSuivante, 2500);
+    } else {
+      afficherEchec(err.message);
+    }
   }
 }
 
@@ -303,12 +350,18 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   const remarque = document.querySelector("#verif-remarque");
   remarque.textContent = resultat.remarque || "";
   remarque.hidden = !resultat.remarque;
-  afficherVerification();
+  VerifCartes.demarrer();
   window.verificationEnCours = true;
   location.hash = "#verif";
 }
 
+// Remet à jour l'écran de vérification (cartes) : d'abord la fiche magasin / date / panier, puis les cartes (js/verif-cartes.js).
 function afficherVerification() {
+  VerifCartes.afficher();
+}
+
+// Fiche magasin, date et panier (dans le détail replié sous l'en-tête).
+function remplirFicheVerif() {
   const choixMag = document.querySelector("#verif-magasin");
   choixMag.innerHTML = MAGASINS.map((m) => `<option value="${m.id}">${echapper(m.nom)}</option>`).join("")
     + `<option value="__nouveau">Autre magasin…</option>`;
@@ -322,21 +375,19 @@ function afficherVerification() {
   document.querySelector("#verif-panier-label").hidden = autres.length === 0;
   document.querySelector("#verif-panier").innerHTML = `<option value="">Aucun autre panier</option>` + autres.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
   document.querySelector("#verif-panier").value = brouillon.panier || "";
+}
 
+// Formulaire d'une ligne (produit associé, nom, marque, poids, rayon, prix, quantité, promo) : il vit dans la carte, sous « Corriger ».
+function htmlLigneVerif(l, k) {
   const options = (choisi) => `<option value="-1" ${choisi === -1 ? "selected" : ""}>Nouveau produit (ajouté à ma liste)</option>`
     + produitsActifs().map((i) => `<option value="${i}" ${i === choisi ? "selected" : ""}>${echapper(PANIER[i].nom)}${PANIER[i].format ? ` (${echapper(PANIER[i].format)})` : ""}</option>`).join("");
-
-  const rayonsExistants = [...new Set(produitsActifs().map((i) => PANIER[i].rayon))];
-  document.querySelector("#verif-lignes").innerHTML = `<datalist id="verif-rayons">${rayonsExistants.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>`
-    + (brouillon.lignes.length
-    ? brouillon.lignes.map((l, k) => {
-      const detail = [
-        l.libelle ? `« ${echapper(l.libelle)} »` : "",
-        l.prixKg > 0 ? `${euros(l.prixKg)}/kg` : "",
-        l.quantite && l.quantite !== 1 ? `quantité ${String(l.quantite).replace(".", ",")}` : "",
-        l.prixUnitaire && Math.abs(l.prixUnitaire - l.prix) > 0.005 ? `${euros(l.prixUnitaire)} l'article` : "",
-      ].filter(Boolean).join(" · ");
-      return `
+  const detail = [
+    l.libelle ? `« ${echapper(l.libelle)} »` : "",
+    l.prixKg > 0 ? `${euros(l.prixKg)}/kg` : "",
+    l.quantite && l.quantite !== 1 ? `quantité ${String(l.quantite).replace(".", ",")}` : "",
+    l.prixUnitaire && Math.abs(l.prixUnitaire - l.prix) > 0.005 ? `${euros(l.prixUnitaire)} l'article` : "",
+  ].filter(Boolean).join(" · ");
+  return `
         <div class="ligne-verif" data-k="${k}">
           <div class="ligne-tete">
             <span class="detail">${detail || "Ligne ajoutée"}</span>
@@ -379,8 +430,6 @@ function afficherVerification() {
             <button type="button" class="promo-bouton ${l.promo ? "actif" : ""}" data-promo aria-pressed="${Boolean(l.promo)}">${l.promo ? "En promo ✓" : "En promo ?"}</button>
           </div>
         </div>`;
-    }).join("")
-    : `<p class="encart">Aucun produit trouvé sur cette photo. Ajoute une ligne à la main, ou annule.</p>`);
 }
 
 // Prix au kilo ou au litre d'une ligne : d'après le format du produit associé, ou le poids saisi pour un nouveau produit.
@@ -508,9 +557,9 @@ function valider() {
   sauvegarder();
   toutAfficher();
   const texte = `${lignes.length} prix enregistré${lignes.length > 1 ? "s" : ""} chez ${nomMagasin(magasin)}.`;
-  etat(texte, "ok");
   notifier(texte);
-  photoSuivante();
+  // Écran « Enregistré » : on confirme avant de passer à Ma course (ou à la photo suivante s'il y en a).
+  VerifCartes.afficherFin({ n: lignes.length, total: lignes.reduce((s, l) => s + l.prix * (l.quantite ?? 1), 0), magasin: nomMagasin(magasin), suite: file.length > 0 });
 }
 
 // ---------- Démarrage ----------
@@ -524,6 +573,14 @@ function demarrerLecture() {
       e.target.value = "";
     });
   }
+
+  // Écran Photo : accueil du premier lancement, lecture impossible.
+  const etape1 = document.querySelector("#accueil-etape1");
+  etape1.addEventListener("click", () => document.querySelector("#photo-import").click());
+  etape1.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); document.querySelector("#photo-import").click(); } });
+  document.querySelector("#accueil-passer").addEventListener("click", () => { ecrire(CLE_ACCUEIL, true); majPhoto(); });
+  document.querySelector("#photo-echec-annuler").addEventListener("click", () => { file = []; revenirPhoto(); });
+  majPhoto();
 
   document.querySelector("#verif-lignes").addEventListener("input", majChamp);
   document.querySelector("#verif-lignes").addEventListener("change", majChamp);
@@ -545,7 +602,7 @@ function demarrerLecture() {
     afficherVerification();
   });
   document.querySelector("#verif-ajouter").addEventListener("click", () => {
-    brouillon.lignes.push({ libelle: "", nom: "", marque: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, lien: "meme", variante: "", avertissement: "", suggestion: -1, prix: 0, rayon: "Ajoutés" });
+    brouillon.lignes.push({ libelle: "", nom: "", marque: "", quantite: 1, prixUnitaire: 0, prixKg: 0, poids: "", promo: false, produit: 0, lien: "meme", variante: "", avertissement: "", suggestion: -1, prix: 0, rayon: "Ajoutés", ouvert: true, corriger: true });
     afficherVerification();
   });
   document.querySelector("#verif-magasin").addEventListener("change", (e) => {
@@ -556,7 +613,11 @@ function demarrerLecture() {
   document.querySelector("#verif-magasin-adresse").addEventListener("input", (e) => { brouillon.magasinAdresse = e.target.value; });
   document.querySelector("#verif-date").addEventListener("change", (e) => { brouillon.date = e.target.value; });
   document.querySelector("#verif-panier").addEventListener("change", (e) => { brouillon.panier = e.target.value; });
-  document.querySelector("#verif-valider").addEventListener("click", valider);
+  document.querySelector("#verif-valider").addEventListener("click", (e) => {
+    if (e.currentTarget.getAttribute("aria-disabled") === "true") return; // il reste des lignes à confirmer
+    valider();
+  });
+  document.querySelector("#verif-fin-suite").addEventListener("click", photoSuivante);
   document.querySelector("#verif-annuler").addEventListener("click", () => {
     etat(file.length ? "Photo ignorée." : "Lecture annulée.");
     photoSuivante();
