@@ -210,6 +210,7 @@ function montrer(vue) {
   if (vue === "course" && typeof majNotifs === "function") majNotifs();
   window.scrollTo(0, 0);
   if (avant && avant !== vue) animerVue(avant, vue);
+  if (typeof placerSoulignes === "function") placerSoulignes(); // le trait des bascules se replace dès que l'écran est visible (js/bascules.js)
 }
 
 // ---------- Menu « Mon profil » ----------

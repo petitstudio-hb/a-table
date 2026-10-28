@@ -149,7 +149,9 @@ function ouvrirPanier(id) {
   rayonsOuvertsPanier.clear();
   rayonsRepliesPanier.clear();
   afficherPaniers();
-  if (panierOuvert) document.querySelector(`#liste-paniers li[data-id="${panierOuvert}"]`)?.scrollIntoView({ block: "start" });
+  // Le panier déplié se place sous l'en-tête en défilant doucement (sans animation si l'iPhone demande de réduire les mouvements).
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (panierOuvert) document.querySelector(`#liste-paniers li[data-id="${panierOuvert}"]`)?.scrollIntoView({ block: "start", behavior: reduit ? "auto" : "smooth" });
 }
 
 function fermerPanier() {

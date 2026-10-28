@@ -822,7 +822,8 @@ input, select, textarea { font-size: 16px !important; }
 
 /* Séance 33 : panier déplié sur place dans Mes paniers */
 #liste-paniers > li.ouvert { border: 2px solid var(--accent); padding: 8px; }
-#liste-paniers > li.ouvert .ouvrir .fleche::before { transform: rotate(45deg); left: 8px; top: 7px; }
+#liste-paniers .ouvrir .fleche::before { transition: transform 0.15s; }
+#liste-paniers > li.ouvert .ouvrir .fleche::before { transform: rotate(135deg); left: 9px; top: 5px; } /* ouvert : la flèche pointe vers le bas, fermé : vers la droite */
 .detail-deplie { margin-top: 8px; padding-top: 10px; border-top: 1.5px dashed var(--ligne); }
 .detail-deplie .pleine { width: 100%; min-height: 48px; }
 #liste-paniers > li.ouvert { flex-direction: column; align-items: stretch; }
@@ -990,17 +991,18 @@ input, select, textarea { font-size: 16px !important; }
 .plus-reglage { margin-top: 8px; }
 .plus-reglage .bouton-secondaire { display: block; text-align: center; }
 
-/* Séance 37 : transitions entre écrans (variante D choisie par Hugo) : l'écran arrive de la droite ou de la gauche selon le sens
-   de l'onglet, ceux du menu profil arrivent par le bas. Seuls opacity et transform sont animés (rien ne force la mise en page),
-   aucun délai (l'écran reste tactile). « backwards » : l'état de départ s'applique dès le premier instant. */
+/* Transitions entre écrans : glissement doux partout (choix de Hugo, 28/10/2026 : « du doux partout »), pour les pages comme pour les
+   bascules (Liste/Carte, Par rayon/Mes achats). L'écran arrive de la droite ou de la gauche selon le sens de l'onglet, ceux du menu
+   profil arrivent par le bas. Seuls opacity et transform sont animés (rien ne force la mise en page), aucun délai (l'écran reste
+   tactile). « backwards » : l'état de départ s'applique dès le premier instant. */
 @keyframes vue-fondu { from { opacity: 0; } }
-@keyframes vue-depuis-droite { from { opacity: 0; transform: translateX(28px); } }
-@keyframes vue-depuis-gauche { from { opacity: 0; transform: translateX(-28px); } }
-@keyframes vue-depuis-bas { from { opacity: 0; transform: translateY(36px); } }
-.vue.anim-fondu { animation: vue-fondu 220ms ease-out backwards; }
-.vue.anim-droite { animation: vue-depuis-droite 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
-.vue.anim-gauche { animation: vue-depuis-gauche 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
-.vue.anim-bas { animation: vue-depuis-bas 220ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
+@keyframes vue-depuis-droite { from { opacity: 0; transform: translateX(20px); } }
+@keyframes vue-depuis-gauche { from { opacity: 0; transform: translateX(-20px); } }
+@keyframes vue-depuis-bas { from { opacity: 0; transform: translateY(20px); } }
+.vue.anim-fondu { animation: vue-fondu 450ms ease-out backwards; }
+.vue.anim-droite, .glisse-droite { animation: vue-depuis-droite 450ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; }
+.vue.anim-gauche, .glisse-gauche { animation: vue-depuis-gauche 450ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; }
+.vue.anim-bas { animation: vue-depuis-bas 450ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; }
 main.en-transition { overflow-x: clip; } /* pendant un glissement, on coupe ce qui dépasse sans créer de zone de défilement */
 
 
@@ -1014,7 +1016,7 @@ details[open] > :not(summary) { animation: ouvre-ligne 200ms ease-out backwards;
 
 /* Mouvement réduit (réglage « Réduire les animations » de l'iPhone) : aucune animation. */
 @media (prefers-reduced-motion: reduce) {
-  .vue, .vue[class*="anim-"], .carte-fiche, details > * { animation: none !important; transition: none !important; }
+  .vue, .vue[class*="anim-"], .glisse-droite, .glisse-gauche, .souligne, .carte-fiche, details > * { animation: none !important; transition: none !important; }
   button:active, .bouton-secondaire:active, .onglets a:active { transform: none !important; transition: none !important; }
 }
 
@@ -1067,3 +1069,42 @@ input[type=checkbox]:not(.bascule) { border-radius: calc(var(--rayon) / 2); }
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bascule::before, #profil-bouton::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 #profil-bouton { position: relative; }
+/* ======================================================================================================
+   Lot 1 « look » (28/10/2026, maquettes validées par Hugo) : angles doux 8 px, bas de ticket en dents, bascules en onglets
+   soulignés (trait droit qui glisse), icônes en contour. Voir context.md, « Décisions de style validées ».
+   ====================================================================================================== */
+:root { --rayon: 8px; }
+
+/* Angles doux : cartes, boutons, champs, rangées (les ronds et pastilles restent ronds). */
+.carte-blanche, .carte, #interrupteur-courses, .rang, .kpi-case, .ticket, details.exclus, .carte-nettoyage, .plus-course, .plus-panier, .plus-reglage,
+.chip-mag, .choix-magasin, #carte-cadre, #carte-zone, .encart, .ligne-duel, .rayon-titre, .rayon-bande-bouton, #ou-aller,
+.interrupteur, #barre-courses, .feuille-fin, .profil-menu { border-radius: var(--rayon) !important; }
+.carte-fiche { border-radius: var(--rayon) var(--rayon) 0 0 !important; }
+button:not(.bascule):not(.recherche-croix):not(.rayon-titre):not(.rayon-bande-bouton):not(.reglage-titre):not(.ouvrir):not(.lien-discret):not(.lien-fleche):not(.cellule):not(#carte-loc):not(.puce):not(.promo-bouton):not(.mode-releves button),
+.bouton-secondaire { border-radius: var(--rayon) !important; }
+input[type=text], input[type=search], input[type=date], select, textarea, .recherche { border-radius: var(--rayon) !important; }
+input[type=checkbox]:not(.bascule) { border-radius: calc(var(--rayon) / 2) !important; }
+.pastille-format, .etiquette { border-radius: 999px !important; }
+.profil-menu a { border-radius: var(--rayon); justify-content: flex-start; gap: 12px; }
+
+/* Bas de ticket en dents sur les cartes des cinq écrans (Ma course, Magasins, Mes paniers, Mes relevés, Ma liste). */
+:is(#vue-course, #vue-magasins, #vue-paniers, #vue-releves, #vue-liste) .carte-blanche { position: relative; padding-bottom: 34px; border-bottom: none; border-radius: var(--rayon) var(--rayon) 0 0 !important; }
+:is(#vue-course, #vue-magasins, #vue-paniers, #vue-releves, #vue-liste) .carte-blanche::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 9px; background: linear-gradient(45deg, var(--fond) 4.5px, transparent 0), linear-gradient(315deg, var(--fond) 4.5px, transparent 0); background-size: 9px 9px; background-position: left bottom; pointer-events: none; }
+
+/* Bascules : onglets soulignés, trait droit (Liste/Carte, Par rayon/Mes achats, Ticket de caisse/Prix en rayon). */
+:is(#vue-magasins, #vue-releves) .mode-releves { position: relative; display: flex; gap: 22px; margin: 6px 0 18px; border: none; border-bottom: 1px solid var(--ligne); border-radius: 0 !important; background: none; }
+:is(#vue-magasins, #vue-releves) .mode-releves button { flex: 1; margin-bottom: -1px; min-height: 44px; border: none; border-bottom: 3px solid transparent; border-radius: 0 !important; background: none; color: var(--discret); font-weight: 600; transition: color 300ms; }
+:is(#vue-magasins, #vue-releves) .mode-releves button.actif { background: none; color: var(--accent); font-weight: 800; }
+.souligne { position: absolute; bottom: -1px; left: 0; width: 0; height: 3px; background: var(--accent); transition: left 380ms cubic-bezier(0.4, 0, 0.2, 1), width 380ms cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+.segment { display: flex; justify-content: center; gap: 22px; margin: 6px auto 14px; padding: 0; width: fit-content; max-width: 100%; border: none; border-bottom: 1px solid var(--ligne); border-radius: 0; background: none; }
+.segment label { position: relative; margin: 0; }
+.segment span { display: block; padding: 10px 4px; margin-bottom: -1px; border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--discret); font-weight: 600; }
+.segment input:checked + span { background: none; color: var(--accent); font-weight: 800; border-bottom-color: var(--accent); box-shadow: none; }
+#vue-magasins, #vue-releves { overflow-x: clip; }
+
+/* Mes paniers : le panier déplié se place sous l'en-tête (60 px) en défilant doucement. */
+#liste-paniers > li { scroll-margin-top: 68px; }
+
+/* Icônes en contour (une seule famille : trait de 2 px, bouts ronds, grille de 24 px). */
+svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.profil-menu a svg { flex: none; }
