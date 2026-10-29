@@ -223,6 +223,7 @@ function premierLancement() {
 }
 
 function majPhoto() {
+  if (!document.querySelector("#photo-accueil")) return; // anciennes maquettes : écran Photo d'avant le lot 2
   const accueil = phasePhoto === "repos" && premierLancement();
   document.querySelector("#photo-accueil").hidden = !accueil;
   document.querySelector("#photo-classique").hidden = phasePhoto !== "repos" || accueil;

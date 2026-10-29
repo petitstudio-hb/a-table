@@ -70,9 +70,11 @@ function majCourses() {
   document.querySelector("#cabas-reste").textContent = reste;
   // Écart entre le prix prévu et le prix vu en rayon, seulement s'il y a des corrections.
   const nb = correctionsCourses().length;
-  const ecart = document.querySelector("#cabas-ecart");
-  ecart.hidden = nb === 0;
-  ecart.innerHTML = nb ? `<small>Écart prévu / payé</small><b>${texteEcart(ecartCourses())}</b>` : "";
+  const ecart = document.querySelector("#cabas-ecart"); // absent des anciennes maquettes (copies de l'écran d'avant le lot 3)
+  if (ecart) {
+    ecart.hidden = nb === 0;
+    ecart.innerHTML = nb ? `<small>Écart prévu / payé</small><b>${texteEcart(ecartCourses())}</b>` : "";
+  }
 }
 
 // ---------- Interrupteur ----------
