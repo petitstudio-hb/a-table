@@ -177,6 +177,7 @@
         <div id="course-comparaison" class="carte-blanche comparaison">
           <p id="classement-etiq" class="etiq" hidden>OÙ CE PANIER COÛTE LE MOINS ?</p>
           <div id="classement"></div>
+          <button type="button" id="repartition-bandeau" class="rp-bandeau" hidden></button>
         </div>
         <div class="carte-blanche">
           <div class="outils-course">
@@ -232,6 +233,21 @@
               <tbody></tbody>
               <tfoot><tr></tr></tfoot>
             </table>
+          </div>
+        </div>
+
+        <!-- Répartir sur deux magasins : feuille du bas ouverte par le bandeau vert de Ma course (maquette validée le 29/10). -->
+        <div id="feuille-repartition" class="feuille-prix" hidden>
+          <div class="fp-voile" id="rep-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="rep-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="rep-titre" class="fp-titre">Répartir sur 2 magasins</p>
+            <p id="rep-sous" class="fp-sous"></p>
+            <div id="rep-corps"></div>
+            <div class="rp-pen" role="group" aria-label="Déplacement compté">Déplacement compté :
+              <button type="button" data-pen="0">0 €</button><button type="button" data-pen="2">2 €</button><button type="button" data-pen="5">5 €</button><button type="button" data-pen="10">10 €</button>
+            </div>
+            <div class="fp-actions"><button type="button" id="rep-fermer" class="principal">Fermer</button></div>
           </div>
         </div>
 
@@ -543,6 +559,7 @@
     <script src="js/donnees.js"></script>
     <script src="js/prix.js"></script>
     <script src="js/outils.js"></script>
+    <script src="js/repartition.js"></script>
     <script src="js/historique.js"></script>
     <script src="js/donnees-sures.js"></script>
     <script src="js/app.js"></script>
@@ -557,6 +574,7 @@
     <script src="js/carte.js"></script>
     <script src="js/ouialler.js"></script>
     <script src="js/courses.js"></script>
+    <script src="js/repartir.js"></script>
     <script src="js/formats.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->

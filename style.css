@@ -1285,3 +1285,18 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .fp-actions .principal { flex: 2; background: var(--accent); color: #fff; }
 html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .fp-voile, .fp-feuille { animation: none !important; } }
+
+/* --- Répartir sur deux magasins : bandeau vert et détail (maquette validée le 29/10) --- */
+.rp-bandeau { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 12px; padding: 12px; border: 2px solid var(--vert); border-radius: var(--rayon); background: var(--vert-fond); color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.rp-bandeau[hidden] { display: none; }
+.rp-bandeau .txt { flex: 1; min-width: 0; font-weight: 700; }
+.rp-bandeau small { display: block; font-weight: 400; color: var(--discret); }
+.rp-chev { flex: none; width: 10px; height: 10px; margin: 0 6px 0 2px; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(45deg); }
+.rp-detail h3 { margin: 12px 0 4px; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.rp-ligne { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--ligne); }
+.rp-ligne span:last-child { font-family: var(--mono); font-weight: 700; }
+.rp-total { display: flex; justify-content: space-between; padding: 8px 0 0; font-weight: 800; }
+.rp-note { margin: 10px 0 0; padding: 8px 10px; border-radius: var(--rayon); background: var(--fond); color: var(--discret); font-size: 0.85rem; }
+.rp-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; font-size: 0.85rem; color: var(--discret); }
+.rp-pen button { padding: 6px 12px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
+.rp-pen button.on { border-color: var(--accent); background: var(--accent); color: #fff; }

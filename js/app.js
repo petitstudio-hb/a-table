@@ -416,6 +416,7 @@ function afficherCourse() {
     return `<span>Total ${echapper(m.nom)}</span><strong>${t.connus ? euros(t.total) : "—"}</strong><small>${t.connus}/${t.coches} prix connus</small>`;
   }).join("");
   if (typeof majCourses === "function") majCourses();
+  if (typeof majRepartition === "function") majRepartition();
   if (typeof majNettoyage === "function") majNettoyage();
 }
 
