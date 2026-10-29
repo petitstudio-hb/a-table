@@ -1,4 +1,4 @@
-// Données versionnées et import sûr (S11, fondation invisible : non branché). Détail : livrables/doc-donnees-sures.md
+// Données versionnées et import sûr (S11, fondation invisible : non branché). Détail : livrables/5-documentation/doc-donnees-sures.md
 // Valide un fichier de sauvegarde, le met à la version actuelle (migrations), refuse un fichier corrompu ou d'une version future.
 const DonneesSures = (() => {
   const VERSION = 4; // version écrite par exporter() aujourd'hui

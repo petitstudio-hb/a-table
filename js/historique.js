@@ -1,4 +1,4 @@
-// Couche historique des prix (S9, fondation invisible : aucune interface). Détail : livrables/doc-historique.md
+// Couche historique des prix (S9, fondation invisible : aucune interface). Détail : livrables/5-documentation/doc-historique.md
 // Travaille sur la liste des relevés { produit, magasin, prix, date (AAAA-MM-JJ), quantite? } sans jamais la modifier.
 const Historique = (() => {
   const arrondi = (x, n = 2) => Math.round(x * 10 ** n) / 10 ** n;

@@ -1,6 +1,6 @@
 // Moteur d'association produit/ticket (S7, fondation invisible : rien ne l'appelle encore depuis l'interface).
 // Entrée : un libellé de caisse (« B.75CL BIERE BLC MT ») et la liste des produits ; sortie : le meilleur produit,
-// un score de 0 à 1, les raisons, et un classement « sûre / douteuse / nouvelle ». Détail : livrables/doc-association.md
+// un score de 0 à 1, les raisons, et un classement « sûre / douteuse / nouvelle ». Détail : livrables/5-documentation/doc-association.md
 const Association = (() => {
   const sansAccent = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   // Abréviations de caisse apprises des tickets réels.

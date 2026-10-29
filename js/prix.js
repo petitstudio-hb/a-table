@@ -1,4 +1,4 @@
-// Moteur de prix comparables (S8, fondation invisible : non branché à l'interface). Détail : livrables/doc-prix.md
+// Moteur de prix comparables (S8, fondation invisible : non branché à l'interface). Détail : livrables/5-documentation/doc-prix.md
 // Unités : masse (g), volume (ml), pièce, lavage, longueur (m). Tout est converti vers une unité de base, puis un prix unitaire
 // normalisé (€/kg, €/L, €/pièce, €/lavage, €/m) permet de comparer des formats différents.
 const Prix = (() => {

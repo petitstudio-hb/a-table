@@ -1,4 +1,4 @@
-// « Répartir sur deux magasins » (S10, fondation invisible : aucune interface). Détail : livrables/doc-repartition.md
+// « Répartir sur deux magasins » (S10, fondation invisible : aucune interface). Détail : livrables/5-documentation/doc-repartition.md
 // Entrée : produits (numéros), magasins (identifiants), prixDe(produit, magasin) → nombre ou null.
 // Sortie : le meilleur partage du panier entre 2 magasins, l'économie nette par rapport au meilleur magasin seul, avec une pénalité de déplacement.
 const Repartition = (() => {
