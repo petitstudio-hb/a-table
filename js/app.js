@@ -514,27 +514,58 @@ function afficherMagasins() {
 
 let enModification = null; // indice du relevé en cours de modification
 let rechercheReleves = ""; // texte cherché dans Mes relevés (sans accent, non mémorisé)
+// Filtres et tri de Mes relevés (lot « filtres », maquette validée le 29/10/2026) : non mémorisés, comme la recherche.
+// source : ticket | etiquette | saisie ; periode : nombre de jours (0 = toute la période) ; tri : rayon (actuel) | recent | prix | nom
+const FILTRES_RELEVES_VIDES = { magasin: "tous", source: "tous", periode: 0, tri: "rayon" };
+let filtresReleves = { ...FILTRES_RELEVES_VIDES };
+const nbFiltresReleves = () => ["magasin", "source", "periode", "tri"].filter((c) => filtresReleves[c] !== FILTRES_RELEVES_VIDES[c]).length;
+
+// Ce relevé passe-t-il les filtres (hors recherche) ?
+function releveFiltre(r) {
+  const f = filtresReleves;
+  if (f.magasin !== "tous" && r.magasin !== f.magasin) return false;
+  if (f.source !== "tous" && (f.source === "saisie" ? r.source === "ticket" || r.source === "etiquette" : r.source !== f.source)) return false;
+  if (f.periode) {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - f.periode);
+    if (r.date < limite.toISOString().slice(0, 10)) return false;
+  }
+  return true;
+}
 
 function afficherReleves() {
   const liste = document.querySelector("#liste-releves");
   document.querySelector("#nb-releves").textContent = releves.length;
+  if (typeof majFiltresReleves === "function") majFiltresReleves();
   if (!releves.length) {
     liste.innerHTML = `<li class="vide">Aucun prix enregistré pour l'instant. Prends une photo, ou saisis un prix dans « Ma course ».</li>`;
     return;
   }
   const lignes = releves
     .map((r, k) => ({ r, k }))
-    .filter(({ r }) => !rechercheReleves || sansAccent(`${PANIER[r.produit].nom} ${r.marque || ""} ${nomMagasin(r.magasin)}`).includes(rechercheReleves))
-    .sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k);
+    .filter(({ r }) => releveFiltre(r) && (!rechercheReleves || sansAccent(`${PANIER[r.produit].nom} ${r.marque || ""} ${nomMagasin(r.magasin)}`).includes(rechercheReleves)))
+    .sort((a, b) => {
+      const parDate = b.r.date.localeCompare(a.r.date) || b.k - a.k;
+      if (filtresReleves.tri === "prix") return a.r.prix - b.r.prix || parDate;
+      if (filtresReleves.tri === "nom") return PANIER[a.r.produit].nom.localeCompare(PANIER[b.r.produit].nom, "fr") || parDate;
+      return parDate;
+    });
+  const message = rechercheReleves || nbFiltresReleves() ? `Aucun relevé ne correspond à ces filtres ou à cette recherche.` : "";
+  // « Plus récent d'abord » : une seule liste du plus récent au plus ancien, sans rayons.
+  if (filtresReleves.tri === "recent") {
+    liste.innerHTML = lignes.length ? ligneReleves(lignes) : `<li class="vide">${message}</li>`;
+    return;
+  }
   // Regroupés par rayon, dans l'ordre des rayons de la liste ; chaque rayon se replie.
   const rayons = [...new Set(PANIER.map((p) => p.rayon))].filter((rayon) => lignes.some(({ r }) => PANIER[r.produit].rayon === rayon));
+  const filtre = rechercheReleves || nbFiltresReleves();
   liste.innerHTML = rayons.map((rayon) => {
     const groupe = lignes.filter(({ r }) => PANIER[r.produit].rayon === rayon);
-    const replie = !rechercheReleves && relevesReplies.has(rayon); // pendant une recherche, tout est déplié
+    const replie = !filtre && relevesReplies.has(rayon); // pendant une recherche ou un filtre, tout est déplié
     return `<li class="rayon-releve"><button type="button" class="rayon-titre" data-rayon-releve="${echapper(rayon)}" aria-expanded="${!replie}">
       <span>${echapper(rayon)} · ${groupe.length}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`
       + (replie ? "" : ligneReleves(groupe));
-  }).join("") || `<li class="vide">Aucun relevé ne correspond à « ${echapper(document.querySelector("#recherche-releves-champ").value.trim())} ».</li>`;
+  }).join("") || `<li class="vide">${message}</li>`;
 }
 
 // Historique du prix d'un produit (lot 3) : courbe dans le magasin du relevé, variation, meilleur prix vu partout. Calculs : js/historique.js.

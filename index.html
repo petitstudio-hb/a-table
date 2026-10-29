@@ -236,6 +236,20 @@
           </div>
         </div>
 
+        <!-- Filtrer et trier Mes relevés : feuille du bas (maquette validée le 29/10). -->
+        <div id="feuille-filtres" class="feuille-prix" hidden>
+          <div class="fp-voile" id="ft-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="ft-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="ft-titre" class="fp-titre">Filtrer et trier</p>
+            <div id="ft-corps"></div>
+            <div class="fp-actions">
+              <button type="button" id="ft-effacer">Tout effacer</button>
+              <button type="button" id="ft-ok" class="principal">Voir les relevés</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Répartir sur deux magasins : feuille du bas ouverte par le bandeau vert de Ma course (maquette validée le 29/10). -->
         <div id="feuille-repartition" class="feuille-prix" hidden>
           <div class="fp-voile" id="rep-voile"></div>
@@ -393,8 +407,10 @@
           <div id="releves-rayons">
             <div class="outils-releves">
               <div id="recherche-releves"><input type="search" class="recherche" id="recherche-releves-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
+              <button type="button" id="filtres-releves" class="ft-bouton" aria-label="Filtrer et trier">Filtres<span id="filtres-releves-nb" class="ft-nb" hidden></span></button>
               <button type="button" id="plus-releves" class="bouton-plus" aria-expanded="false" aria-label="Plus d'options">⋯</button>
             </div>
+            <div id="filtres-releves-actifs" class="ft-puces" hidden></div>
             <div id="plus-releves-zone" class="plus-panier" hidden>
               <button type="button" id="releves-replier">Tout replier</button>
               <button type="button" id="releves-deplier">Tout déplier</button>
@@ -575,6 +591,7 @@
     <script src="js/ouialler.js"></script>
     <script src="js/courses.js"></script>
     <script src="js/repartir.js"></script>
+    <script src="js/filtres-releves.js"></script>
     <script src="js/formats.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->

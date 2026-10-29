@@ -1300,3 +1300,14 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .rp-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; font-size: 0.85rem; color: var(--discret); }
 .rp-pen button { padding: 6px 12px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
 .rp-pen button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+/* --- Filtres et tri de Mes relevés (maquette validée le 29/10) --- */
+.ft-bouton { position: relative; flex: none; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--ligne); background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+.ft-nb { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--jaune); color: var(--texte); font-size: 0.75rem; }
+.ft-puces { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.ft-puces[hidden] { display: none; }
+.ft-puces button { padding: 7px 12px; min-height: 36px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 600; cursor: pointer; }
+.ft-puces button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ft-puces .actif { display: inline-flex; align-items: center; gap: 6px; border-color: var(--accent); background: var(--carte); color: var(--accent); }
+.ft-puces .actif::after { content: "×"; font-weight: 800; }
+#feuille-filtres h4 { margin: 14px 0 6px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
