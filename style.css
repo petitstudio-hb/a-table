@@ -872,7 +872,7 @@ input, select, textarea { font-size: 16px !important; }
 /* Mode courses : le choix du panier, le magasin où l'on est, la liste agrandie et les boutons replier restent ; le reste disparaît. */
 .mode-courses #choix-magasins, .mode-courses #liste-choix-magasins, .mode-courses #course-comparaison .aide,
 .mode-courses #tout-comparer-bouton, .mode-courses #tout-comparer, .mode-courses #course-total,
-.mode-courses .carte-blanche:has(#saisie), .mode-courses #nb-coches, .mode-courses #tout, .mode-courses #rien,
+.mode-courses #nb-coches, .mode-courses #tout, .mode-courses #rien,
 .mode-courses .carte-blanche > .aide { display: none; }
 .mode-courses .repere { border-radius: 50%; }
 .mode-courses #classement::after { content: "Touche le magasin où tu es : un seul à la fois."; display: block; margin: 2px 0 6px; font-size: 0.82rem; color: var(--discret); }
@@ -1265,3 +1265,23 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 /* Mes relevés : la ligne dépliée garde sa flèche, vers le bas (retour de recette du 29/10) ; toucher le titre la referme. */
 .modif-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 4px 0 8px; border: none; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .chev-bas { flex: none; width: 10px; height: 10px; margin: 0 8px 4px 0; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(135deg); }
+
+/* --- Saisie d un prix : feuille du bas (maquette validée le 29/10) --- */
+.feuille-prix { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
+.feuille-prix[hidden] { display: none; }
+.fp-voile { position: absolute; inset: 0; background: rgba(19, 57, 42, 0.55); animation: vue-fondu 200ms ease-out; }
+.fp-feuille { position: relative; width: 100%; max-width: 430px; max-height: 88vh; overflow: auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--carte); border-radius: 14px 14px 0 0; text-align: left; animation: vue-depuis-bas 260ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; }
+.fp-poignee { width: 40px; height: 4px; margin: -8px auto 10px; border-radius: 2px; background: var(--ligne); }
+.fp-titre { margin: 0 0 2px; font-size: 1.15rem; font-weight: 800; }
+.fp-sous { margin: 0 0 8px; color: var(--discret); }
+.fp-feuille .formulaire { display: block; }
+.fp-feuille label.large { display: block; margin: 10px 0 4px; font-size: 0.85rem; font-weight: 700; color: var(--discret); }
+.fp-feuille select, .fp-feuille input[type=text], .fp-feuille input[type=date] { display: block; width: 100%; margin-top: 4px; padding: 12px; border: 1.5px solid var(--ligne); background: var(--blanc); font: inherit; color: var(--texte); border-radius: var(--rayon); }
+.fp-feuille .fp-prix { font-size: 1.6rem; font-weight: 800; font-family: var(--mono); text-align: center; }
+.fp-feuille .case { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; font-size: 1rem; font-weight: 600; }
+.fp-plus > summary { padding: 8px 0; color: var(--accent); font-weight: 700; cursor: pointer; }
+.fp-actions { display: flex; gap: 10px; margin-top: 14px; }
+.fp-actions button { flex: 1; min-height: 52px; font: inherit; font-weight: 800; border: 2px solid var(--accent); background: var(--carte); color: var(--accent); cursor: pointer; }
+.fp-actions .principal { flex: 2; background: var(--accent); color: #fff; }
+html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .fp-voile, .fp-feuille { animation: none !important; } }

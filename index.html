@@ -235,28 +235,40 @@
           </div>
         </div>
 
-        <div class="carte-blanche" id="saisie-carte" hidden>
-          <h2>Saisir un prix à la main</h2>
-          <form id="saisie" class="formulaire">
-            <label class="large">Produit
-              <select id="saisie-produit"></select>
-            </label>
-            <label>Magasin
-              <select id="saisie-magasin"></select>
-            </label>
-            <label>Prix (€)
-              <input id="saisie-prix" type="text" inputmode="decimal" placeholder="ex. 1,29" autocomplete="off">
-            </label>
-            <label>Date
-              <input id="saisie-date" type="date">
-            </label>
-            <label hidden>Code-barres (facultatif)
-              <input id="saisie-code" type="text" inputmode="numeric" autocomplete="off">
-            </label>
-            <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
-            <button type="submit" class="principal">Enregistrer</button>
-            <p id="saisie-message" class="message" role="status"></p>
-          </form>
+        <!-- Saisie d'un prix : feuille du bas (maquette validée le 29/10). S'ouvre en touchant un prix de la liste, ou « Saisir un prix » dans ⋯. -->
+        <div id="saisie-carte" class="feuille-prix" hidden>
+          <div class="fp-voile" id="saisie-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="saisie-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="saisie-titre" class="fp-titre">Saisir un prix</p>
+            <p id="saisie-sous" class="fp-sous"></p>
+            <form id="saisie" class="formulaire">
+              <label class="large" id="saisie-produit-label">Produit
+                <select id="saisie-produit"></select>
+              </label>
+              <label class="large">Magasin
+                <select id="saisie-magasin"></select>
+              </label>
+              <label class="large">Prix vu (€)
+                <input id="saisie-prix" class="fp-prix" type="text" inputmode="decimal" placeholder="ex. 1,29" autocomplete="off">
+              </label>
+              <label class="case"><input id="saisie-promo" type="checkbox"> En promo</label>
+              <details class="fp-plus">
+                <summary>Plus : la date</summary>
+                <label class="large">Date
+                  <input id="saisie-date" type="date">
+                </label>
+              </details>
+              <label hidden>Code-barres (facultatif)
+                <input id="saisie-code" type="text" inputmode="numeric" autocomplete="off">
+              </label>
+              <p id="saisie-message" class="message" role="status"></p>
+              <div class="fp-actions">
+                <button type="button" id="saisie-annuler">Annuler</button>
+                <button type="submit" class="principal">Enregistrer</button>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 

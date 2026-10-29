@@ -611,16 +611,33 @@ function toutAfficher() {
 
 // ---------- Saisie manuelle ----------
 
+// La saisie d'un prix est une feuille du bas (comme le choix de la photo ou la fin des courses) : on reste là où on est.
+// Avec un produit (on a touché son prix) : son nom en titre, le menu « Produit » masqué. Sans produit (« Saisir un prix » dans ⋯) : le menu est affiché.
 function ouvrirSaisie(produit, magasin) {
-  document.querySelector("#saisie-produit").value = produit;
-  document.querySelector("#saisie-magasin").value = magasin;
-  const actuel = prixDe(Number(produit), magasin).prix;
   const champ = document.querySelector("#saisie-prix");
-  champ.value = actuel === null ? "" : actuel.toFixed(2).replace(".", ",");
-  document.querySelector("#saisie-code").value = dernierCode(Number(produit), magasin) || "";
-  document.querySelector("#saisie-carte").hidden = false; // le formulaire est replié sous « ⋯ » tant qu'on ne s'en sert pas
-  document.querySelector("#saisie").scrollIntoView({ behavior: "smooth", block: "center" });
+  const connu = produit !== undefined && produit !== null && produit !== "";
+  const p = connu ? PANIER[Number(produit)] : null;
+  if (connu) document.querySelector("#saisie-produit").value = produit;
+  if (magasin) document.querySelector("#saisie-magasin").value = magasin;
+  const idProduit = Number(document.querySelector("#saisie-produit").value);
+  const idMagasin = document.querySelector("#saisie-magasin").value;
+  const actuel = Number.isInteger(idProduit) && idMagasin ? prixDe(idProduit, idMagasin).prix : null;
+  champ.value = connu && actuel !== null ? actuel.toFixed(2).replace(".", ",") : "";
+  document.querySelector("#saisie-code").value = connu ? (dernierCode(idProduit, idMagasin) || "") : "";
+  document.querySelector("#saisie-titre").textContent = p ? p.nom : "Saisir un prix";
+  document.querySelector("#saisie-sous").textContent = p ? `${p.format || ""}${p.format ? " · " : ""}${actuel === null ? "prix inconnu" : `dernier prix connu ${euros(actuel)}`}` : "";
+  document.querySelector("#saisie-produit-label").hidden = connu;
+  document.querySelector("#saisie-message").textContent = "";
+  document.querySelector("#saisie-message").className = "message";
+  document.querySelector("#saisie-carte").hidden = false;
+  document.documentElement.classList.add("feuille-prix-ouverte"); // fige la page derrière la feuille
   champ.focus();
+  champ.select();
+}
+
+function fermerSaisie() {
+  document.querySelector("#saisie-carte").hidden = true;
+  document.documentElement.classList.remove("feuille-prix-ouverte");
 }
 
 const lirePrix = (texte) => parseFloat(String(texte).replace(",", ".").replace(/[^\d.]/g, ""));
@@ -846,11 +863,10 @@ function brancherEvenements() {
     panneau.hidden = !panneau.hidden;
     e.currentTarget.setAttribute("aria-expanded", String(!panneau.hidden));
   });
-  document.querySelector("#saisie-ouvrir").addEventListener("click", () => {
-    const carte = document.querySelector("#saisie-carte");
-    carte.hidden = !carte.hidden;
-    if (!carte.hidden) carte.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+  document.querySelector("#saisie-ouvrir").addEventListener("click", () => ouvrirSaisie());
+  document.querySelector("#saisie-annuler").addEventListener("click", fermerSaisie);
+  document.querySelector("#saisie-voile").addEventListener("click", fermerSaisie);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.querySelector("#saisie-carte").hidden) fermerSaisie(); });
   document.querySelector("#tout-comparer-bouton").addEventListener("click", (e) => {
     const bloc = document.querySelector("#tout-comparer");
     bloc.hidden = !bloc.hidden;
@@ -893,11 +909,11 @@ function brancherEvenements() {
     releves.push(releve);
     sauvegarder();
     toutAfficher();
-    message.textContent = `Enregistré : ${PANIER[releve.produit].nom} chez ${nomMagasin(releve.magasin)}, ${euros(releve.prix)}.`;
-    message.className = "message ok";
     document.querySelector("#saisie-prix").value = "";
     document.querySelector("#saisie-code").value = "";
     document.querySelector("#saisie-promo").checked = false;
+    fermerSaisie();
+    notifier(`Prix enregistré : ${PANIER[releve.produit].nom} chez ${nomMagasin(releve.magasin)}, ${euros(releve.prix)}.`);
   });
 
   document.querySelector("#liste-releves").addEventListener("click", (e) => {
