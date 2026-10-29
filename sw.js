@@ -48,13 +48,16 @@ self.addEventListener("fetch", (e) => {
   // Le site lui-même : réseau d'abord, copie gardée si pas de réseau.
   if (url.origin === self.location.origin) {
     e.respondWith((async () => {
-      const cache = await caches.open(CACHE_SITE);
+      // Stockage plein, indisponible ou copie illisible : on ne bloque jamais la réponse du réseau.
+      let cache = null;
+      try { cache = await caches.open(CACHE_SITE); } catch (err) { /* sans copie gardée */ }
       try {
         const rep = await avecDelai(fetch(req, { cache: "no-cache" }), DELAI_RESEAU); // « no-cache » : toujours vérifier la version en ligne
-        if (rep.ok) cache.put(req.mode === "navigate" ? "index.html" : req, rep.clone());
+        if (rep.ok && cache) { try { Promise.resolve(cache.put(req.mode === "navigate" ? "index.html" : req, rep.clone())).catch(() => {}); } catch (err) { /* idem */ } }
         return rep;
       } catch (err) {
-        const copie = (await cache.match(req, { ignoreSearch: true })) || (req.mode === "navigate" ? await cache.match("index.html") : null);
+        let copie = null;
+        try { if (cache) copie = (await cache.match(req, { ignoreSearch: true })) || (req.mode === "navigate" ? await cache.match("index.html") : null); } catch (err2) { /* copie illisible */ }
         return copie || new Response("Hors connexion : cette page n'est pas encore gardée dans le téléphone.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     })());
