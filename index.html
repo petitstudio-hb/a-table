@@ -236,6 +236,20 @@
           </div>
         </div>
 
+        <!-- Filtrer Mes achats : feuille du bas (maquette validée le 29/10, option B : supermarché, période, produit). -->
+        <div id="feuille-filtres-achats" class="feuille-prix" hidden>
+          <div class="fp-voile" id="fa-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="fa-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="fa-titre" class="fp-titre">Filtrer mes achats</p>
+            <div id="fa-corps"></div>
+            <div class="fp-actions">
+              <button type="button" id="fa-effacer">Tout effacer</button>
+              <button type="button" id="fa-ok" class="principal">Voir les achats</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Filtrer et trier Mes relevés : feuille du bas (maquette validée le 29/10). -->
         <div id="feuille-filtres" class="feuille-prix" hidden>
           <div class="fp-voile" id="ft-voile"></div>
@@ -420,6 +434,7 @@
           <div id="achats" hidden>
             <div id="achats-kpi" class="kpi"></div>
             <div id="achats-semaines"></div>
+            <div id="achats-outils"></div>
             <div id="achats-liste"></div>
           </div>
         </div>
@@ -592,6 +607,7 @@
     <script src="js/courses.js"></script>
     <script src="js/repartir.js"></script>
     <script src="js/filtres-releves.js"></script>
+    <script src="js/filtres-achats.js"></script>
     <script src="js/formats.js"></script>
     <script src="js/confort.js"></script>
     <!-- Open Prices masqué pour l'instant : <script src="js/openprices.js"></script> -->

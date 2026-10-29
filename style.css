@@ -1311,3 +1311,17 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .ft-puces .actif { display: inline-flex; align-items: center; gap: 6px; border-color: var(--accent); background: var(--carte); color: var(--accent); }
 .ft-puces .actif::after { content: "×"; font-weight: 800; }
 #feuille-filtres h4 { margin: 14px 0 6px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+/* --- Mes achats par mois, filtres et bilan par produit (maquette validée le 29/10) --- */
+.barre-filtres { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+.mois-achats { display: flex; align-items: center; gap: 10px; width: 100%; margin: 12px 0 4px; padding: 10px 12px; border: none; border-radius: var(--rayon); background: var(--ligne); color: var(--accent); font: inherit; text-align: left; cursor: pointer; }
+.mois-achats .t { flex: 1; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.mois-achats .t small { display: block; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--discret); }
+.mois-achats .tot { font-family: var(--mono); font-weight: 800; }
+.ch-mois { flex: none; width: 10px; height: 10px; margin: 0 4px; border-right: 3px solid var(--accent); border-top: 3px solid var(--accent); transform: rotate(45deg); transition: transform 0.15s; }
+.mois-achats.ouvert .ch-mois { transform: rotate(135deg); margin-top: -4px; }
+.bilan-produit { margin: 0 0 12px; padding: 12px; border: 2px solid var(--accent); border-radius: var(--rayon); background: var(--carte); }
+.bilan-produit b { font-size: 1.15rem; }
+.bilan-produit .l { display: flex; justify-content: space-between; padding: 4px 0; font-family: var(--mono); }
+#fa-corps h4 { margin: 14px 0 6px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+#fa-corps input[type=search] { width: 100%; }

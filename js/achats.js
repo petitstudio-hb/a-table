@@ -32,9 +32,29 @@ function debutSemaine(iso) {
 }
 const debutMois = (iso) => iso.slice(0, 7);
 
+// Filtres de Mes achats (maquette validée le 29/10/2026, option B) : supermarché, période, produit. Non mémorisés, comme la recherche.
+const FILTRES_ACHATS_VIDES = { magasin: "tous", periode: 0, produit: "" };
+let filtresAchats = { ...FILTRES_ACHATS_VIDES };
+const moisReplies = new Set(); // mois repliés dans la liste (tous ouverts au départ)
+const NOMS_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const nbFiltresAchats = () => (filtresAchats.magasin !== "tous" ? 1 : 0) + (filtresAchats.periode ? 1 : 0) + (filtresAchats.produit.trim() ? 1 : 0);
+const ligneCorrespond = (r) => !filtresAchats.produit.trim() || sansAccent(PANIER[r.produit]?.nom || "").includes(sansAccent(filtresAchats.produit.trim()));
+
+function ticketFiltre(t) {
+  const f = filtresAchats;
+  if (f.magasin !== "tous" && t.magasin !== f.magasin) return false;
+  if (f.periode) {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - f.periode);
+    if (t.date < limite.toISOString().slice(0, 10)) return false;
+  }
+  return t.lignes.some(ligneCorrespond);
+}
+
 function afficherAchats() {
   const tous = ticketsGroupes();
-  const tickets = tous.filter((t) => !t.exclu);
+  const sansExclus = tous.filter((t) => !t.exclu);
+  const tickets = sansExclus.filter(ticketFiltre);
   const exclus = tous.filter((t) => t.exclu);
   const kpi = document.querySelector("#achats-kpi");
   if (!kpi) return;
@@ -51,9 +71,10 @@ function afficherAchats() {
       ${exclus.map((t) => ticketHtml(t, true)).join("")}
     </details>`;
 
-  if (!tickets.length) {
+  if (!sansExclus.length) {
     kpi.innerHTML = "";
     document.querySelector("#achats-semaines").innerHTML = "";
+    document.querySelector("#achats-outils").innerHTML = "";
     document.querySelector("#achats-liste").innerHTML = `<p class="encart">${exclus.length ? "Tous vos tickets sont exclus des dépenses." : "Aucun ticket lu pour l'instant. Photographiez ou importez un ticket depuis l'onglet Photo."}</p>` + zoneExclus;
     return;
   }
@@ -80,7 +101,23 @@ function afficherAchats() {
     <div id="semaines-detail" ${semainesOuvertes ? "" : "hidden"}>` + semaines.map((s) => `
     <div class="barre-sem"><span>sem. du ${dateFr(s.iso).slice(0, 5)}</span><i style="width:${Math.round((s.total / max) * 100)}%"></i><b class="mono">${s.total ? euros(s.total) : "—"}</b></div>`).join("") + `</div>`;
 
-  document.querySelector("#achats-liste").innerHTML = `<p class="etiq">MES TICKETS</p>` + tickets.map((t) => ticketHtml(t, false)).join("") + zoneExclus;
+  // Outils : bouton Filtres, puces des filtres actifs, bilan du produit cherché (nombre d'achats, dépensé, prix moyen).
+  if (typeof majOutilsAchats === "function") majOutilsAchats(tickets);
+
+  // Les tickets groupés par mois (le plus récent d'abord) : chaque mois se replie, avec son total.
+  const parMois = new Map();
+  for (const t of tickets) {
+    const cle = debutMois(t.date);
+    if (!parMois.has(cle)) parMois.set(cle, []);
+    parMois.get(cle).push(t);
+  }
+  const mois_html = [...parMois.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([cle, groupe]) => {
+    const [annee, m] = cle.split("-");
+    const ouvert = !moisReplies.has(cle);
+    return `<button type="button" class="mois-achats ${ouvert ? "ouvert" : ""}" data-mois-achats="${cle}" aria-expanded="${ouvert}"><span class="t">${NOMS_MOIS[Number(m) - 1]} ${annee}<small>${groupe.length} ticket${groupe.length > 1 ? "s" : ""}</small></span><span class="tot">${euros(somme(groupe))}</span><span class="ch-mois" aria-hidden="true"></span></button>`
+      + (ouvert ? groupe.map((t) => ticketHtml(t, false)).join("") : "");
+  }).join("");
+  document.querySelector("#achats-liste").innerHTML = (mois_html || `<p class="encart">Aucun ticket ne correspond à ces filtres.</p>`) + zoneExclus;
 }
 
 // Un ticket déplié : ses lignes, puis « Exclure ce ticket des dépenses » (repère `exclu` sur ses relevés, rien n'est supprimé) ou « Remettre dans mes achats ».
@@ -118,6 +155,13 @@ function basculerExclusion(cle, exclu) {
 }
 
 document.querySelector("#achats-liste").addEventListener("click", (e) => {
+  const moisBouton = e.target.closest("[data-mois-achats]");
+  if (moisBouton) {
+    const cle = moisBouton.dataset.moisAchats;
+    moisReplies.has(cle) ? moisReplies.delete(cle) : moisReplies.add(cle);
+    afficherAchats();
+    return;
+  }
   const croix = e.target.closest("[data-exclure]");
   const remettre = e.target.closest("[data-remettre]");
   if (!croix && !remettre) return;
