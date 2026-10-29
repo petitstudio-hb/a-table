@@ -1261,3 +1261,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .papier .l { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; }
 .papier .l > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .papier hr { margin: 6px 0; border: 0; border-top: 1px dashed var(--discret); }
+
+/* Mes relevés : la ligne dépliée garde sa flèche, vers le bas (retour de recette du 29/10) ; toucher le titre la referme. */
+.modif-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 4px 0 8px; border: none; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.chev-bas { flex: none; width: 10px; height: 10px; margin: 0 8px 4px 0; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(135deg); }

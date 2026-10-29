@@ -574,7 +574,7 @@ function ligneReleves(groupe) {
       if (k === enModification) {
         return `
           <li class="modif" data-k="${k}">
-            <strong>${echapper(p.nom)}</strong>
+            <button type="button" class="modif-tete" data-replier-releve aria-expanded="true" aria-label="Replier ${echapper(p.nom)}"><strong>${echapper(p.nom)}</strong><span class="chev-bas" aria-hidden="true"></span></button>
             <div class="formulaire">
               <label>Prix (€)<input type="text" inputmode="decimal" data-champ="prix" value="${r.prix.toFixed(2).replace(".", ",")}"></label>
               <label>Date<input type="date" data-champ="date" value="${r.date}"></label>
@@ -917,7 +917,8 @@ function brancherEvenements() {
       toutAfficher();
       return;
     }
-    // Toucher une ligne ouvre sa modification (la suppression s'y trouve).
+    // Toucher une ligne ouvre sa modification (la suppression s'y trouve) ; toucher son titre (flèche vers le bas) la referme.
+    if (e.target.closest("[data-replier-releve]")) { enModification = null; afficherReleves(); return; }
     const ligne = e.target.closest("li[data-k]:not(.modif)");
     if (ligne) { enModification = Number(ligne.dataset.k); afficherReleves(); return; }
     if (e.target.closest("[data-annuler]")) { enModification = null; afficherReleves(); return; }
