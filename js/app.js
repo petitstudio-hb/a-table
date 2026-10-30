@@ -338,6 +338,9 @@ function afficherChoixMagasins() {
     + `<p class="aide">Décochez un magasin pour le retirer du classement. Il reste dans l'onglet Magasins.</p>`;
 }
 
+// Classement replié : seul le moins cher se voit, les autres se déplient d'un toucher (maquette validée le 30/10/2026, option K3).
+let classementOuvert = false;
+
 // Classement des magasins pour le panier, puis la liste avec une colonne de prix par magasin choisi dans le classement.
 function afficherCourse() {
   const mags = visibles();
@@ -371,6 +374,12 @@ function afficherCourse() {
       <span class="rang-prix">${principal}<small>${sous}</small></span>
       <span class="repere ${repere ? "" : "vide"}">${repere}</span></button>`;
   }).join("");
+
+  const nbAutres = infos.length - 1, voir = document.querySelector("#classement-voir");
+  classement.classList.toggle("replie", nbAutres >= 1 && !classementOuvert);
+  voir.hidden = nbAutres < 1;
+  voir.setAttribute("aria-expanded", String(classementOuvert));
+  voir.textContent = classementOuvert ? `Masquer les ${nbAutres} autres ▴` : `Voir les ${nbAutres} autre${nbAutres > 1 ? "s" : ""} magasin${nbAutres > 1 ? "s" : ""} ▾`;
 
   // La liste : une colonne de prix par magasin choisi dans le classement, le moins cher de la ligne en étiquette jaune.
   if (!mags.length) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
@@ -840,6 +849,7 @@ function brancherEvenements() {
     sauvegarder();
     toutAfficher();
   });
+  document.querySelector("#classement-voir").addEventListener("click", () => { classementOuvert = !classementOuvert; afficherCourse(); });
   // Un magasin touché dans le classement affiche ou masque sa colonne de prix ; on peut tous les masquer.
   document.querySelector("#classement").addEventListener("click", (e) => {
     const b = e.target.closest("[data-compare]");
