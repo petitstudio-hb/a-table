@@ -1336,3 +1336,14 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .onglets .lentille { position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; z-index: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 1px 6px var(--ombre); pointer-events: none; }
 .onglets .lentille.pret { transition: left 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), width 0.45s cubic-bezier(0.3, 0.9, 0.3, 1); }
 @media (prefers-reduced-motion: reduce) { .onglets .lentille.pret, .onglets svg.ap { transition: none; } }
+
+/* ---------- Ma course : lignes en deux étages et classement replié (maquette validée le 30/10/2026, options C et K3) ---------- */
+#vue-course:not(.mode-courses) .ligne-duel:not([style*="--cols:0"]) { grid-template-columns: repeat(var(--cols), 1fr); row-gap: 8px; padding-top: 12px; padding-bottom: 12px; }
+#vue-course:not(.mode-courses) .ligne-duel:not([style*="--cols:0"]) label { grid-column: 1 / -1; }
+#vue-course:not(.mode-courses) .ligne-duel:not([style*="--cols:0"]) .lc-prix { width: 100%; min-height: 46px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--fond); border-radius: 8px; }
+#vue-course:not(.mode-courses) .ligne-duel:not([style*="--cols:0"]) .lc-prix.manquant { background: transparent; font-size: 1.05rem; padding: 4px 6px; }
+#vue-course:not(.mode-courses) .liste-tete:not([style*="--cols:0"]) { grid-template-columns: repeat(var(--cols), 1fr); }
+#vue-course:not(.mode-courses) .liste-tete:not([style*="--cols:0"]) span:first-child { display: none; }
+#vue-course:not(.mode-courses) .liste-tete:not([style*="--cols:0"]) span { text-align: center; }
+#classement.replie .rang:not(:first-child) { display: none; }
+.classement-voir { display: block; width: 100%; min-height: 44px; margin: 6px 0 0; padding: 10px; border: 1.5px solid var(--ligne); background: var(--carte); color: var(--accent); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
