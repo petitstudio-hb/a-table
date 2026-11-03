@@ -86,6 +86,17 @@ let releves = lire(CLE.releves, []);
 let paniers = lire(CLE.paniers, null) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
 const panierHabituel = () => paniers.find((p) => p.id === "habituel");
 
+// Le panier « Tous » (30/10/2026, demandé par Hugo) : tous les produits actifs de la liste, tenu à jour tout seul, placé après le panier habituel.
+// Il ne se modifie pas à la main (pas de renommage, de suppression ni de case) ; on peut le dupliquer pour en faire un panier à soi.
+function synchroniserTous() {
+  const tous = paniers.find((p) => p.id === "tous");
+  const produits = produitsActifs();
+  if (tous) { tous.nom = "Tous les produits"; tous.auto = true; tous.produits = produits; return; }
+  const k = paniers.findIndex((p) => p.id === "habituel");
+  paniers.splice(k + 1, 0, { id: "tous", nom: "Tous les produits", auto: true, produits });
+}
+synchroniserTous();
+
 // Le panier affiché dans « Ma course » : sa liste, ses totaux et ses économies ne portent que sur ses produits.
 let panierCourse = lire(CLE.panierCourse, "habituel");
 function produitsCourse() {
@@ -114,6 +125,7 @@ function htmlCorrectionRayon(i, magasin, prix) {
 }
 
 function sauvegarder() {
+  synchroniserTous();
   invaliderIndexPrix();
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.compares, compares);
@@ -140,6 +152,28 @@ function ajouterProduit({ nom, format, rayon, marque }) {
   coches.add(i);
   panierHabituel()?.produits.push(i); // un nouveau produit rejoint le panier habituel
   return i;
+}
+
+// Les variantes (oignons rouges, une autre marque…) sont des produits à part entière (demande de Hugo, 03/11/2026).
+// Une seule fois, les relevés qui portaient une variante passent sur un produit à eux ; une copie des relevés est gardée sur l'appareil.
+function separerVariantes() {
+  const norme = (t) => sansAccent(String(t || "")).toLowerCase().trim();
+  const connus = new Map();
+  let n = 0;
+  for (const r of releves) {
+    if (!r.variante || !PANIER[r.produit]) continue;
+    const nom = String(r.variante).trim();
+    if (!nom || norme(nom) === norme(PANIER[r.produit].nom)) { r.variante = null; continue; }
+    const cle = norme(nom);
+    let i = connus.get(cle);
+    if (i === undefined) {
+      i = PANIER.findIndex((p) => !p.masque && norme(p.nom) === cle);
+      if (i < 0) i = ajouterProduit({ nom, rayon: PANIER[r.produit].rayon, marque: r.marque || "" });
+      connus.set(cle, i);
+    }
+    r.produit = i; r.variante = null; n++;
+  }
+  return n;
 }
 
 function ajouterMagasin(nom, adresse = "") {
@@ -899,11 +933,25 @@ function brancherEvenements() {
     const b = e.target.closest("button.cellule");
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
   });
-  // Le bouton « ⋯ » range les actions rares de Ma course (tout cocher, tout replier, tout comparer, saisir un prix, magasins affichés).
+  // Le bouton « ⋯ » ouvre une feuille du bas qui range les actions rares de Ma course (maquette validée le 03/11/2026).
+  const feuilleOptions = document.querySelector("#feuille-options-course");
+  const fermerOptions = () => {
+    feuilleOptions.hidden = true;
+    document.querySelector("#plus-options").setAttribute("aria-expanded", "false");
+    if (!document.querySelector(".feuille-prix:not([hidden])")) document.documentElement.classList.remove("feuille-prix-ouverte");
+  };
   document.querySelector("#plus-options").addEventListener("click", (e) => {
-    const panneau = document.querySelector("#plus-course");
-    panneau.hidden = !panneau.hidden;
-    e.currentTarget.setAttribute("aria-expanded", String(!panneau.hidden));
+    feuilleOptions.hidden = false;
+    e.currentTarget.setAttribute("aria-expanded", "true");
+    document.documentElement.classList.add("feuille-prix-ouverte");
+  });
+  document.querySelector("#options-voile").addEventListener("click", fermerOptions);
+  document.querySelector("#options-fermer").addEventListener("click", fermerOptions);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !feuilleOptions.hidden) fermerOptions(); });
+  // Chaque action ferme la feuille, sauf le choix des magasins qui se déplie dans la feuille (le geste propre au bouton a déjà eu lieu).
+  feuilleOptions.addEventListener("click", (e) => {
+    const b = e.target.closest("button.fp-ligne");
+    if (b && b.id !== "choix-magasins") fermerOptions();
   });
   document.querySelector("#saisie-ouvrir").addEventListener("click", () => ouvrirSaisie());
   document.querySelector("#saisie-annuler").addEventListener("click", fermerSaisie);
@@ -1070,6 +1118,16 @@ function brancherEvenements() {
     e.target.value = "";
   });
 }
+
+// Une seule fois : séparation des variantes déjà enregistrées en produits à part (après le chargement de tous les scripts : formats.js sert à créer le produit).
+document.addEventListener("DOMContentLoaded", () => {
+  if (lire("atable.variantes-separees", false) === true) return;
+  try { localStorage.setItem("atable.avant-variantes", JSON.stringify(releves)); } catch (e) { /* stockage plein : on continue sans copie */ }
+  const separees = separerVariantes();
+  if (separees) { sauvegarder(); toutAfficher(); }
+  ecrire("atable.variantes-separees", true);
+  if (separees) setTimeout(() => notifier(`${separees} achat${separees > 1 ? "s" : ""} de variantes ${separees > 1 ? "sont passés" : "est passé"} sur des produits à part.`), 600);
+});
 
 document.querySelector("#saisie-date").value = aujourdhui();
 brancherEvenements();

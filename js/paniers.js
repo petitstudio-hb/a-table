@@ -36,7 +36,7 @@ function afficherListePaniers() {
     return `
       <li data-id="${p.id}" class="${ouvert ? "ouvert" : ""}">
         <button type="button" class="ouvrir" data-ouvrir-panier="${p.id}" aria-expanded="${ouvert}" aria-label="${ouvert ? "Replier" : "Déplier"} le panier ${echapper(p.nom)}">
-          <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : ""}
+          <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : p.auto ? ` <em class="etiquette">automatique</em>` : ""}
             <span class="date">${detail}</span>${blocTotaux(p)}</span>
           <span class="fleche" aria-hidden="true">›</span>
         </button>
@@ -85,10 +85,10 @@ function blocTotaux(panier) {
 const rayonsOuvertsPanier = new Set(); // rayons dépliés à la main
 const rayonsRepliesPanier = new Set(); // rayons repliés à la main
 
-const ligneProduit = (i, dedans) => {
+const ligneProduit = (i, dedans, verrou) => {
   const p = PANIER[i];
   return `<li class="ligne-panier"><label class="ligne-case">
-    <input type="checkbox" data-produit-panier="${i}" ${dedans ? "checked" : ""}>
+    <input type="checkbox" data-produit-panier="${i}" ${dedans ? "checked" : ""} ${verrou ? "disabled" : ""}>
     <span><strong>${echapper(p.nom)}</strong>${p.format ? ` <span class="lc-format">${echapper(p.format)}</span>` : ""}
       ${p.marque ? `<span class="date">${echapper(p.marque)}</span>` : ""}</span>
   </label></li>`;
@@ -107,8 +107,8 @@ function detailHtml(panier) {
     </div>
     <div class="plus-panier" data-plus-zone hidden>
       <button type="button" data-dupliquer-panier>Dupliquer</button>
-      <button type="button" data-renommer-panier="${panier.id}">Renommer</button>
-      ${panier.id === "habituel" ? "" : `<button type="button" class="danger" data-supprimer-panier="${panier.id}">Supprimer</button>`}
+      ${panier.auto ? "" : `<button type="button" data-renommer-panier="${panier.id}">Renommer</button>`}
+      ${panier.id === "habituel" || panier.auto ? "" : `<button type="button" class="danger" data-supprimer-panier="${panier.id}">Supprimer</button>`}
     </div>
     <ul class="releves" data-produits></ul>
   </div>`;
@@ -131,7 +131,7 @@ function majListesDetail() {
     const n = produits.filter((i) => dedans.has(i)).length;
     const ouvert = requete ? true : rayonsOuvertsPanier.has(rayon) ? true : rayonsRepliesPanier.has(rayon) ? false : n > 0;
     html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${ouvert}"><span>${echapper(rayon)} · ${n}/${produits.length}</span><span class="fleche">${ouvert ? "▾" : "▸"}</span></button></li>`;
-    if (ouvert) html += produits.map((i) => ligneProduit(i, dedans.has(i))).join("");
+    if (ouvert) html += produits.map((i) => ligneProduit(i, dedans.has(i), panier.auto)).join("");
   }
   li.querySelector("[data-produits]").innerHTML = html || `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Ta liste ne contient aucun produit."}</li>`;
   // Les totaux de la ligne suivent les ajouts et les retraits.
@@ -253,6 +253,7 @@ document.querySelector("#liste-paniers").addEventListener("change", (e) => {
   if (!e.target.matches("[data-produit-panier]")) return;
   const panier = paniers.find((p) => p.id === panierOuvert);
   if (!panier) return;
+  if (panier.auto) return; // le panier « Tous » ne se modifie pas à la main
   const i = Number(e.target.dataset.produitPanier);
   if (e.target.checked) {
     if (!panier.produits.includes(i)) panier.produits.push(i);

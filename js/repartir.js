@@ -24,7 +24,7 @@ function majRepartition() {
   const afficher = r.ok && r.vautLeDeplacement;
   bandeauRepartition.hidden = !afficher;
   if (!afficher) return;
-  bandeauRepartition.innerHTML = `<span class="txt">Économisez ${euros(r.economieNette)} en deux magasins<small>${resumeRepartition(r)} · déplacement compté</small></span><span class="rp-chev" aria-hidden="true"></span>`;
+  bandeauRepartition.innerHTML = `<span class="txt">Économisez ${euros(r.economieNette)} en deux magasins</span><span class="rp-chev" aria-hidden="true"></span>`;
 }
 
 function detailRepartition(r) {

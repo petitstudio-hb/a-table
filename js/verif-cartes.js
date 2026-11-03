@@ -36,7 +36,39 @@ const VerifCartes = (() => {
     return { sure: false, propose, candidats: c.candidats };
   }
 
-  const enAttente = (l) => l.dt && !l.ok;
+  // Une ligne est « en attente » tant que son identité n'est pas confirmée, ou qu'il reste une question de contenu / marque (maquette Q2 validée le 03/11/2026).
+  const enAttente = (l) => (l.dt && !l.ok) || Boolean(questionDe(l));
+  const identiteEnAttente = (l) => l.dt && !l.ok;
+
+  // Pour un nouveau produit confirmé, on demande le contenu (litrage ou grammage) puis la marque, s'ils n'ont pas été lus.
+  // « Je ne sais pas » les passe : ils restent vides et apparaissent comme avant (« contenu à préciser » dans Ma course).
+  const estVrac = (l) => (l.prixKg > 0 && !(l.poids || "").trim()) || /vrac/i.test(`${l.nom || ""} ${l.libelle || ""}`);
+  function questionDe(l) {
+    if (!l.ok || l.produit >= 0) return null;
+    if (!(l.poids || "").trim() && !l.contenuPasse && !estVrac(l)) return "contenu";
+    if (!(l.marque || "").trim() && !l.marquePasse) return "marque";
+    return null;
+  }
+
+  const CONTENUS_RAYON = [[/boisson|cafe|the|jus/, ["33 cl", "1 L", "1,5 L"]], [/cremerie|frais|laitier|fromage/, ["125 g", "250 g", "500 g"]], [/fruit|leg|primeur/, ["250 g", "500 g", "1 kg"]], [/viande|poisson/, ["250 g", "500 g", "1 kg"]]];
+  // Suggestions : les contenus des produits qui commencent par le même mot, sinon des contenus courants du rayon.
+  function suggestionsContenu(l) {
+    const mot = sansAccent(l.nom || l.libelle || "").toLowerCase().split(/\s+/)[0] || "";
+    const vus = [];
+    if (mot.length > 2) for (const p of PANIER) if (!p.masque && p.format && sansAccent(p.nom).toLowerCase().startsWith(mot) && !vus.includes(p.format)) vus.push(p.format);
+    if (vus.length < 3) {
+      const r = sansAccent(l.rayon || "").toLowerCase();
+      for (const [re, liste] of CONTENUS_RAYON) if (re.test(r)) { for (const f of liste) if (!vus.includes(f)) vus.push(f); break; }
+    }
+    if (vus.length < 3) for (const f of ["250 g", "500 g", "1 kg"]) if (!vus.includes(f)) vus.push(f);
+    return vus.slice(0, 4);
+  }
+  // Suggestions de marque : les marques déjà connues dans le même rayon, les plus fréquentes d'abord.
+  function suggestionsMarque(l) {
+    const compte = new Map();
+    for (const p of PANIER) if (!p.masque && p.marque && (!l.rayon || p.rayon === l.rayon)) compte.set(p.marque, (compte.get(p.marque) || 0) + 1);
+    return [...compte.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([m]) => m);
+  }
   const nomProduit = (i) => PANIER[i].nom + (PANIER[i].format ? ` ${PANIER[i].format}` : "");
   const nomAffiche = (l) => (l.produit >= 0 && PANIER[l.produit] ? nomProduit(l.produit) : (l.nom || l.libelle || "Ligne sans nom"));
   const rayonDe = (l) => (l.produit >= 0 && PANIER[l.produit] ? PANIER[l.produit].rayon : l.rayon);
@@ -80,14 +112,22 @@ const VerifCartes = (() => {
     const dt = enAttente(l);
     const ouvert = Boolean(l.ouvert);
     let corps = "";
+    const q = questionDe(l);
     if (ouvert) {
-      if (dt) {
+      if (identiteEnAttente(l)) {
         const question = l.propose >= 0
           ? `C'est bien <b>${echapper(nomProduit(l.propose))}</b> ?`
           : `Nouveau produit : <b>${echapper(l.nom || l.libelle || "sans nom")}</b> ?`;
         corps += `<div class="vc-corps vc-q">${icone(pictoRayon(l.propose >= 0 ? PANIER[l.propose].rayon : l.rayon), "vc-gros")}
           <p>${question}${l.propose < 0 ? '<span class="vc-nouveau">nouveau</span>' : ""}</p>
           <div class="vc-duo"><button type="button" class="vc-gr" data-vc-oui="${k}">${icone("oui")}Oui</button><button type="button" class="vc-gr" data-vc-autre="${k}">${icone("autre")}Autre produit</button></div></div>`;
+      } else if (q) {
+        const suggestions = q === "contenu" ? suggestionsContenu(l) : suggestionsMarque(l);
+        const gros = icone(pictoRayon(l.rayon), "vc-gros");
+        corps += `<div class="vc-corps vc-q">${gros}<p>${q === "contenu" ? "Quel contenu ?" : "Quelle marque ?"}<small class="vc-q-nom">${echapper(l.nom || l.libelle || "")}</small></p>
+          <div class="vc-choix-puces">${suggestions.map((s) => `<button type="button" class="vc-puce" data-vc-reponse="${k}" data-vc-genre="${q}" data-vc-valeur="${echapper(s)}">${echapper(s)}</button>`).join("")}${q === "marque" ? `<button type="button" class="vc-puce" data-vc-sansmarque="${k}">Sans marque</button>` : ""}</div>
+          <div class="vc-saisie-q"><input type="text" class="vc-champ-q" data-vc-champ-q="${k}" data-vc-genre="${q}" placeholder="${q === "contenu" ? "ou tapez : 500 g, 1 L…" : "ou tapez la marque"}" autocomplete="off" aria-label="${q === "contenu" ? "Contenu" : "Marque"}"><button type="button" class="vc-gr vc-ok-q" data-vc-ok-q="${k}" data-vc-genre="${q}">OK</button></div>
+          <button type="button" class="vc-passer" data-vc-passer="${k}">Je ne sais pas</button></div>`;
       } else {
         const puces = [l.marque, l.poids, l.quantite && l.quantite !== 1 ? `× ${String(l.quantite).replace(".", ",")}` : "", l.rayon, l.promo ? "Promo" : ""].filter(Boolean);
         if (puces.length) corps += `<div class="vc-corps"><div class="vc-puces">${puces.map((p) => `<span>${echapper(p)}</span>`).join("")}</div></div>`;
@@ -97,7 +137,7 @@ const VerifCartes = (() => {
     return `<article class="vc-carte ${dt ? "dt" : "sur"} ${ouvert ? "ouvert" : ""}" data-vc-carte="${k}">
       <button type="button" class="vc-ch" data-vc-tog="${k}" aria-expanded="${ouvert}">
         <span class="vc-ico">${icone(pictoRayon(rayonDe(l)))}</span>
-        <span class="vc-nm">${echapper(dt ? (l.libelle || l.nom || "Ligne sans nom") : nomAffiche(l))}</span>
+        <span class="vc-nm">${echapper(identiteEnAttente(l) ? (l.libelle || l.nom || "Ligne sans nom") : nomAffiche(l))}</span>
         <span class="etiquette">${euros(l.prix)}</span>
         ${icone(dt ? "alerte" : "coche", "vc-st")}<span class="vc-chev" aria-hidden="true"></span>
       </button>${corps}</article>`;
@@ -206,6 +246,20 @@ const VerifCartes = (() => {
       l.ok = true;
       ouvrirSuivante();
       afficherCartes();
+    } else if (d.vcReponse !== undefined || d.vcOkQ !== undefined || d.vcSansmarque !== undefined || d.vcPasser !== undefined) {
+      // Réponses aux questions « Quel contenu ? » et « Quelle marque ? » (maquette Q2 validée le 03/11/2026).
+      const k = Number(d.vcReponse ?? d.vcOkQ ?? d.vcSansmarque ?? d.vcPasser);
+      const l = brouillon.lignes[k];
+      if (d.vcPasser !== undefined) { l.contenuPasse = true; l.marquePasse = true; }
+      else if (d.vcSansmarque !== undefined) l.marquePasse = true;
+      else {
+        const genre = d.vcGenre;
+        const valeur = (d.vcReponse !== undefined ? d.vcValeur : (b.closest(".vc-saisie-q")?.querySelector("input")?.value || "")).trim();
+        if (!valeur) { b.closest(".vc-saisie-q")?.querySelector("input")?.focus(); return; }
+        if (genre === "contenu") l.poids = valeur; else l.marque = valeur;
+      }
+      ouvrirSuivante();
+      afficherCartes();
     } else if (d.vcAutre !== undefined) {
       indexChoix = Number(d.vcAutre);
       mode = "choix";
@@ -247,7 +301,7 @@ const VerifCartes = (() => {
     const noeud = document.querySelector(`.vc-carte[data-vc-carte="${k}"]`);
     if (!noeud) return;
     const nm = noeud.querySelector(".vc-nm");
-    if (nm) nm.textContent = enAttente(l) ? (l.libelle || l.nom || "Ligne sans nom") : nomAffiche(l);
+    if (nm) nm.textContent = identiteEnAttente(l) ? (l.libelle || l.nom || "Ligne sans nom") : nomAffiche(l);
     noeud.querySelector(".etiquette").textContent = euros(l.prix);
     if (champ === "produit" || champ === "nom") { ouvrirSuivante(); l.ouvert = true; afficherCartes(); return; }
     enTete();
@@ -256,6 +310,9 @@ const VerifCartes = (() => {
   function brancher() {
     zone().addEventListener("click", agirCartes);
     zone().addEventListener("change", apresCorrection);
+    zone().addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target.matches?.(".vc-champ-q")) { e.preventDefault(); e.target.closest(".vc-saisie-q").querySelector(".vc-ok-q").click(); }
+    });
     zone().addEventListener("toggle", (e) => {
       const det = e.target.closest?.("[data-vc-corriger]");
       if (det) brouillon.lignes[Number(det.dataset.vcCorriger)].corriger = det.open;
