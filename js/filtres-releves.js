@@ -8,7 +8,7 @@ const puces = document.querySelector("#filtres-releves-actifs");
 
 const LIB_SOURCE = { tous: "Toutes les sources", ticket: "Ticket", etiquette: "Étiquette", saisie: "Saisie à la main" };
 const LIB_PERIODE = { 0: "Toute la période", 7: "7 derniers jours", 30: "30 derniers jours", 180: "6 derniers mois" };
-const LIB_TRI = { rayon: "Par rayon", recent: "Plus récent d'abord", prix: "Prix croissant", nom: "Produit A → Z" };
+const LIB_TRI = { produit: "Par produit", rayon: "Par rayon", recent: "Plus récent d'abord", prix: "Prix croissant", nom: "Produit A → Z" };
 
 // Magasins qui ont au moins un relevé (on ne propose pas de filtre qui ne montrerait rien).
 const magasinsAvecReleves = () => MAGASINS.filter((m) => releves.some((r) => r.magasin === m.id));
@@ -41,7 +41,7 @@ function remplirFeuilleFiltres() {
     groupeFiltre("magasin", "Magasin", ["tous", ...magasinsAvecReleves().map((m) => m.id)], libelleMagasin)
     + groupeFiltre("source", "Source", ["tous", "ticket", "etiquette", "saisie"], (s) => LIB_SOURCE[s])
     + groupeFiltre("periode", "Période", [0, 7, 30, 180], (p) => LIB_PERIODE[p])
-    + groupeFiltre("tri", "Trier", ["rayon", "recent", "prix", "nom"], (t) => LIB_TRI[t]);
+    + groupeFiltre("tri", "Trier", ["produit", "rayon", "recent", "prix", "nom"], (t) => LIB_TRI[t]);
 }
 
 function ouvrirFiltres() {

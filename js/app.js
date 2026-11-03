@@ -413,7 +413,7 @@ function afficherCourse() {
   classement.classList.toggle("replie", nbAutres >= 1 && !classementOuvert);
   voir.hidden = nbAutres < 1;
   voir.setAttribute("aria-expanded", String(classementOuvert));
-  voir.textContent = classementOuvert ? `Masquer les ${nbAutres} autres ▴` : `Voir les ${nbAutres} autre${nbAutres > 1 ? "s" : ""} magasin${nbAutres > 1 ? "s" : ""} ▾`;
+  voir.innerHTML = (classementOuvert ? `Masquer les ${nbAutres} autres` : `Voir les ${nbAutres} autre${nbAutres > 1 ? "s" : ""} magasin${nbAutres > 1 ? "s" : ""}`) + `<i class="chev ${classementOuvert ? "haut" : "bas"}" aria-hidden="true"></i>`;
 
   // La liste : une colonne de prix par magasin choisi dans le classement, le moins cher de la ligne en étiquette jaune.
   if (!mags.length) { liste.innerHTML = ""; document.querySelector("#course-total").textContent = ""; return; }
@@ -558,8 +558,8 @@ function afficherMagasins() {
 let enModification = null; // indice du relevé en cours de modification
 let rechercheReleves = ""; // texte cherché dans Mes relevés (sans accent, non mémorisé)
 // Filtres et tri de Mes relevés (lot « filtres », maquette validée le 29/10/2026) : non mémorisés, comme la recherche.
-// source : ticket | etiquette | saisie ; periode : nombre de jours (0 = toute la période) ; tri : rayon (actuel) | recent | prix | nom
-const FILTRES_RELEVES_VIDES = { magasin: "tous", source: "tous", periode: 0, tri: "rayon" };
+// source : ticket | etiquette | saisie ; periode : nombre de jours (0 = toute la période) ; tri : produit (par défaut, 03/11/2026) | rayon | recent | prix | nom
+const FILTRES_RELEVES_VIDES = { magasin: "tous", source: "tous", periode: 0, tri: "produit" };
 let filtresReleves = { ...FILTRES_RELEVES_VIDES };
 const nbFiltresReleves = () => ["magasin", "source", "periode", "tri"].filter((c) => filtresReleves[c] !== FILTRES_RELEVES_VIDES[c]).length;
 
@@ -577,6 +577,7 @@ function releveFiltre(r) {
 }
 
 function afficherReleves() {
+  majFeuilleReleves(); // la feuille d'un produit, si elle est ouverte, suit les changements
   const liste = document.querySelector("#liste-releves");
   document.querySelector("#nb-releves").textContent = releves.length;
   if (typeof majFiltresReleves === "function") majFiltresReleves();
@@ -594,6 +595,21 @@ function afficherReleves() {
       return parDate;
     });
   const message = rechercheReleves || nbFiltresReleves() ? `Aucun relevé ne correspond à ces filtres ou à cette recherche.` : "";
+  // « Par produit » (maquette validée le 03/11/2026) : une ligne par produit avec son meilleur prix et sa tendance ; toucher une ligne ouvre une feuille du bas.
+  if (filtresReleves.tri === "produit") {
+    const ids = [...new Set(lignes.map(({ r }) => r.produit))].sort((a, b) => PANIER[a].nom.localeCompare(PANIER[b].nom, "fr"));
+    liste.innerHTML = ids.length ? ids.map((i) => {
+      const siens = lignes.filter(({ r }) => r.produit === i);
+      const derniers = new Map();
+      for (const { r } of siens) { const d = derniers.get(r.magasin); if (!d || r.date >= d.date) derniers.set(r.magasin, r); }
+      const meilleur = [...derniers.values()].reduce((m, x) => (!m || x.prix < m.prix ? x : m), null);
+      const serie = Historique.serie(releves, i, meilleur.magasin);
+      const v = serie.length > 1 ? Historique.variation(serie) : null;
+      const tendance = v ? ` · <span class="${v.pourcent >= 0 ? "rp-hausse" : "rp-baisse"}">${v.pourcent >= 0 ? "▲" : "▼"} ${String(Math.abs(v.pourcent)).replace(".", ",")} %</span>` : "";
+      return `<li class="rel-produit"><button type="button" data-produit-releves="${i}"><span class="txt"><b>${echapper(PANIER[i].nom)}</b><small>${siens.length} relevé${siens.length > 1 ? "s" : ""} · ${derniers.size} magasin${derniers.size > 1 ? "s" : ""}</small></span><span class="pr">${euros(meilleur.prix)}<small>chez ${echapper(nomMagasin(meilleur.magasin))}${tendance}</small></span><span class="chev" aria-hidden="true"></span></button></li>`;
+    }).join("") : `<li class="vide">${message}</li>`;
+    return;
+  }
   // « Plus récent d'abord » : une seule liste du plus récent au plus ancien, sans rayons.
   if (filtresReleves.tri === "recent") {
     liste.innerHTML = lignes.length ? ligneReleves(lignes) : `<li class="vide">${message}</li>`;
@@ -639,6 +655,45 @@ function htmlHistorique(r) {
   const meilleur = tous.reduce((m, x) => (!m || x.prix < m.prix ? x : m), null);
   if (meilleur && tous.length > 1) corps += `<div class="lg-hist"><span>Meilleur prix vu<small>${echapper(nomMagasin(meilleur.magasin))}, ${dateFr(meilleur.date)}</small></span><b>${euros(meilleur.prix)}</b></div>`;
   return `<details class="historique"><summary>Historique du prix</summary>${corps}</details>`;
+}
+
+// ---------- Feuille du bas d'un produit (Mes relevés > Par produit) ----------
+
+let produitFeuilleReleves = null;
+
+function ouvrirFeuilleReleves(i) {
+  produitFeuilleReleves = i;
+  enModification = null;
+  document.querySelector("#feuille-releves-produit").hidden = false;
+  document.documentElement.classList.add("feuille-prix-ouverte");
+  majFeuilleReleves();
+}
+
+function fermerFeuilleReleves() {
+  produitFeuilleReleves = null;
+  enModification = null;
+  document.querySelector("#feuille-releves-produit").hidden = true;
+  if (!document.querySelector(".feuille-prix:not([hidden])")) document.documentElement.classList.remove("feuille-prix-ouverte");
+}
+
+// Contenu de la feuille : courbe du prix, meilleur prix vu, puis tous les relevés du produit (toucher l'un d'eux le modifie ou le supprime).
+function majFeuilleReleves() {
+  const i = produitFeuilleReleves;
+  if (i === null) return;
+  const siens = releves.map((r, k) => ({ r, k })).filter(({ r }) => r.produit === i).sort((a, b) => b.r.date.localeCompare(a.r.date) || b.k - a.k);
+  if (!siens.length) { fermerFeuilleReleves(); return; }
+  const p = PANIER[i];
+  const derniers = new Map();
+  for (const { r } of siens) if (!derniers.has(r.magasin)) derniers.set(r.magasin, r);
+  const meilleur = [...derniers.values()].reduce((m, x) => (!m || x.prix < m.prix ? x : m), null);
+  const serie = Historique.serie(releves, i, siens[0].r.magasin);
+  const v = serie.length > 1 ? Historique.variation(serie) : null;
+  document.querySelector("#frp-titre").textContent = p.nom;
+  document.querySelector("#frp-sous").textContent = `${p.format ? `${p.format} · ` : ""}${siens.length} relevé${siens.length > 1 ? "s" : ""}`;
+  document.querySelector("#frp-resume").innerHTML = (serie.length > 1 ? courbeSvg(serie) : "")
+    + (v ? `<p class="fp-sous">${v.pourcent >= 0 ? "Hausse" : "Baisse"} de ${String(Math.abs(v.pourcent)).replace(".", ",")} % chez ${echapper(nomMagasin(siens[0].r.magasin))}</p>` : "")
+    + `<div class="lg-hist"><span>Meilleur prix actuel<small>${echapper(nomMagasin(meilleur.magasin))}, ${dateFr(meilleur.date)}</small></span><b>${euros(meilleur.prix)}</b></div>`;
+  document.querySelector("#frp-liste").innerHTML = ligneReleves(siens);
 }
 
 function ligneReleves(groupe) {
@@ -1006,7 +1061,9 @@ function brancherEvenements() {
     notifier(`Prix enregistré : ${PANIER[releve.produit].nom} chez ${nomMagasin(releve.magasin)}, ${euros(releve.prix)}.`);
   });
 
-  document.querySelector("#liste-releves").addEventListener("click", (e) => {
+  const cliquerReleves = (e) => {
+    const prodLigne = e.target.closest("[data-produit-releves]");
+    if (prodLigne) { ouvrirFeuilleReleves(Number(prodLigne.dataset.produitReleves)); return; }
     const rayon = e.target.closest("[data-rayon-releve]");
     if (rayon) {
       const nom = rayon.dataset.rayonReleve;
@@ -1042,7 +1099,12 @@ function brancherEvenements() {
       sauvegarder();
       toutAfficher();
     }
-  });
+  };
+  document.querySelector("#liste-releves").addEventListener("click", cliquerReleves);
+  document.querySelector("#frp-liste").addEventListener("click", cliquerReleves);
+  document.querySelector("#frp-voile").addEventListener("click", fermerFeuilleReleves);
+  document.querySelector("#frp-fermer").addEventListener("click", fermerFeuilleReleves);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && produitFeuilleReleves !== null) fermerFeuilleReleves(); });
 
   const listeMagasins = document.querySelector("#liste-magasins");
   listeMagasins.addEventListener("change", (e) => {

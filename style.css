@@ -1387,3 +1387,23 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 #feuille-produit input.manque { border: 1.5px dashed var(--orange); }
 .fp-plein { flex: 1; min-height: 52px; border: 2px solid var(--accent); background: var(--accent); color: var(--carte); font: inherit; font-weight: 800; cursor: pointer; }
 .fp-reste { margin: 8px 0 0; text-align: center; color: var(--discret); font-size: 0.85rem; }
+
+/* ---------- Mes relevés : une ligne par produit, feuille du bas (maquette validée le 03/11/2026) ---------- */
+.rel-produit { list-style: none; padding: 0; border-bottom: 1px dashed var(--ligne); }
+.rel-produit > button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 11px 0; border: none; background: none; color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.rel-produit .txt { flex: 1; min-width: 0; }
+.rel-produit .txt b { display: block; font-weight: 600; }
+.rel-produit .txt small { display: block; color: var(--discret); }
+.rel-produit .pr { font-family: var(--mono); font-weight: 800; white-space: nowrap; text-align: right; }
+.rel-produit .pr small { display: block; font-weight: 400; color: var(--discret); font-size: 0.72rem; }
+.rel-produit .chev { flex: none; width: 10px; height: 10px; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(45deg); }
+.rp-hausse { color: var(--rouge-vif); }
+.rp-baisse { color: var(--vert); }
+#frp-liste { margin: 8px 0 0; padding: 0; }
+
+/* Flèche commune (même trait que Mes paniers), quatre sens : à utiliser à la place des caractères ▸ ▾ ▴ (03/11/2026). */
+.chev { display: inline-block; flex: none; width: 10px; height: 10px; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(45deg); }
+.chev.bas { transform: rotate(135deg); margin-top: -4px; }
+.chev.haut { transform: rotate(-45deg); margin-top: 4px; }
+.chev.gauche { transform: rotate(-135deg); }
+.classement-voir { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
