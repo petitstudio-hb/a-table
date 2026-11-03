@@ -599,9 +599,11 @@ function afficherReleves() {
   const message = rechercheReleves || nbFiltresReleves() ? `Aucun relevé ne correspond à ces filtres ou à cette recherche.` : "";
   // « Par produit » (maquette validée le 03/11/2026) : une ligne par produit avec son meilleur prix et sa tendance ; toucher une ligne ouvre une feuille du bas.
   if (filtresReleves.tri === "produit") {
-    const ids = [...new Set(lignes.map(({ r }) => r.produit))].sort((a, b) => PANIER[a].nom.localeCompare(PANIER[b].nom, "fr"));
+    const parProduit = new Map(); // relevés regroupés une seule fois (au lieu d'un filtre de toute la liste par produit)
+    for (const l of lignes) { const g = parProduit.get(l.r.produit); if (g) g.push(l); else parProduit.set(l.r.produit, [l]); }
+    const ids = [...parProduit.keys()].sort((a, b) => PANIER[a].nom.localeCompare(PANIER[b].nom, "fr"));
     liste.innerHTML = ids.length ? ids.map((i) => {
-      const siens = lignes.filter(({ r }) => r.produit === i);
+      const siens = parProduit.get(i);
       const derniers = new Map();
       for (const { r } of siens) { const d = derniers.get(r.magasin); if (!d || r.date >= d.date) derniers.set(r.magasin, r); }
       const meilleur = [...derniers.values()].reduce((m, x) => (!m || x.prix < m.prix ? x : m), null);
