@@ -539,7 +539,9 @@ function valider() {
   const idTicket = "t" + Date.now().toString(36);
   const panierChoisi = paniers.find((p) => p.id === document.querySelector("#verif-panier").value);
   for (const l of lignes) {
-    const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon, marque: l.marque });
+    // Sans marque lue ni donnée, on part du principe que c'est la marque du supermarché (règle de Hugo, 03/11/2026).
+    const marque = (l.marque || "").trim() || nomMagasin(magasin);
+    const produit = l.produit >= 0 ? l.produit : ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon, marque });
     if (panierChoisi && !panierChoisi.produits.includes(produit)) { panierChoisi.produits.push(produit); coches.add(produit); }
     releves.push({
       produit,
@@ -549,7 +551,7 @@ function valider() {
       promo: Boolean(l.promo),
       quantite: l.quantite ?? 1,
       libelle: l.libelle || null,
-      marque: (l.marque || "").trim() || null,
+      marque,
       ticket: idTicket,
       montant: !l.montantModifie && l.prixTotal > 0 ? Math.round(l.prixTotal * 100) / 100 : Math.round(l.prix * (l.quantite ?? 1) * 100) / 100,
       variante: l.produit >= 0 && l.lien === "variante" && l.variante.trim() ? l.variante.trim() : null,
