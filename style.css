@@ -20,6 +20,8 @@
   --orange-fonce: #b35f00;
   --rouge-vif: #c0392b;
   --bleu: #2b6cb0;
+  --gris-doux: #8a9a90; /* bouton Valider grisé (seule teinte hors famille ; voir audit-palette) */
+  --jaune-fort: #e3ad12; /* trait de l'icône d'onglet actif */
   --ombre: rgba(0, 0, 0, 0.14);
   --mono: "Courier Prime", ui-monospace, monospace;
 }
@@ -1090,7 +1092,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 
 .ph-etapes { margin: 14px 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .ph-etapes li { display: flex; gap: 12px; align-items: center; padding: 12px; background: var(--carte); border: 1px solid var(--ligne); border-radius: var(--rayon); }
-.ph-etapes .num { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 800; }
+.ph-etapes .num { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--blanc); font-weight: 800; }
 .ph-etapes .txt { flex: 1; min-width: 0; }
 .ph-etapes .txt b { display: block; }
 .ph-etapes .txt small { color: var(--discret); }
@@ -1100,7 +1102,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .ph-etapes li.suivante { border: 2px solid var(--accent); cursor: pointer; padding: 10px; }
 .ph-etapes li.suivante .pic { border-radius: 50%; background: var(--accent); color: var(--carte); box-shadow: 0 0 0 4px var(--jaune); animation: ph-pouls 2s ease-out infinite; }
 .ph-etapes li.suivante .pic svg { width: 28px; height: 28px; }
-@keyframes ph-pouls { 0% { box-shadow: 0 0 0 4px var(--jaune), 0 0 0 4px rgba(236, 194, 46, 0.5); } 70%, 100% { box-shadow: 0 0 0 4px var(--jaune), 0 0 0 14px rgba(236, 194, 46, 0); } }
+@keyframes ph-pouls { 0% { box-shadow: 0 0 0 4px var(--jaune), 0 0 0 4px color-mix(in srgb, var(--jaune) 50%, transparent); } 70%, 100% { box-shadow: 0 0 0 4px var(--jaune), 0 0 0 14px color-mix(in srgb, var(--jaune) 0%, transparent); } }
 #accueil-passer { display: block; margin: 8px auto; }
 
 .ph-lecture { text-align: center; padding-top: 20px; }
@@ -1146,7 +1148,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .vc-nouveau { display: inline-block; margin-left: 4px; padding: 0 6px; border: 1.5px solid var(--accent); border-radius: 999px; color: var(--accent); font-size: 0.68rem; vertical-align: 3px; }
 .vc-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .vc-gr { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; padding: 0 12px; border: 2.5px solid var(--accent); background: var(--carte); color: var(--accent); font: inherit; font-weight: 700; font-size: 1.1rem; text-align: center; cursor: pointer; }
-.vc-gr.plein { background: var(--accent); color: #fff; }
+.vc-gr.plein { background: var(--accent); color: var(--blanc); }
 .vc-puces { display: flex; flex-wrap: wrap; gap: 6px; }
 .vc-puces span { padding: 4px 10px; border-radius: 999px; background: var(--fond); font-size: 0.85rem; }
 .vc-corriger { margin: 0 12px 12px; }
@@ -1183,7 +1185,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 
 /* --- Enregistré --- */
 .vc-fin { text-align: center; padding-top: 14px; }
-.vc-fin-rond { width: 110px; height: 110px; margin: 6px auto 10px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 0 0 6px var(--ligne), inset 0 0 0 5px var(--jaune); }
+.vc-fin-rond { width: 110px; height: 110px; margin: 6px auto 10px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--blanc); box-shadow: 0 0 0 6px var(--ligne), inset 0 0 0 5px var(--jaune); }
 .vc-fin-rond .vc-icone { width: 60px; height: 60px; }
 .vc-fin h2 { margin: 0 0 12px; font-size: 1.7rem; }
 .vc-fin-recap { display: grid; gap: 2px; margin-bottom: 16px; padding: 14px; background: var(--carte); border-radius: var(--rayon); }
@@ -1193,7 +1195,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 
 .vc-gr, .vc-res, .vc-rech, .vc-lu, .vc-formc input, .vc-fin .vc-gr { border-radius: var(--rayon); }
 .ph-etapes li { text-align: left; }
-.vc-pied .vc-gr.plein[aria-disabled="true"] { opacity: 1; background: #8a9a90; border-color: #8a9a90; }
+.vc-pied .vc-gr.plein[aria-disabled="true"] { opacity: 1; background: var(--gris-doux); border-color: var(--gris-doux); }
 #verif-cartes { padding-bottom: 8px; }
 #photo-classique { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
 #photo-classique .ph-parcours { width: 100%; margin-top: 8px; }
@@ -1236,7 +1238,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 /* --- Saisie d un prix : feuille du bas (maquette validée le 29/10) --- */
 .feuille-prix { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
 .feuille-prix[hidden] { display: none; }
-.fp-voile { position: absolute; inset: 0; background: rgba(19, 57, 42, 0.55); animation: vue-fondu 200ms ease-out; }
+.fp-voile { position: absolute; inset: 0; background: color-mix(in srgb, var(--texte) 55%, transparent); animation: vue-fondu 200ms ease-out; }
 .fp-feuille { position: relative; width: 100%; max-width: 430px; max-height: 88vh; overflow: auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); background: var(--carte); border-radius: 14px 14px 0 0; text-align: left; animation: vue-depuis-bas 260ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; }
 .fp-poignee { width: 40px; height: 4px; margin: -8px auto 10px; border-radius: 2px; background: var(--ligne); }
 .fp-titre { margin: 0 0 2px; font-size: 1.15rem; font-weight: 800; }
@@ -1249,7 +1251,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .fp-plus > summary { padding: 8px 0; color: var(--accent); font-weight: 700; cursor: pointer; }
 .fp-actions { display: flex; gap: 10px; margin-top: 14px; }
 .fp-actions button { flex: 1; min-height: 52px; font: inherit; font-weight: 800; border: 2px solid var(--accent); background: var(--carte); color: var(--accent); cursor: pointer; }
-.fp-actions .principal { flex: 2; background: var(--accent); color: #fff; }
+.fp-actions .principal { flex: 2; background: var(--accent); color: var(--blanc); }
 html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .fp-voile, .fp-feuille { animation: none !important; } }
 
@@ -1266,7 +1268,7 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .rp-note { margin: 10px 0 0; padding: 8px 10px; border-radius: var(--rayon); background: var(--fond); color: var(--discret); font-size: 0.85rem; }
 .rp-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; font-size: 0.85rem; color: var(--discret); }
 .rp-pen button { padding: 6px 12px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
-.rp-pen button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+.rp-pen button.on { border-color: var(--accent); background: var(--accent); color: var(--blanc); }
 
 /* --- Filtres et tri de Mes relevés (maquette validée le 29/10) --- */
 .ft-bouton { position: relative; flex: none; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--ligne); background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
@@ -1274,7 +1276,7 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .ft-puces { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
 .ft-puces[hidden] { display: none; }
 .ft-puces button { padding: 7px 12px; min-height: 36px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 600; cursor: pointer; }
-.ft-puces button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ft-puces button.on { border-color: var(--accent); background: var(--accent); color: var(--blanc); }
 .ft-puces .actif { display: inline-flex; align-items: center; gap: 6px; border-color: var(--accent); background: var(--carte); color: var(--accent); }
 .ft-puces .actif::after { content: "×"; font-weight: 800; }
 #feuille-filtres h4 { margin: 14px 0 6px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
@@ -1294,13 +1296,13 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 #fa-corps input[type=search] { width: 100%; }
 
 /* ---------- Barre du bas en verre (maquette validée le 30/10/2026 : lentille L11, détail jaune sur l'onglet actif et picto agrandi P11) ---------- */
-.onglets { --jaune-fort: #e3ad12; left: 8px; right: 8px; max-width: 520px; margin: 0 auto; bottom: calc(4px + env(safe-area-inset-bottom)); padding: 6px 4px; border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; background: color-mix(in srgb, var(--carte) 72%, transparent); -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3); box-shadow: 0 6px 16px var(--ombre); }
+.onglets { left: 8px; right: 8px; max-width: 520px; margin: 0 auto; bottom: calc(4px + env(safe-area-inset-bottom)); padding: 6px 4px; border: 1px solid color-mix(in srgb, var(--blanc) 80%, transparent); border-radius: 24px; background: color-mix(in srgb, var(--carte) 72%, transparent); -webkit-backdrop-filter: blur(12px) saturate(1.3); backdrop-filter: blur(12px) saturate(1.3); box-shadow: 0 6px 16px var(--ombre); }
 .onglets a { position: relative; z-index: 1; padding: 5px 4px; }
 .onglets svg.ap { transition: transform 0.3s ease; }
 .onglets a.actif svg.ap { transform: scale(1.1); }
 .onglets .ac { stroke: currentColor; }
 .onglets a.actif .ac { stroke: var(--jaune-fort); }
-.onglets .lentille { position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; z-index: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: 0 1px 6px var(--ombre); pointer-events: none; }
+.onglets .lentille { position: absolute; top: 3px; bottom: 3px; left: 0; width: 0; z-index: 0; border-radius: 999px; background: color-mix(in srgb, var(--blanc) 55%, transparent); border: 1px solid color-mix(in srgb, var(--blanc) 95%, transparent); box-shadow: 0 1px 6px var(--ombre); pointer-events: none; }
 .onglets .lentille.pret { transition: left 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), width 0.45s cubic-bezier(0.3, 0.9, 0.3, 1); }
 @media (prefers-reduced-motion: reduce) { .onglets .lentille.pret, .onglets svg.ap { transition: none; } }
 
