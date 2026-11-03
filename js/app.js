@@ -23,7 +23,8 @@ const CLE = {
 function lire(cle, defaut) {
   try {
     const v = JSON.parse(localStorage.getItem(cle));
-    return v === null ? defaut : v;
+    // Une liste attendue qui n'en est pas une (stockage abîmé) est ignorée : on repart de la valeur par défaut.
+    return v === null || (Array.isArray(defaut) && !Array.isArray(v)) ? defaut : v;
   } catch (e) { return defaut; }
 }
 let avertiStockage = false;
@@ -55,7 +56,7 @@ const produitsActifs = () => PANIER.map((p, i) => i).filter((i) => !PANIER[i].ma
 // complétée par les anciens magasins ajoutés depuis les photos.
 {
   const enregistres = lire(CLE.magasins2, null);
-  if (enregistres) MAGASINS.splice(0, Infinity, ...enregistres);
+  if (Array.isArray(enregistres)) MAGASINS.splice(0, Infinity, ...enregistres);
   else MAGASINS.push(...lire(CLE.magasins, []));
 }
 
@@ -83,12 +84,13 @@ let detailsOuverts = new Set(); // produits dont « voir les autres » est ouver
 let releves = lire(CLE.releves, []);
 
 // Les paniers : { id, nom, produits: [indices dans PANIER] }. Le « Panier habituel » reprend d'abord tous les produits de la liste.
-let paniers = lire(CLE.paniers, null) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
+let paniers = (Array.isArray(lire(CLE.paniers, null)) && lire(CLE.paniers, null)) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
 const panierHabituel = () => paniers.find((p) => p.id === "habituel");
 
 // Le panier « Tous » (30/10/2026, demandé par Hugo) : tous les produits actifs de la liste, tenu à jour tout seul, placé après le panier habituel.
 // Il ne se modifie pas à la main (pas de renommage, de suppression ni de case) ; on peut le dupliquer pour en faire un panier à soi.
 function synchroniserTous() {
+  if (!panierHabituel()) paniers.unshift({ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }); // jamais sans panier habituel (fichier importé sans lui)
   const tous = paniers.find((p) => p.id === "tous");
   const produits = produitsActifs();
   if (tous) { tous.nom = "Tous les produits"; tous.auto = true; tous.produits = produits; return; }
@@ -774,7 +776,7 @@ async function importer(fichier) {
       releves = donnees.releves.filter((r) => r.produit < PANIER.length);
       coches = new Set(donnees.coches || PANIER.map((_, i) => i));
       paniers = Array.isArray(donnees.paniers) ? donnees.paniers : [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
-      for (const p of paniers) p.produits = p.produits.filter((i) => i < PANIER.length);
+      for (const p of paniers) p.produits = (p.produits || []).filter((i) => i < PANIER.length);
       message.textContent = `Import terminé : ${releves.length} relevés.`;
     } else {
       throw new Error("format inconnu");
