@@ -832,6 +832,7 @@ async function importer(fichier) {
       coches = new Set(donnees.coches || PANIER.map((_, i) => i));
       paniers = Array.isArray(donnees.paniers) ? donnees.paniers : [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
       for (const p of paniers) p.produits = (p.produits || []).filter((i) => i < PANIER.length);
+      cabas.clear(); cabasLibres = []; prixRayon = {}; corrigeOuverts.clear(); // l'état des courses se rapporte aux anciens numéros de produits
       message.textContent = `Import terminé : ${releves.length} relevés.`;
     } else {
       throw new Error("format inconnu");
