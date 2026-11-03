@@ -437,6 +437,18 @@
 
       <!-- ========== MES RELEVÉS ========== -->
       <section id="vue-releves" class="vue" hidden>
+        <!-- Un produit de Mes relevés : feuille du bas (maquette validée le 03/11/2026). -->
+        <div id="feuille-releves-produit" class="feuille-prix" hidden>
+          <div class="fp-voile" id="frp-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="frp-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="frp-titre" class="fp-titre"></p>
+            <p id="frp-sous" class="fp-sous"></p>
+            <div id="frp-resume"></div>
+            <ul id="frp-liste" class="releves"></ul>
+            <div class="fp-actions"><button type="button" id="frp-fermer" class="fp-fermer">Fermer</button></div>
+          </div>
+        </div>
         <div class="carte-blanche">
           <h2>Mes relevés (<span id="nb-releves">0</span>)</h2>
           <div class="mode-releves" role="group" aria-label="Façon de voir les relevés">
