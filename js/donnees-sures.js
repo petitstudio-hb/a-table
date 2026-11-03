@@ -4,6 +4,9 @@ const DonneesSures = (() => {
   const VERSION = 4; // version écrite par exporter() aujourd'hui
   const APPLICATIONS = ["Cabasito", "A table"];
   const estNombre = (x) => typeof x === "number" && Number.isFinite(x);
+  // Un identifiant (magasin, panier) sert dans des attributs HTML : lettres, chiffres, point, tiret et souligné seulement (un fichier piégé ne peut pas y glisser de code).
+  const IDENTIFIANT = /^[\w.-]{1,60}$/;
+  const idSur = (x) => typeof x === "string" && IDENTIFIANT.test(x);
 
   // Un relevé valide : produit entier ≥ 0, magasin texte, prix nombre ≥ 0, date AAAA-MM-JJ.
   function releveValide(r) {
@@ -11,6 +14,7 @@ const DonneesSures = (() => {
     if (!r || typeof r !== "object") return ["relevé illisible"];
     if (!Number.isInteger(r.produit) || r.produit < 0) erreurs.push("produit invalide");
     if (typeof r.magasin !== "string" || !r.magasin) erreurs.push("magasin manquant");
+    else if (!idSur(r.magasin)) erreurs.push("magasin illisible");
     if (!estNombre(r.prix) || r.prix < 0) erreurs.push("prix invalide");
     if (typeof r.date !== "string" || !/^\d{4}-\d\d-\d\d$/.test(r.date)) erreurs.push("date invalide");
     return erreurs;
@@ -46,6 +50,9 @@ const DonneesSures = (() => {
       if (entree.produitsAjoutes !== undefined && !Array.isArray(entree.produitsAjoutes)) erreurs.push("La liste des produits est illisible.");
       if (entree.magasins !== undefined && entree.magasins !== null && !Array.isArray(entree.magasins)) erreurs.push("La liste des magasins est illisible.");
       if (entree.paniers !== undefined && entree.paniers !== null && !Array.isArray(entree.paniers)) erreurs.push("La liste des paniers est illisible.");
+      if (Array.isArray(entree.magasins) && entree.magasins.some((m) => !m || !idSur(m.id))) erreurs.push("Un magasin du fichier a un identifiant illisible.");
+      if (Array.isArray(entree.magasinsAjoutes) && entree.magasinsAjoutes.some((m) => !m || !idSur(m.id))) erreurs.push("Un magasin du fichier a un identifiant illisible.");
+      if (Array.isArray(entree.paniers) && entree.paniers.some((p) => !p || !idSur(p.id))) erreurs.push("Un panier du fichier a un identifiant illisible.");
     }
     if (erreurs.length) return { ok: false, erreurs, avertissements, donnees: null };
     const donnees = migrer(entree);
