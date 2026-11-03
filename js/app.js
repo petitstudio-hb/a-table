@@ -451,7 +451,7 @@ function afficherCourse() {
       }).join("");
       return `<div class="rayon-course">
         <button type="button" class="rayon-titre" data-rayon="${echapper(rayon)}" aria-expanded="${!replie}">
-          <span>${echapper(rayon)}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button>${lignes}</div>`;
+          <span>${echapper(rayon)}</span><span class="fleche" aria-hidden="true"></span></button>${lignes}</div>`;
     })
     .join("") : rechercheCourse ? `<p class="encart">Aucun produit « ${echapper(document.querySelector("#recherche-course-champ").value.trim())} » dans ce panier.</p>`
       : `<p class="encart">Ce panier est vide. Ajoute des produits dans <a href="#paniers">Mes paniers</a>.</p>`;
@@ -547,7 +547,7 @@ function afficherMagasins() {
           <span class="date">${echapper(m.adresse) || "Rue non renseignée"} · ${n} relevé${n > 1 ? "s" : ""}</span></span>
         <span class="boutons">
           <label class="interrupteur" title="Afficher dans Ma course"><input type="checkbox" data-afficher="${m.id}" ${m.affiche !== false ? "checked" : ""}><span>Affiché</span></label>
-          <span class="fleche" aria-hidden="true">›</span>
+          <span class="fleche" aria-hidden="true"></span>
         </span>
       </li>`;
   }).join("");
@@ -624,7 +624,7 @@ function afficherReleves() {
     const groupe = lignes.filter(({ r }) => PANIER[r.produit].rayon === rayon);
     const replie = !filtre && relevesReplies.has(rayon); // pendant une recherche ou un filtre, tout est déplié
     return `<li class="rayon-releve"><button type="button" class="rayon-titre" data-rayon-releve="${echapper(rayon)}" aria-expanded="${!replie}">
-      <span>${echapper(rayon)} · ${groupe.length}</span><span class="fleche">${replie ? "▸" : "▾"}</span></button></li>`
+      <span>${echapper(rayon)} · ${groupe.length}</span><span class="fleche" aria-hidden="true"></span></button></li>`
       + (replie ? "" : ligneReleves(groupe));
   }).join("") || `<li class="vide">${message}</li>`;
 }
@@ -722,7 +722,7 @@ function ligneReleves(groupe) {
         <li data-k="${k}">
           <span><strong>${echapper(p.nom)}</strong> chez ${echapper(nomMagasin(r.magasin))} : ${euros(r.prix)}${r.promo ? " <span class=\"badge-promo\">PROMO</span>" : ""}
           <span class="date">${r.marque ? `${echapper(r.marque)} · ` : ""}${r.variante ? `variante : ${echapper(r.variante)} · ` : ""}${prixAuKilo(p.format, r.prix) ? `${prixAuKilo(p.format, r.prix)} · ` : ""}${dateFr(r.date)} · ${source}${r.libelle ? ` · « ${echapper(r.libelle)} »` : ""}</span></span>
-          <span class="fleche" aria-hidden="true">›</span>
+          <span class="fleche" aria-hidden="true"></span>
         </li>`;
     })
     .join("");
