@@ -474,6 +474,21 @@
           <div id="liste-gestion"></div>
           <div id="liste-masques"></div>
         </div>
+        <!-- Modifier un produit : feuille du bas (maquette validée le 03/11/2026). -->
+        <div id="feuille-produit" class="feuille-prix" hidden>
+          <div class="fp-voile" id="fpp-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="fpp-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="fpp-titre" class="fp-titre"></p>
+            <p id="fpp-sous" class="fp-sous"></p>
+            <label class="large">Contenu (litrage ou grammage)<input type="text" data-champ="format" placeholder="500 g, 1 L…" autocomplete="off"></label>
+            <label class="large">Marque<input type="text" data-champ="marque" placeholder="ex. Lustucru" autocomplete="off"></label>
+            <label class="large">Nom<input type="text" data-champ="nom" autocomplete="off"></label>
+            <label class="large">Rayon<input type="text" data-champ="rayon" list="liste-rayons" autocomplete="off"></label>
+            <div class="fp-actions"><button type="button" id="fpp-annuler" class="fp-fermer">Annuler</button><button type="button" id="fpp-ok" class="fp-plein">Enregistrer</button></div>
+            <p id="fpp-reste" class="fp-reste"></p>
+          </div>
+        </div>
       </section>
 
       <!-- ========== RÉGLAGES (lecture des photos, sauvegarde, aide) ========== -->

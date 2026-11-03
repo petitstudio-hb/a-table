@@ -1375,3 +1375,15 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .vc-champ-q { flex: 1; min-width: 0; box-sizing: border-box; padding: 12px; border: 1.5px solid var(--ligne); background: var(--blanc); color: var(--texte); font: inherit; font-size: 1rem; }
 .vc-ok-q { flex: none; width: 72px; min-height: 48px; }
 .vc-passer { display: block; width: 100%; min-height: 44px; margin-top: 4px; border: none; background: none; color: var(--discret); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* ---------- Ma liste : filtres, carte « À compléter », modification en feuille du bas (maquette validée le 03/11/2026) ---------- */
+.liste-puces { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.liste-puces button { min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--ligne); border-radius: 999px !important; background: var(--fond); color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
+.liste-puces button.on { border-color: var(--accent); background: var(--accent); color: var(--carte); }
+.liste-acompleter { display: flex; align-items: center; gap: 10px; width: 100%; margin: 10px 0 4px; padding: 12px; border: 2px solid var(--jaune); border-radius: var(--rayon); background: var(--carte); color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.liste-acompleter .txt { flex: 1; min-width: 0; font-weight: 700; }
+.liste-acompleter small { display: block; font-weight: 400; color: var(--discret); }
+.liste-chev { flex: none; width: 10px; height: 10px; margin-right: 6px; border-right: 3px solid var(--discret); border-top: 3px solid var(--discret); transform: rotate(45deg); }
+#feuille-produit input.manque { border: 1.5px dashed var(--orange); }
+.fp-plein { flex: 1; min-height: 52px; border: 2px solid var(--accent); background: var(--accent); color: var(--carte); font: inherit; font-weight: 800; cursor: pointer; }
+.fp-reste { margin: 8px 0 0; text-align: center; color: var(--discret); font-size: 0.85rem; }

@@ -1,8 +1,13 @@
 // « Gérer ma liste » (séance 18) : renommer, changer le format ou le rayon,
 // fusionner deux produits, supprimer. Un produit supprimé reste en place, masqué,
 // pour que les numéros des autres produits ne bougent pas.
+// Maquette validée le 03/11/2026 : puces de filtre (Tous / Sans contenu / Sans marque), carte « À compléter » et
+// modification dans une feuille du bas avec « Enregistrer et suivant » pour enchaîner les produits sans contenu.
 
-let produitEnEdition = null; // { i, mode: "modifier" | "fusionner" }
+let produitEnEdition = null; // { i, mode: "fusionner" } (la modification, elle, passe par la feuille du bas)
+let filtreListe = "tous"; // tous | contenu | marque
+let suiteListe = []; // produits sans contenu pris l'un après l'autre
+let produitFeuille = null; // produit ouvert dans la feuille du bas
 // La fusion est masquée pour l'instant (retour de test du 23/10/2026) : le code reste, prêt à être réactivé avec une recherche.
 const FUSION_ACTIVE = false;
 
@@ -10,22 +15,15 @@ function afficherListe() {
   const zone = document.querySelector("#liste-gestion");
   if (!zone) return;
   const requete = sansAccent(document.querySelector("#liste-recherche")?.value.trim() || "");
-  const actifs = produitsActifs().filter((i) => !requete || sansAccent(`${PANIER[i].nom} ${PANIER[i].rayon} ${PANIER[i].format}`).includes(requete));
+  const tous = produitsActifs();
+  const sansContenu = tous.filter((i) => !PANIER[i].format);
+  const sansMarque = tous.filter((i) => !PANIER[i].marque);
+  const passeFiltre = (i) => filtreListe === "tous" || (filtreListe === "contenu" && !PANIER[i].format) || (filtreListe === "marque" && !PANIER[i].marque);
+  const actifs = tous.filter((i) => passeFiltre(i) && (!requete || sansAccent(`${PANIER[i].nom} ${PANIER[i].rayon} ${PANIER[i].format}`).includes(requete)));
   const rayons = [...new Set(actifs.map((i) => PANIER[i].rayon))];
   const nbReleves = (i) => releves.filter((r) => r.produit === i).length;
   const ligne = (i) => {
     const p = PANIER[i];
-    if (produitEnEdition?.i === i && produitEnEdition.mode === "modifier") {
-      return `<li class="modif" data-i="${i}">
-        <div class="formulaire">
-          <label class="large">Nom<input type="text" data-champ="nom" value="${echapper(p.nom)}"></label>
-          <label class="large">Marque<input type="text" data-champ="marque" value="${echapper(p.marque || "")}" placeholder="ex. Lustucru"></label>
-          <label>Format<input type="text" data-champ="format" value="${echapper(p.format)}" placeholder="500 g, 1 L…"></label>
-          <label>Rayon<input type="text" data-champ="rayon" list="liste-rayons" value="${echapper(p.rayon)}"></label>
-        </div>
-        <div class="actions"><button type="button" data-annuler-liste>Annuler</button><button type="button" class="principal" data-enregistrer-liste="${i}">Enregistrer</button></div>
-      </li>`;
-    }
     if (produitEnEdition?.i === i && produitEnEdition.mode === "fusionner") {
       return `<li class="modif" data-i="${i}">
         <strong>${echapper(p.nom)}</strong>
@@ -36,14 +34,58 @@ function afficherListe() {
         <div class="actions"><button type="button" data-annuler-liste>Annuler</button><button type="button" class="principal" data-fusionner-liste="${i}">Fusionner</button></div>
       </li>`;
     }
-    return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${echapper(p.format)}</span>
+    return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${p.format ? echapper(p.format) : `<span class="pastille-format vide">contenu à préciser</span>`}</span>
       <span class="date">${nbReleves(i)} prix</span></span>
       <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button>${FUSION_ACTIVE ? `<button type="button" data-fusion-liste="${i}">Fusionner</button>` : ""}<button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
   };
-  zone.innerHTML = `<datalist id="liste-rayons">${rayons.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>`
+  const acompleter = sansContenu.length
+    ? `<button type="button" class="liste-acompleter" data-completer-liste><span class="txt">${sansContenu.length} produit${sansContenu.length > 1 ? "s" : ""} sans contenu<small>Les compléter un par un (litrage ou grammage)</small></span><span class="liste-chev" aria-hidden="true"></span></button>` : "";
+  const puce = (cle, texte, n) => `<button type="button" data-filtre-liste="${cle}" class="${filtreListe === cle ? "on" : ""}" aria-pressed="${filtreListe === cle}">${texte} (${n})</button>`;
+  const puces = `<div class="liste-puces" role="group" aria-label="Filtrer la liste">${puce("tous", "Tous", tous.length)}${puce("contenu", "Sans contenu", sansContenu.length)}${puce("marque", "Sans marque", sansMarque.length)}</div>`;
+  zone.innerHTML = `<datalist id="liste-rayons">${rayons.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>` + acompleter + puces
     + (actifs.length ? rayons.map((rayon) => `<div class="rayon-liste"><h3 class="rayon-titre-liste">${echapper(rayon)}</h3><ul class="releves">${actifs.filter((i) => PANIER[i].rayon === rayon).map(ligne).join("")}</ul></div>`).join("")
-      : `<p class="encart">${requete ? "Aucun produit ne correspond." : "Ta liste est vide."}</p>`);
+      : `<p class="encart">${requete || filtreListe !== "tous" ? "Aucun produit ne correspond." : "Ta liste est vide."}</p>`);
   afficherMasques();
+}
+
+// ---------- Feuille du bas : modifier un produit ----------
+
+function ouvrirFeuilleProduit(i, suite) {
+  produitFeuille = i;
+  suiteListe = suite ? produitsActifs().filter((j) => !PANIER[j].format) : [];
+  const p = PANIER[i];
+  const f = document.querySelector("#feuille-produit");
+  f.querySelector('[data-champ="nom"]').value = p.nom;
+  f.querySelector('[data-champ="marque"]').value = p.marque || "";
+  f.querySelector('[data-champ="format"]').value = p.format || "";
+  f.querySelector('[data-champ="format"]').classList.toggle("manque", !p.format);
+  f.querySelector('[data-champ="rayon"]').value = p.rayon;
+  document.querySelector("#fpp-titre").textContent = p.nom;
+  document.querySelector("#fpp-sous").textContent = `${releves.filter((r) => r.produit === i).length} prix relevés`;
+  const reste = suiteListe.filter((j) => j !== i && !PANIER[j].format).length;
+  document.querySelector("#fpp-ok").textContent = suite && reste ? "Enregistrer et suivant" : "Enregistrer";
+  document.querySelector("#fpp-ok").dataset.suite = suite && reste ? "1" : "";
+  document.querySelector("#fpp-reste").textContent = suite && reste ? `Encore ${reste} produit${reste > 1 ? "s" : ""} à compléter` : "";
+  f.hidden = false;
+  document.documentElement.classList.add("feuille-prix-ouverte");
+  if (!p.format) f.querySelector('[data-champ="format"]').focus({ preventScroll: true });
+}
+
+function fermerFeuilleProduit() {
+  document.querySelector("#feuille-produit").hidden = true;
+  produitFeuille = null;
+  if (!document.querySelector(".feuille-prix:not([hidden])")) document.documentElement.classList.remove("feuille-prix-ouverte");
+}
+
+function validerFeuilleProduit() {
+  const i = produitFeuille;
+  if (i === null || !enregistrerProduit(i, document.querySelector("#feuille-produit"))) return;
+  const enchaine = document.querySelector("#fpp-ok").dataset.suite === "1";
+  const prochain = suiteListe.find((j) => j !== i && !PANIER[j].format);
+  sauvegarder();
+  toutAfficher();
+  if (enchaine && prochain !== undefined) ouvrirFeuilleProduit(prochain, true);
+  else fermerFeuilleProduit();
 }
 
 // Les produits supprimés ou fusionnés, qu'on peut rétablir.
@@ -111,13 +153,12 @@ function brancherListe() {
     if (!b) return;
     const apres = () => { sauvegarder(); produitEnEdition = null; toutAfficher(); };
     if (b.dataset.retablirListe !== undefined) { retablirProduit(Number(b.dataset.retablirListe)); apres(); notifier("Produit rétabli."); }
-    else if (b.dataset.modifierListe !== undefined) { produitEnEdition = { i: Number(b.dataset.modifierListe), mode: "modifier" }; afficherListe(); }
+    else if (b.dataset.modifierListe !== undefined) ouvrirFeuilleProduit(Number(b.dataset.modifierListe), false);
+    else if (b.dataset.filtreListe !== undefined) { filtreListe = b.dataset.filtreListe; afficherListe(); }
+    else if (b.hasAttribute("data-completer-liste")) { const premier = produitsActifs().find((j) => !PANIER[j].format); if (premier !== undefined) ouvrirFeuilleProduit(premier, true); }
     else if (b.dataset.fusionListe !== undefined) { produitEnEdition = { i: Number(b.dataset.fusionListe), mode: "fusionner" }; afficherListe(); }
     else if (b.hasAttribute("data-annuler-liste")) { produitEnEdition = null; afficherListe(); }
-    else if (b.dataset.enregistrerListe !== undefined) {
-      const i = Number(b.dataset.enregistrerListe);
-      if (enregistrerProduit(i, b.closest("li"))) apres();
-    } else if (b.dataset.fusionnerListe !== undefined) {
+    else if (b.dataset.fusionnerListe !== undefined) {
       const source = Number(b.dataset.fusionnerListe);
       const cible = Number(b.closest("li").querySelector('[data-champ="cible"]').value);
       if (!Number.isInteger(cible)) return;
@@ -134,6 +175,11 @@ function brancherListe() {
     }
   };
   zones.forEach((z) => z.addEventListener("click", clic));
+  document.querySelector("#fpp-ok").addEventListener("click", validerFeuilleProduit);
+  document.querySelector("#fpp-annuler").addEventListener("click", fermerFeuilleProduit);
+  document.querySelector("#fpp-voile").addEventListener("click", fermerFeuilleProduit);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.querySelector("#feuille-produit").hidden) fermerFeuilleProduit(); });
+  document.querySelector("#feuille-produit").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("input")) { e.preventDefault(); validerFeuilleProduit(); } });
 }
 
 brancherListe();

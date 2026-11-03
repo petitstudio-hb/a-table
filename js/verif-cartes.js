@@ -39,6 +39,7 @@ const VerifCartes = (() => {
   // Une ligne est « en attente » tant que son identité n'est pas confirmée, ou qu'il reste une question de contenu / marque (maquette Q2 validée le 03/11/2026).
   const enAttente = (l) => (l.dt && !l.ok) || Boolean(questionDe(l));
   const identiteEnAttente = (l) => l.dt && !l.ok;
+  const marqueMagasin = () => (brouillon.magasin === "__nouveau" ? (brouillon.magasinNom || "") : nomMagasin(brouillon.magasin)) || "";
 
   // Pour un nouveau produit confirmé, on demande le contenu (litrage ou grammage) puis la marque, s'ils n'ont pas été lus.
   // « Je ne sais pas » les passe : ils restent vides et apparaissent comme avant (« contenu à préciser » dans Ma course).
@@ -125,7 +126,7 @@ const VerifCartes = (() => {
         const suggestions = q === "contenu" ? suggestionsContenu(l) : suggestionsMarque(l);
         const gros = icone(pictoRayon(l.rayon), "vc-gros");
         corps += `<div class="vc-corps vc-q">${gros}<p>${q === "contenu" ? "Quel contenu ?" : "Quelle marque ?"}<small class="vc-q-nom">${echapper(l.nom || l.libelle || "")}</small></p>
-          <div class="vc-choix-puces">${suggestions.map((s) => `<button type="button" class="vc-puce" data-vc-reponse="${k}" data-vc-genre="${q}" data-vc-valeur="${echapper(s)}">${echapper(s)}</button>`).join("")}${q === "marque" ? `<button type="button" class="vc-puce" data-vc-sansmarque="${k}">Sans marque</button>` : ""}</div>
+          <div class="vc-choix-puces">${suggestions.map((s) => `<button type="button" class="vc-puce" data-vc-reponse="${k}" data-vc-genre="${q}" data-vc-valeur="${echapper(s)}">${echapper(s)}</button>`).join("")}${q === "marque" ? `<button type="button" class="vc-puce" data-vc-sansmarque="${k}">Marque du magasin</button>` : ""}</div>
           <div class="vc-saisie-q"><input type="text" class="vc-champ-q" data-vc-champ-q="${k}" data-vc-genre="${q}" placeholder="${q === "contenu" ? "ou tapez : 500 g, 1 L…" : "ou tapez la marque"}" autocomplete="off" aria-label="${q === "contenu" ? "Contenu" : "Marque"}"><button type="button" class="vc-gr vc-ok-q" data-vc-ok-q="${k}" data-vc-genre="${q}">OK</button></div>
           <button type="button" class="vc-passer" data-vc-passer="${k}">Je ne sais pas</button></div>`;
       } else {
@@ -251,7 +252,7 @@ const VerifCartes = (() => {
       const k = Number(d.vcReponse ?? d.vcOkQ ?? d.vcSansmarque ?? d.vcPasser);
       const l = brouillon.lignes[k];
       if (d.vcPasser !== undefined) { l.contenuPasse = true; l.marquePasse = true; }
-      else if (d.vcSansmarque !== undefined) l.marquePasse = true;
+      else if (d.vcSansmarque !== undefined) { l.marquePasse = true; l.marque = marqueMagasin(); } // pas de marque : celle du supermarché (règle de Hugo)
       else {
         const genre = d.vcGenre;
         const valeur = (d.vcReponse !== undefined ? d.vcValeur : (b.closest(".vc-saisie-q")?.querySelector("input")?.value || "")).trim();
