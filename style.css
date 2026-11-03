@@ -1387,3 +1387,16 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 #feuille-produit input.manque { border: 1.5px dashed var(--orange); }
 .fp-plein { flex: 1; min-height: 52px; border: 2px solid var(--accent); background: var(--accent); color: var(--carte); font: inherit; font-weight: 800; cursor: pointer; }
 .fp-reste { margin: 8px 0 0; text-align: center; color: var(--discret); font-size: 0.85rem; }
+
+/* Accessibilité (04/11/2026) : zones tactiles élargies à 44 px par une zone invisible (rien ne bouge à l'écran), feuille focalisable sans cadre,
+   et mouvement réduit complet (réglage « Réduire les animations » de l'iPhone). */
+.rayon-titre, #liste-gestion .boutons button, .encart a { position: relative; }
+.rayon-titre::after, #liste-gestion .boutons button::after, .encart a::after { content: ""; position: absolute; }
+.rayon-titre::after { inset: -8px 0 0; }
+#liste-gestion .boutons button[data-modifier-liste]::after { inset: -8px -3px -8px -6px; }
+#liste-gestion .boutons button[data-supprimer-liste]::after { inset: -6px -10px -6px -3px; }
+.encart a::after { inset: -14px -4px; }
+.fp-feuille:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
