@@ -154,6 +154,28 @@ function ajouterProduit({ nom, format, rayon, marque }) {
   return i;
 }
 
+// Les variantes (oignons rouges, une autre marque…) sont des produits à part entière (demande de Hugo, 03/11/2026).
+// Une seule fois, les relevés qui portaient une variante passent sur un produit à eux ; une copie des relevés est gardée sur l'appareil.
+function separerVariantes() {
+  const norme = (t) => sansAccent(String(t || "")).toLowerCase().trim();
+  const connus = new Map();
+  let n = 0;
+  for (const r of releves) {
+    if (!r.variante || !PANIER[r.produit]) continue;
+    const nom = String(r.variante).trim();
+    if (!nom || norme(nom) === norme(PANIER[r.produit].nom)) { r.variante = null; continue; }
+    const cle = norme(nom);
+    let i = connus.get(cle);
+    if (i === undefined) {
+      i = PANIER.findIndex((p) => !p.masque && norme(p.nom) === cle);
+      if (i < 0) i = ajouterProduit({ nom, rayon: PANIER[r.produit].rayon, marque: r.marque || "" });
+      connus.set(cle, i);
+    }
+    r.produit = i; r.variante = null; n++;
+  }
+  return n;
+}
+
 function ajouterMagasin(nom, adresse = "") {
   const id = "m" + Date.now().toString(36);
   MAGASINS.push({ id, nom: nom || "Nouveau magasin", adresse });
@@ -1082,6 +1104,16 @@ function brancherEvenements() {
     e.target.value = "";
   });
 }
+
+// Une seule fois : séparation des variantes déjà enregistrées en produits à part (après le chargement de tous les scripts : formats.js sert à créer le produit).
+document.addEventListener("DOMContentLoaded", () => {
+  if (lire("atable.variantes-separees", false) === true) return;
+  try { localStorage.setItem("atable.avant-variantes", JSON.stringify(releves)); } catch (e) { /* stockage plein : on continue sans copie */ }
+  const separees = separerVariantes();
+  if (separees) { sauvegarder(); toutAfficher(); }
+  ecrire("atable.variantes-separees", true);
+  if (separees) setTimeout(() => notifier(`${separees} achat${separees > 1 ? "s" : ""} de variantes ${separees > 1 ? "sont passés" : "est passé"} sur des produits à part.`), 600);
+});
 
 document.querySelector("#saisie-date").value = aujourdhui();
 brancherEvenements();

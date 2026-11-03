@@ -1347,3 +1347,6 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 #vue-course:not(.mode-courses) .liste-tete:not([style*="--cols:0"]) span { text-align: center; }
 #classement.replie .rang:not(:first-child) { display: none; }
 .classement-voir { display: block; width: 100%; min-height: 44px; margin: 6px 0 0; padding: 10px; border: 1.5px solid var(--ligne); background: var(--carte); color: var(--accent); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+
+/* Une variante (oignons rouges, autre marque) est un produit à part entière (03/11/2026) : le choix « même produit / variante » du formulaire de vérification n'est plus proposé. */
+[data-bloc="lien"], [data-bloc="variante"] { display: none !important; }

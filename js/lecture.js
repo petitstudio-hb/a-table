@@ -115,7 +115,7 @@ const SCHEMA = {
           prix_kg: { type: "number", description: "Prix au kilo ou au litre s'il est indiqué, sinon 0." },
           poids: { type: "string", description: "Contenance de l'article (ex. « 500 g », « 1 L », « x12 »), ou chaîne vide." },
           promo: { type: "boolean", description: "Vrai si une remise ou une promotion s'applique." },
-          association: { type: "string", enum: ["meme", "variante", "aucune"], description: "« meme » : exactement le même produit que celui du panier (même nature, même format). « variante » : même type de produit mais marque, saveur ou variété différente, format proche. « aucune » : rien ne correspond, ou format très différent (pack contre unité, 75 cl contre 6 × 25 cl)." },
+          association: { type: "string", enum: ["meme", "aucune"], description: "« meme » : exactement le même produit que celui du panier (même nature, même format). « aucune » : rien ne correspond exactement (autre marque, autre saveur, autre variété comme « oignons rouges » pour « oignons »), ou format très différent (pack contre unité, 75 cl contre 6 × 25 cl)." },
           produit_index: { type: "integer", description: "Indice du produit correspondant dans le panier de référence, ou -1 si aucun ne correspond." },
           prix_reference: { type: "number", description: "Prix ramené au format du produit associé (voir les consignes). Si produit_index vaut -1 : le prix unitaire." },
           rayon: { type: "string", description: "Rayon du produit, en reprenant si possible un rayon existant." },
@@ -140,7 +140,7 @@ ${panier}
 Rayons existants : ${rayons}
 
 Associer une ligne à un produit du panier :
-- Sois prudent : n'associe pas en force. Choisis association « meme » si c'est le même produit, « variante » si c'est le même type de produit avec une marque ou une variété différente (« PENNE 500 G » pour « Pâtes (500 g) »), et « aucune » avec produit_index -1 dans le doute ou si le format est très différent (une bière à l'unité de 75 cl n'est pas un pack de 6 × 25 cl). Mieux vaut un nouveau produit qu'une association fausse.
+- Sois prudent : n'associe pas en force. Choisis association « meme » seulement si c'est exactement le même produit (même marque, même variété) ; une autre marque ou une autre variété (« oignons rouges » pour « oignons ») est un autre produit : « aucune » avec produit_index -1, comme dans le doute ou si le format est très différent (une bière à l'unité de 75 cl n'est pas un pack de 6 × 25 cl). Mieux vaut un nouveau produit qu'une association fausse.
 - prix_reference est le prix que coûterait le format du produit associé. Si le format est identique, c'est le prix unitaire. Si le prix au kilo est connu et que le format est un poids, calcule : prix au kilo × poids du format (ex. oignons à 1,99 €/kg pour un format de 500 g : 1,00). Pour un format différent sans prix au kilo, ramène au prorata de la contenance. Arrondis au centime.
 - Pour un produit non associé, propose un nom clair, un poids et un rayon.
 
@@ -303,10 +303,13 @@ async function photoSuivante() {
 // de celui du produit proposé, on ne force pas le rapprochement et on le signale.
 function ligneBrouillon(l) {
   let produit = Number.isInteger(l.produit_index) && l.produit_index >= 0 && l.produit_index < PANIER.length ? l.produit_index : -1;
-  let lien = l.association === "variante" ? "variante" : "meme";
+  const lien = "meme"; // une variante (oignons rouges, autre marque) est un produit à part : plus de lien « variante » (03/11/2026)
   let avertissement = "";
   let suggestion = -1;
-  if (produit >= 0 && !formatsProches(l.poids, PANIER[produit].format)) {
+  if (produit >= 0 && l.association === "variante") {
+    suggestion = produit; // proposé comme produit possible, mais pas associé d'office : c'est un autre produit
+    produit = -1;
+  } else if (produit >= 0 && !formatsProches(l.poids, PANIER[produit].format)) {
     avertissement = `Format différent : ${l.poids} lu sur la photo, contre ${PANIER[produit].format} pour « ${PANIER[produit].nom} ». Je n'ai pas associé. Choisis le produit si tu veux quand même.`;
     suggestion = produit;
     produit = -1;
@@ -327,7 +330,7 @@ function ligneBrouillon(l) {
     promo: l.promo,
     produit,
     lien,
-    variante: lien === "variante" ? l.nom : "",
+    variante: "",
     avertissement,
     suggestion,
     prix: Math.round((produit >= 0 ? l.prix_reference : l.prix_unitaire) * 100) / 100,
