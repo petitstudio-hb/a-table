@@ -86,6 +86,17 @@ let releves = lire(CLE.releves, []);
 let paniers = lire(CLE.paniers, null) || [{ id: "habituel", nom: "Panier habituel", produits: PANIER.map((_, i) => i) }];
 const panierHabituel = () => paniers.find((p) => p.id === "habituel");
 
+// Le panier « Tous » (30/10/2026, demandé par Hugo) : tous les produits actifs de la liste, tenu à jour tout seul, placé après le panier habituel.
+// Il ne se modifie pas à la main (pas de renommage, de suppression ni de case) ; on peut le dupliquer pour en faire un panier à soi.
+function synchroniserTous() {
+  const tous = paniers.find((p) => p.id === "tous");
+  const produits = produitsActifs();
+  if (tous) { tous.nom = "Tous les produits"; tous.auto = true; tous.produits = produits; return; }
+  const k = paniers.findIndex((p) => p.id === "habituel");
+  paniers.splice(k + 1, 0, { id: "tous", nom: "Tous les produits", auto: true, produits });
+}
+synchroniserTous();
+
 // Le panier affiché dans « Ma course » : sa liste, ses totaux et ses économies ne portent que sur ses produits.
 let panierCourse = lire(CLE.panierCourse, "habituel");
 function produitsCourse() {
@@ -114,6 +125,7 @@ function htmlCorrectionRayon(i, magasin, prix) {
 }
 
 function sauvegarder() {
+  synchroniserTous();
   invaliderIndexPrix();
   ecrire(CLE.coches, [...coches]);
   ecrire(CLE.compares, compares);

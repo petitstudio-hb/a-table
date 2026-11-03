@@ -372,7 +372,7 @@ function remplirFicheVerif() {
   document.querySelector("#verif-magasin-adresse").value = brouillon.magasinAdresse;
   document.querySelector("#verif-date").value = brouillon.date;
   // Les nouveaux produits rejoignent le panier habituel ; on peut aussi les envoyer vers un autre panier.
-  const autres = paniers.filter((p) => p.id !== "habituel");
+  const autres = paniers.filter((p) => p.id !== "habituel" && !p.auto);
   document.querySelector("#verif-panier-label").hidden = autres.length === 0;
   document.querySelector("#verif-panier").innerHTML = `<option value="">Aucun autre panier</option>` + autres.map((p) => `<option value="${p.id}">${echapper(p.nom)}</option>`).join("");
   document.querySelector("#verif-panier").value = brouillon.panier || "";
