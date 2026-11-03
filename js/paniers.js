@@ -38,7 +38,7 @@ function afficherListePaniers() {
         <button type="button" class="ouvrir" data-ouvrir-panier="${p.id}" aria-expanded="${ouvert}" aria-label="${ouvert ? "Replier" : "Déplier"} le panier ${echapper(p.nom)}">
           <span><strong>${echapper(p.nom)}</strong>${p.id === "habituel" ? ` <em class="etiquette">par défaut</em>` : p.auto ? ` <em class="etiquette">automatique</em>` : ""}
             <span class="date">${detail}</span>${blocTotaux(p)}</span>
-          <span class="fleche" aria-hidden="true">›</span>
+          <span class="fleche" aria-hidden="true"></span>
         </button>
         ${ouvert ? detailHtml(p) : ""}
       </li>`;
@@ -130,7 +130,7 @@ function majListesDetail() {
     if (!produits.length) continue;
     const n = produits.filter((i) => dedans.has(i)).length;
     const ouvert = requete ? true : rayonsOuvertsPanier.has(rayon) ? true : rayonsRepliesPanier.has(rayon) ? false : n > 0;
-    html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${ouvert}"><span>${echapper(rayon)} · ${n}/${produits.length}</span><span class="fleche">${ouvert ? "▾" : "▸"}</span></button></li>`;
+    html += `<li class="rayon-bande"><button type="button" class="rayon-bande-bouton" data-rayon-panier="${echapper(rayon)}" aria-expanded="${ouvert}"><span>${echapper(rayon)} · ${n}/${produits.length}</span><span class="fleche" aria-hidden="true"></span></button></li>`;
     if (ouvert) html += produits.map((i) => ligneProduit(i, dedans.has(i), panier.auto)).join("");
   }
   li.querySelector("[data-produits]").innerHTML = html || `<li class="vide">${requete ? "Aucun produit ne correspond à cette recherche." : "Ta liste ne contient aucun produit."}</li>`;

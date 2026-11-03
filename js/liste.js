@@ -1,15 +1,12 @@
 // « Gérer ma liste » (séance 18) : renommer, changer le format ou le rayon,
-// fusionner deux produits, supprimer. Un produit supprimé reste en place, masqué,
+// supprimer. Un produit supprimé reste en place, masqué,
 // pour que les numéros des autres produits ne bougent pas.
 // Maquette validée le 03/11/2026 : puces de filtre (Tous / Sans contenu / Sans marque), carte « À compléter » et
 // modification dans une feuille du bas avec « Enregistrer et suivant » pour enchaîner les produits sans contenu.
 
-let produitEnEdition = null; // { i, mode: "fusionner" } (la modification, elle, passe par la feuille du bas)
 let filtreListe = "tous"; // tous | contenu | marque
 let suiteListe = []; // produits sans contenu pris l'un après l'autre
 let produitFeuille = null; // produit ouvert dans la feuille du bas
-// La fusion est masquée pour l'instant (retour de test du 23/10/2026) : le code reste, prêt à être réactivé avec une recherche.
-const FUSION_ACTIVE = false;
 
 function afficherListe() {
   const zone = document.querySelector("#liste-gestion");
@@ -24,19 +21,9 @@ function afficherListe() {
   const nbReleves = (i) => releves.filter((r) => r.produit === i).length;
   const ligne = (i) => {
     const p = PANIER[i];
-    if (produitEnEdition?.i === i && produitEnEdition.mode === "fusionner") {
-      return `<li class="modif" data-i="${i}">
-        <strong>${echapper(p.nom)}</strong>
-        <p class="aide">Ses ${nbReleves(i)} prix passent sur le produit choisi, puis « ${echapper(p.nom)} » disparaît de la liste.</p>
-        <label class="large">Fusionner dans
-          <select data-champ="cible">${actifs.filter((j) => j !== i).map((j) => `<option value="${j}">${echapper(PANIER[j].nom)}${PANIER[j].format ? ` (${echapper(PANIER[j].format)})` : ""}</option>`).join("")}</select>
-        </label>
-        <div class="actions"><button type="button" data-annuler-liste>Annuler</button><button type="button" class="principal" data-fusionner-liste="${i}">Fusionner</button></div>
-      </li>`;
-    }
     return `<li><span><strong>${echapper(p.nom)}</strong> <span class="lc-format">${p.marque ? `${echapper(p.marque)} · ` : ""}${p.format ? echapper(p.format) : `<span class="pastille-format vide">contenu à préciser</span>`}</span>
       <span class="date">${nbReleves(i)} prix</span></span>
-      <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button>${FUSION_ACTIVE ? `<button type="button" data-fusion-liste="${i}">Fusionner</button>` : ""}<button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
+      <span class="boutons"><button type="button" data-modifier-liste="${i}">Modifier</button><button type="button" data-supprimer-liste="${i}" aria-label="Supprimer ${echapper(p.nom)}">✕</button></span></li>`;
   };
   const acompleter = sansContenu.length
     ? `<button type="button" class="liste-acompleter" data-completer-liste><span class="txt">${sansContenu.length} produit${sansContenu.length > 1 ? "s" : ""} sans contenu<small>Les compléter un par un (litrage ou grammage)</small></span><span class="liste-chev" aria-hidden="true"></span></button>` : "";
@@ -131,41 +118,18 @@ function enregistrerProduit(i, zone) {
   return true;
 }
 
-function fusionnerProduits(source, cible) {
-  invaliderIndexPrix();
-  for (const r of releves) {
-    if (r.produit !== source) continue;
-    r.produit = cible;
-    if (!r.variante && PANIER[source].nom !== PANIER[cible].nom) r.variante = PANIER[source].nom;
-  }
-  for (const p of paniers) {
-    if (p.produits.includes(source) && !p.produits.includes(cible)) p.produits.push(cible);
-  }
-  if (coches.has(source)) coches.add(cible);
-  masquerProduit(source);
-}
-
 function brancherListe() {
   document.querySelector("#liste-recherche").addEventListener("input", afficherListe);
   const zones = [document.querySelector("#liste-gestion"), document.querySelector("#liste-masques")];
   const clic = (e) => {
     const b = e.target.closest("button");
     if (!b) return;
-    const apres = () => { sauvegarder(); produitEnEdition = null; toutAfficher(); };
+    const apres = () => { sauvegarder(); toutAfficher(); };
     if (b.dataset.retablirListe !== undefined) { retablirProduit(Number(b.dataset.retablirListe)); apres(); notifier("Produit rétabli."); }
     else if (b.dataset.modifierListe !== undefined) ouvrirFeuilleProduit(Number(b.dataset.modifierListe), false);
     else if (b.dataset.filtreListe !== undefined) { filtreListe = b.dataset.filtreListe; afficherListe(); }
     else if (b.hasAttribute("data-completer-liste")) { const premier = produitsActifs().find((j) => !PANIER[j].format); if (premier !== undefined) ouvrirFeuilleProduit(premier, true); }
-    else if (b.dataset.fusionListe !== undefined) { produitEnEdition = { i: Number(b.dataset.fusionListe), mode: "fusionner" }; afficherListe(); }
-    else if (b.hasAttribute("data-annuler-liste")) { produitEnEdition = null; afficherListe(); }
-    else if (b.dataset.fusionnerListe !== undefined) {
-      const source = Number(b.dataset.fusionnerListe);
-      const cible = Number(b.closest("li").querySelector('[data-champ="cible"]').value);
-      if (!Number.isInteger(cible)) return;
-      fusionnerProduits(source, cible);
-      apres();
-      notifier("Produits fusionnés.");
-    } else if (b.dataset.supprimerListe !== undefined) {
+    else if (b.dataset.supprimerListe !== undefined) {
       const i = Number(b.dataset.supprimerListe);
       const n = releves.filter((r) => r.produit === i).length;
       if (!confirm(`Supprimer « ${PANIER[i].nom} » de ta liste${n ? ` ? Ses ${n} prix seront aussi supprimés` : ""} ?`)) return;
