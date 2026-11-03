@@ -933,11 +933,25 @@ function brancherEvenements() {
     const b = e.target.closest("button.cellule");
     if (b) ouvrirSaisie(b.dataset.produit, b.dataset.magasin);
   });
-  // Le bouton « ⋯ » range les actions rares de Ma course (tout cocher, tout replier, tout comparer, saisir un prix, magasins affichés).
+  // Le bouton « ⋯ » ouvre une feuille du bas qui range les actions rares de Ma course (maquette validée le 03/11/2026).
+  const feuilleOptions = document.querySelector("#feuille-options-course");
+  const fermerOptions = () => {
+    feuilleOptions.hidden = true;
+    document.querySelector("#plus-options").setAttribute("aria-expanded", "false");
+    if (!document.querySelector(".feuille-prix:not([hidden])")) document.documentElement.classList.remove("feuille-prix-ouverte");
+  };
   document.querySelector("#plus-options").addEventListener("click", (e) => {
-    const panneau = document.querySelector("#plus-course");
-    panneau.hidden = !panneau.hidden;
-    e.currentTarget.setAttribute("aria-expanded", String(!panneau.hidden));
+    feuilleOptions.hidden = false;
+    e.currentTarget.setAttribute("aria-expanded", "true");
+    document.documentElement.classList.add("feuille-prix-ouverte");
+  });
+  document.querySelector("#options-voile").addEventListener("click", fermerOptions);
+  document.querySelector("#options-fermer").addEventListener("click", fermerOptions);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !feuilleOptions.hidden) fermerOptions(); });
+  // Chaque action ferme la feuille, sauf le choix des magasins qui se déplie dans la feuille (le geste propre au bouton a déjà eu lieu).
+  feuilleOptions.addEventListener("click", (e) => {
+    const b = e.target.closest("button.fp-ligne");
+    if (b && b.id !== "choix-magasins") fermerOptions();
   });
   document.querySelector("#saisie-ouvrir").addEventListener("click", () => ouvrirSaisie());
   document.querySelector("#saisie-annuler").addEventListener("click", fermerSaisie);

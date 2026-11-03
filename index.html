@@ -185,17 +185,6 @@
             <div id="recherche-course"><input type="search" class="recherche" id="recherche-course-champ" placeholder="Chercher un produit" autocomplete="off" aria-label="Chercher un produit"></div>
             <button type="button" id="plus-options" class="bouton-plus" aria-expanded="false" aria-label="Plus d'options">⋯</button>
           </div>
-          <div id="plus-course" class="plus-course" hidden>
-            <span id="nb-coches"></span>
-            <button type="button" id="tout">Tout cocher</button>
-            <button type="button" id="rien">Tout décocher</button>
-            <button type="button" id="course-replier">Tout replier</button>
-            <button type="button" id="course-deplier">Tout déplier</button>
-            <button type="button" id="tout-comparer-bouton">Tout comparer</button>
-            <button type="button" id="saisie-ouvrir">Saisir un prix</button>
-            <button type="button" id="choix-magasins" class="pleine-largeur" aria-expanded="false"><span id="choix-magasins-texte">Choisir les magasins affichés</span><i class="fleche-lien" aria-hidden="true"></i></button>
-            <div id="liste-choix-magasins" class="choix-magasins" hidden></div>
-          </div>
           <p id="panier-vide" class="encart" hidden>Aucun magasin affiché. Active-en un dans l'onglet <a href="#magasins">Magasins</a>.</p>
           <div id="liste-course"></div>
           <section id="nettoyage" class="carte-nettoyage" hidden></section>
@@ -280,6 +269,29 @@
           </div>
         </div>
 
+        <!-- Options de Ma course : feuille du bas (maquette validée le 03/11/2026). Les boutons gardent leurs identifiants : leurs gestes sont dans app.js. -->
+        <div id="feuille-options-course" class="feuille-prix" hidden>
+          <div class="fp-voile" id="options-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="options-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="options-titre" class="fp-titre">Options de Ma course</p>
+            <p id="nb-coches" class="fp-sous"></p>
+            <div class="fp-rubrique fp-rub-selection">
+              <p class="fp-rub">Sélection</p>
+              <div class="fp-duo"><button type="button" id="tout" class="fp-ligne">Tout cocher</button><button type="button" id="rien" class="fp-ligne">Tout décocher</button></div>
+            </div>
+            <p class="fp-rub">Affichage</p>
+            <div class="fp-duo"><button type="button" id="course-replier" class="fp-ligne">Tout replier</button><button type="button" id="course-deplier" class="fp-ligne">Tout déplier</button></div>
+            <p class="fp-rub">Prix</p>
+            <button type="button" id="saisie-ouvrir" class="fp-ligne">Saisir un prix</button>
+            <button type="button" id="tout-comparer-bouton" class="fp-ligne">Tout comparer</button>
+            <p class="fp-rub">Magasins</p>
+            <button type="button" id="choix-magasins" class="fp-ligne pleine-largeur" aria-expanded="false"><span id="choix-magasins-texte">Choisir les magasins affichés</span><i class="fleche-lien" aria-hidden="true"></i></button>
+            <div id="liste-choix-magasins" class="choix-magasins" hidden></div>
+            <div class="fp-actions"><button type="button" id="options-fermer" class="fp-fermer">Fermer</button></div>
+          </div>
+        </div>
+
         <!-- Saisie d'un prix : feuille du bas (maquette validée le 29/10). S'ouvre en touchant un prix de la liste, ou « Saisir un prix » dans ⋯. -->
         <div id="saisie-carte" class="feuille-prix" hidden>
           <div class="fp-voile" id="saisie-voile"></div>
@@ -321,12 +333,12 @@
       <section id="vue-magasins" class="vue" hidden>
         <div id="ou-aller" class="carte-blanche">
           <select id="ou-aller-rayon" aria-label="Distance maximale">
+            <option value="" selected>Où aller ? Choisir une distance</option>
             <option value="1000">1 km</option>
-            <option value="2000" selected>2 km</option>
+            <option value="2000">2 km</option>
             <option value="5000">5 km</option>
             <option value="20000">20 km</option>
           </select>
-          <button type="button" id="ou-aller-bouton" class="principal">Où aller ?</button>
           <div id="ou-aller-resultat" aria-live="polite"></div>
         </div>
 
@@ -369,6 +381,18 @@
             <div id="carte-fiche" class="carte-fiche"></div>
           </div>
           <p id="carte-etat" class="aide"></p>
+        </div>
+
+        <!-- Y aller : feuille du bas (maquette validée le 03/11/2026) : Plans, Google Maps, Waze ou copier l'adresse. -->
+        <div id="feuille-y-aller" class="feuille-prix" hidden>
+          <div class="fp-voile" id="y-aller-voile"></div>
+          <div class="fp-feuille" role="dialog" aria-modal="true" aria-labelledby="y-aller-titre">
+            <div class="fp-poignee" aria-hidden="true"></div>
+            <p id="y-aller-titre" class="fp-titre">Y aller avec…</p>
+            <p id="y-aller-sous" class="fp-sous"></p>
+            <div id="y-aller-apps"></div>
+            <div class="fp-actions"><button type="button" id="y-aller-fermer" class="fp-fermer">Annuler</button></div>
+          </div>
         </div>
 
         <div id="trouver" class="carte-blanche" hidden>

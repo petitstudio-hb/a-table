@@ -1350,3 +1350,28 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 
 /* Une variante (oignons rouges, autre marque) est un produit à part entière (03/11/2026) : le choix « même produit / variante » du formulaire de vérification n'est plus proposé. */
 [data-bloc="lien"], [data-bloc="variante"] { display: none !important; }
+
+/* ---------- Ma course : bandeau « deux magasins » discret et options en feuille du bas (maquette validée le 03/11/2026) ---------- */
+.rp-bandeau { border: none; background: none; padding: 6px 0; margin: 4px 0 0; min-height: 44px; }
+.rp-bandeau .txt { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.fp-rub { margin: 14px 0 6px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.fp-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fp-ligne { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; min-height: 52px; margin: 0 0 6px; padding: 10px 12px; border: 1.5px solid var(--ligne); background: var(--carte); color: var(--texte); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.fp-ligne.pleine-largeur { justify-content: space-between; }
+.fp-fermer { flex: 1; min-height: 52px; border: 2px solid var(--accent); background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+#feuille-options-course .choix-magasins { margin: 4px 0 8px; }
+.mode-courses .fp-rub-selection { display: none; }
+
+/* ---------- Magasins : « Y aller » en feuille de choix (maquette validée le 03/11/2026) ---------- */
+.y-aller-bouton { min-height: 44px; margin: 2px 0 10px 40px; padding: 8px 16px; border: 1.5px solid var(--accent); background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+#feuille-y-aller .fp-ligne { text-decoration: none; }
+#feuille-y-aller svg { flex: none; color: var(--accent); }
+
+/* ---------- Scan : questions « Quel contenu ? » et « Quelle marque ? » (maquette Q2 validée le 03/11/2026) ---------- */
+.vc-q .vc-q-nom { display: block; margin: 4px 0 0; font-family: var(--mono); font-size: 0.8rem; font-weight: 400; color: var(--discret); overflow-wrap: anywhere; }
+.vc-choix-puces { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 4px 0 10px; }
+.vc-puce { min-height: 48px; padding: 8px 16px; border: 2px solid var(--accent); border-radius: 999px !important; background: var(--carte); color: var(--accent); font: inherit; font-weight: 800; cursor: pointer; }
+.vc-saisie-q { display: flex; gap: 8px; margin: 0 0 4px; }
+.vc-champ-q { flex: 1; min-width: 0; box-sizing: border-box; padding: 12px; border: 1.5px solid var(--ligne); background: var(--blanc); color: var(--texte); font: inherit; font-size: 1rem; }
+.vc-ok-q { flex: none; width: 72px; min-height: 48px; }
+.vc-passer { display: block; width: 100%; min-height: 44px; margin-top: 4px; border: none; background: none; color: var(--discret); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }

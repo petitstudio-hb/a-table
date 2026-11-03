@@ -76,7 +76,7 @@ function montrerFiche(k) {
   const m = p.connu ? MAGASINS.find((x) => x.id === p.id) : null;
   const t = m ? totalDe(m) : null;
   const panier = t && t.coches ? `<div class="ligne"><span>${echapper(paniers.find((x) => x.id === panierCourse)?.nom || "Panier")} · ${t.connus} prix sur ${t.coches}</span><span class="total">${t.connus ? euros(t.total) : "—"}</span></div>` : "";
-  const itineraire = `<a class="bouton-lien" href="https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=w" target="_blank" rel="noopener">Y aller</a>`;
+  const itineraire = `<button type="button" class="bouton-lien" data-y-aller-point="${k}">Y aller</button>`;
   fiche.innerHTML = `<div class="poignee"></div><h3>${k + 1}. ${echapper(p.nom)} ${pastille}</h3>
     <div class="ligne"><span>${echapper(p.rue) || "Rue non renseignée"}</span><span>${p.distance != null ? `${distanceTexte(p.distance)} à vol d'oiseau` : ""}</span></div>${panier}
     <div class="actions">${itineraire}${p.connu ? `<button type="button" class="plein" data-course-ici="${echapper(p.id)}">Ma course ici</button>` : `<button type="button" class="plein" data-ajouter-trouve="${p.trouve}">+ Ajouter à ma liste</button>`}</div>`;
@@ -117,7 +117,11 @@ async function majCarte() {
     bornes.extend([centreRecherche.lon, centreRecherche.lat]);
     nb++;
   }
-  if (nb > 1) carte.fitBounds(bornes, { padding: 40, maxZoom: 16, animate: false });
+  if (centreRecherche && typeof rayonCarte === "number" && rayonCarte > 0) {
+    // Une distance est choisie : la carte se cale sur ce rayon autour de la position (maquette validée le 03/11/2026).
+    const dLat = rayonCarte / 110540, dLon = rayonCarte / (111320 * Math.cos((centreRecherche.lat * Math.PI) / 180));
+    carte.fitBounds([[centreRecherche.lon - dLon, centreRecherche.lat - dLat], [centreRecherche.lon + dLon, centreRecherche.lat + dLat]], { padding: 20, animate: true, duration: 600 });
+  } else if (nb > 1) carte.fitBounds(bornes, { padding: 40, maxZoom: 16, animate: false });
   else if (nb === 1) carte.jumpTo({ center: bornes.getCenter(), zoom: 15 });
   fermerFiche();
   const sansPlace = MAGASINS.filter((m) => typeof m.lat !== "number").length;
@@ -147,6 +151,9 @@ document.querySelector("#carte-fiche").addEventListener("click", (e) => {
   // « Ma course ici » : ce magasin devient le seul comparé, et on passe à Ma course.
   const c = e.target.closest("[data-course-ici]");
   if (c) { compares = [c.dataset.courseIci]; sauvegarder(); location.hash = "#course"; calculer(); }
+  // « Y aller » : la feuille de choix de l'appli de plan (ouialler.js).
+  const y = e.target.closest("[data-y-aller-point]");
+  if (y) { const p = pointsCarte[Number(y.dataset.yAllerPoint)]; if (p) ouvrirYAller({ nom: p.nom, lat: p.lat, lon: p.lon, adresse: p.rue }); }
 });
 
 // Bouton rond : c'est le seul endroit où la carte demande la position (jamais à l'ouverture), qui n'est jamais enregistrée (D9).
