@@ -169,14 +169,6 @@ main {
 }
 .bouton-secondaire:hover { border-color: var(--discret); }
 
-.choix-modele {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--discret);
-}
-.choix-modele select { font-size: 0.85rem; padding: 4px 8px; }
 
 .encart {
   background: var(--carte);
@@ -204,14 +196,6 @@ main {
 
 /* ---------- Vérification ---------- */
 
-.miniature {
-  display: block;
-  max-width: 100%;
-  max-height: 220px;
-  margin: 0 auto 16px;
-  border-radius: 8px;
-  border: 1px solid var(--ligne);
-}
 .ligne-verif {
   border: 1px solid var(--ligne);
   border-radius: 10px;
@@ -222,17 +206,6 @@ main {
 .ligne-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
 .ligne-tete .detail { font-size: 0.8rem; color: var(--discret); }
 button.supprimer { padding: 2px 8px; }
-.actions-bas {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 16px;
-  position: sticky;
-  bottom: calc(84px + env(safe-area-inset-bottom));
-  background: var(--carte);
-  padding: 10px 0;
-}
-.actions-bas button { padding: 10px 20px; }
 
 /* ---------- Relevés et réglages ---------- */
 
@@ -936,12 +909,6 @@ input, select, textarea { font-size: 16px !important; }
 .outils-course { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; }
 .outils-course #recherche-course { flex: 1; margin: 0; }
 .bouton-plus { flex: none; width: 46px; height: 46px; border: 1.5px solid var(--accent); background: var(--blanc); color: var(--accent); font-size: 1.4rem; font-weight: 800; line-height: 1; cursor: pointer; }
-.plus-course { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; padding: 8px; background: var(--carte); border: 1.5px dashed var(--discret); }
-.plus-course[hidden] { display: none; }
-.plus-course #nb-coches { flex: 1 1 100%; margin: 0 0 2px; font-size: 0.8rem; color: var(--discret); }
-.plus-course > button { flex: 1 1 45%; padding: 10px 6px; border: 1.5px solid var(--accent); background: var(--blanc); color: var(--accent); font: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
-.plus-course > button.pleine-largeur { flex: 1 1 100%; display: flex; justify-content: space-between; align-items: center; }
-.plus-course .choix-magasins { flex: 1 1 100%; }
 .pleine-largeur[aria-expanded="true"] .fleche-lien { transform: rotate(45deg); margin-bottom: 4px; }
 
 /* Séance 37 : Magasins plus simple (Où aller ? sur une ligne, ligne = toucher pour modifier, ajout par l'adresse d'abord) */
@@ -1054,7 +1021,7 @@ details[open] > :not(summary) { animation: ouvre-ligne 200ms ease-out backwards;
 :is(#vue-magasins, #vue-paniers, #vue-releves, #vue-liste) #liste-magasins > li { padding: 12px 0; }
 
 /* Rayon 14 px : blocs encadres, boutons (pas de pastille), champs, tickets, KPI, rangs, mode courses, fiche de carte. */
-.carte-blanche, .carte, #interrupteur-courses, .rang, .kpi-case, .ticket, details.exclus, .carte-nettoyage, .plus-course, .plus-panier, .plus-reglage,
+.carte-blanche, .carte, #interrupteur-courses, .rang, .kpi-case, .ticket, details.exclus, .carte-nettoyage, .plus-panier, .plus-reglage,
 .mode-releves, .chip-mag, .choix-magasin, #carte-cadre, #carte-zone, .encart, .ligne-duel, .rayon-titre, .rayon-bande-bouton, #ou-aller,
 .interrupteur, #barre-courses, .feuille-fin { border-radius: var(--rayon); }
 .carte-fiche { border-radius: var(--rayon) var(--rayon) 0 0; }
@@ -1076,7 +1043,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 :root { --rayon: 8px; }
 
 /* Angles doux : cartes, boutons, champs, rangées (les ronds et pastilles restent ronds). */
-.carte-blanche, .carte, #interrupteur-courses, .rang, .kpi-case, .ticket, details.exclus, .carte-nettoyage, .plus-course, .plus-panier, .plus-reglage,
+.carte-blanche, .carte, #interrupteur-courses, .rang, .kpi-case, .ticket, details.exclus, .carte-nettoyage, .plus-panier, .plus-reglage,
 .chip-mag, .choix-magasin, #carte-cadre, #carte-zone, .encart, .ligne-duel, .rayon-titre, .rayon-bande-bouton, #ou-aller,
 .interrupteur, #barre-courses, .feuille-fin, .profil-menu { border-radius: var(--rayon) !important; }
 .carte-fiche { border-radius: var(--rayon) var(--rayon) 0 0 !important; }
