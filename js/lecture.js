@@ -92,8 +92,9 @@ async function preparerPdf(fichier) {
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["magasin_id", "magasin_nom", "magasin_adresse", "date", "lignes", "remarque"],
+  required: ["type_photo", "magasin_id", "magasin_nom", "magasin_adresse", "date", "lignes", "remarque"],
   properties: {
+    type_photo: { type: "string", enum: ["ticket", "etiquette"], description: "« ticket » pour un ticket de caisse (liste d'articles achetés avec un total), « etiquette » pour une ou plusieurs étiquettes de prix en rayon." },
     magasin_id: { type: "string", description: "Identifiant d'un magasin connu, ou chaîne vide si aucun ne correspond." },
     magasin_nom: { type: "string", description: "Enseigne du magasin lue sur la photo (ex. « Aldi », « Intermarché Express »), sans l'adresse, ou chaîne vide." },
     magasin_adresse: { type: "string", description: "Numéro et rue du magasin lus sur la photo (ex. « 12 rue de Clignancourt »), sans le code postal ni la ville, ou chaîne vide si absents." },
@@ -147,14 +148,23 @@ Associer une ligne à un produit du panier :
 Si un magasin connu correspond (enseigne et adresse cohérentes), donne son identifiant. Si l'enseigne est connue mais que l'adresse lue est clairement différente, c'est un autre magasin : magasin_id vide. Sinon magasin_id vide aussi. Dans les deux cas, renseigne magasin_nom (enseigne) et magasin_adresse (numéro et rue) tels qu'imprimés sur la photo, en gardant leur écriture normale (pas tout en majuscules).
 Réponds uniquement à partir de ce qui est visible. N'invente pas de ligne.`;
 
-  if (type === "etiquette") {
+  const etiquette = `Renvoie une ligne par produit étiqueté : nom, contenance, prix, prix au kilo ou au litre s'il est affiché, et promo si l'étiquette l'indique (prix barré, pourcentage, « offre »). La date et le magasin sont souvent absents : laisse-les vides.`;
+  if (type === "etiquette") return `${commun}\n\nLa photo montre une ou plusieurs étiquettes de prix en rayon. ${etiquette}`;
+  const ticket = consignesTicket();
+  if (type === "auto") {
     return `${commun}
 
-La photo montre une ou plusieurs étiquettes de prix en rayon. Renvoie une ligne par produit étiqueté : nom, contenance, prix, prix au kilo ou au litre s'il est affiché, et promo si l'étiquette l'indique (prix barré, pourcentage, « offre »). La date et le magasin sont souvent absents : laisse-les vides.`;
-  }
-  return `${commun}
+Commence par reconnaître le type de photo et renseigne type_photo : « ticket » pour un ticket de caisse, « etiquette » pour une ou plusieurs étiquettes de prix en rayon. Puis applique les consignes qui correspondent.
 
-La photo montre un ticket de caisse. Renvoie une ligne par article acheté :
+Si c'est une étiquette de rayon : ${etiquette}
+
+Si c'est un ticket de caisse : ${ticket}`;
+  }
+  return `${commun}\n\nLa photo montre un ticket de caisse. ${ticket}`;
+}
+
+function consignesTicket() {
+  return `Renvoie une ligne par article acheté :
 - « 2 x 0,49 € » : quantite 2, prix_unitaire 0,49, prix_total 0,98.
 - Vrac « 0,736 kg x 1,99 €/kg » : quantite 0,736, prix_kg 1,99, prix_unitaire et prix_total 1,46.
 - Une remise sous un article (ex. « REMISE -0,50 ») s'applique à cet article : déduis-la du prix et mets promo à vrai. Ne crée pas de ligne pour la remise.
@@ -177,7 +187,7 @@ async function lireAvecIA(base64, type, mediaType = "image/jpeg") {
         mediaType === "application/pdf"
           ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
           : { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-        { type: "text", text: type === "etiquette" ? "Lis cette étiquette de prix." : "Lis ce ticket de caisse." },
+        { type: "text", text: type === "etiquette" ? "Lis cette étiquette de prix." : type === "auto" ? "Lis cette photo (ticket de caisse ou étiquettes de prix)." : "Lis ce ticket de caisse." },
       ],
     }],
     output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
@@ -206,8 +216,9 @@ function etat(texte, classe) {
   m.className = `message ${classe || ""}`;
 }
 
+// Plus de choix ticket / étiquette (04/11/2026) : la lecture reconnaît toute seule le type de photo (champ type_photo du résultat).
 function typeChoisi() {
-  return document.querySelector('input[name="type-photo"]:checked').value;
+  return "auto";
 }
 
 // ---------- Écran Photo : accueil du premier lancement, écran habituel, lecture en cours, lecture impossible ----------
@@ -339,6 +350,7 @@ function ligneBrouillon(l) {
 }
 
 function ouvrirVerification(resultat, dataUrl, type, suffixe) {
+  if (type === "auto") type = resultat.type_photo === "etiquette" ? "etiquette" : "ticket"; // reconnu par la lecture ; ticket en cas de doute
   const magasinConnu = MAGASINS.some((m) => m.id === resultat.magasin_id);
   brouillon = {
     type,
@@ -564,8 +576,8 @@ function valider() {
   toutAfficher();
   const texte = `${lignes.length} prix enregistré${lignes.length > 1 ? "s" : ""} chez ${nomMagasin(magasin)}.`;
   notifier(texte);
-  // Écran « Enregistré » : on confirme avant de passer à Ma course (ou à la photo suivante s'il y en a).
-  VerifCartes.afficherFin({ n: lignes.length, total: lignes.reduce((s, l) => s + l.prix * (l.quantite ?? 1), 0), magasin: nomMagasin(magasin), suite: file.length > 0 });
+  // Plus d'écran « Enregistré » (04/11/2026) : retour direct à Ma course (ou à la photo suivante s'il y en a), le message ci-dessus confirme.
+  photoSuivante();
 }
 
 // ---------- Démarrage ----------
@@ -623,7 +635,6 @@ function demarrerLecture() {
     if (e.currentTarget.getAttribute("aria-disabled") === "true") return; // il reste des lignes à confirmer
     valider();
   });
-  document.querySelector("#verif-fin-suite").addEventListener("click", photoSuivante);
   document.querySelector("#verif-annuler").addEventListener("click", () => {
     etat(file.length ? "Photo ignorée." : "Lecture annulée.");
     photoSuivante();
