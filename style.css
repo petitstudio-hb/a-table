@@ -1181,17 +1181,7 @@ svg.ap { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: roun
 .vc-ign { display: block; margin: 14px auto 0; padding: 10px 14px; border: none; background: none; color: var(--discret); text-decoration: underline; font: inherit; cursor: pointer; }
 .vc-aucun { text-align: center; color: var(--discret); }
 
-/* --- Enregistré --- */
-.vc-fin { text-align: center; padding-top: 14px; }
-.vc-fin-rond { width: 110px; height: 110px; margin: 6px auto 10px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 0 0 6px var(--ligne), inset 0 0 0 5px var(--jaune); }
-.vc-fin-rond .vc-icone { width: 60px; height: 60px; }
-.vc-fin h2 { margin: 0 0 12px; font-size: 1.7rem; }
-.vc-fin-recap { display: grid; gap: 2px; margin-bottom: 16px; padding: 14px; background: var(--carte); border-radius: var(--rayon); }
-.vc-fin-recap b { font-size: 1.4rem; font-weight: 800; }
-.vc-fin-recap span { color: var(--discret); }
-.vc-fin .vc-gr { width: 100%; }
-
-.vc-gr, .vc-res, .vc-rech, .vc-lu, .vc-formc input, .vc-fin .vc-gr { border-radius: var(--rayon); }
+.vc-gr, .vc-res, .vc-rech, .vc-lu, .vc-formc input { border-radius: var(--rayon); }
 .ph-etapes li { text-align: left; }
 .vc-pied .vc-gr.plein[aria-disabled="true"] { opacity: 1; background: #8a9a90; border-color: #8a9a90; }
 #verif-cartes { padding-bottom: 8px; }

@@ -200,22 +200,10 @@ const VerifCartes = (() => {
       <button type="button" class="vc-ign" data-vc-ignorer>Je ne sais pas, ignorer</button>`;
   }
 
-  // ---------- Enregistré ----------
-
-  function afficherFin({ n, total, magasin, suite }) {
-    mode = "fin";
-    document.querySelector("#verif-fin-n").textContent = `${n} produit${n > 1 ? "s" : ""}`;
-    document.querySelector("#verif-fin-total").textContent = euros(total);
-    document.querySelector("#verif-fin-mag").textContent = magasin || "";
-    document.querySelector("#verif-fin-suite").textContent = suite ? "Photo suivante" : "Voir ma course";
-    afficher();
-    window.scrollTo(0, 0);
-  }
 
   function afficher() {
     document.querySelector("#verif-cartes").hidden = mode !== "cartes";
     document.querySelector("#verif-choix").hidden = mode !== "choix";
-    document.querySelector("#verif-fin").hidden = mode !== "fin";
     if (mode === "cartes") afficherCartes();
     else if (mode === "choix") afficherChoix();
   }
@@ -331,5 +319,5 @@ const VerifCartes = (() => {
   }
   brancher();
 
-  return { demarrer, afficher, afficherFin, classerLigne, restantes: () => brouillon.lignes.filter(enAttente).length };
+  return { demarrer, afficher, classerLigne, restantes: () => brouillon.lignes.filter(enAttente).length };
 })();

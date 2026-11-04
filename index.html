@@ -70,12 +70,7 @@
 
         <!-- Écran Photo habituel : phrase, type de photo, gros bouton (ouvre le choix photothèque / appareil / fichier de l'iPhone), parcours en trois pictogrammes. -->
         <div id="photo-classique">
-          <p class="accroche">Prends en photo un ticket ou une étiquette : Cabasito lit les prix pour toi.</p>
-
-          <div class="segment" role="radiogroup" aria-label="Type de photo">
-            <label><input type="radio" name="type-photo" value="ticket" checked><span>Ticket de caisse</span></label>
-            <label><input type="radio" name="type-photo" value="etiquette"><span>Prix en rayon</span></label>
-          </div>
+          <p class="accroche">Prends en photo un ticket ou une étiquette : Cabasito reconnaît tout seul ce que c’est et lit les prix pour toi.</p>
 
           <label class="gros-bouton" for="photo-import" aria-label="Ajouter une photo ou un fichier">
             <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true"><path fill="currentColor" d="M9.4 4h5.2l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.9l1.5-2ZM12 17.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
@@ -154,14 +149,6 @@
 
         <!-- « Autre produit » : chercher le bon produit, en créer un nouveau, ou ignorer la ligne. -->
         <div id="verif-choix" hidden></div>
-
-        <!-- Enregistré : confirmation avant de passer à Ma course. -->
-        <div id="verif-fin" class="vc-fin" hidden>
-          <div class="vc-fin-rond" aria-hidden="true"><svg class="vc-icone" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h2>Enregistré</h2>
-          <div class="vc-fin-recap"><b id="verif-fin-n"></b><b id="verif-fin-total"></b><span id="verif-fin-mag"></span></div>
-          <button type="button" id="verif-fin-suite" class="vc-gr plein">Voir ma course</button>
-        </div>
       </section>
 
       <!-- ========== MA COURSE ========== -->
