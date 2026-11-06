@@ -129,7 +129,7 @@ const SCHEMA = {
 function consignes(type) {
   const panier = produitsActifs().map((i) => `${i} | ${PANIER[i].nom} | ${PANIER[i].format || "format libre"} | ${PANIER[i].rayon}`).join("\n");
   const magasins = MAGASINS.map((m) => `${m.id} | ${m.nom} | ${m.adresse || ""}`).join("\n");
-  const rayons = [...new Set(PANIER.map((p) => p.rayon))].join(", ");
+  const rayons = rayonsConnus(PANIER.map((p) => p.rayon)).join(", ");
   const commun = `Tu aides une personne à suivre les prix de ses courses en France. Tu lis une photo et tu renvoies les produits et leurs prix, en euros, sous forme de données structurées.
 
 Magasins connus (identifiant | nom | adresse) :
@@ -139,6 +139,7 @@ Panier de référence (indice | produit | format | rayon) :
 ${panier}
 
 Rayons existants : ${rayons}
+Le rayon « Maison » est pour les produits ménagers et d'hygiène : papier toilette, sacs poubelle, mouchoirs, produits d'entretien, éponges, etc.
 
 Associer une ligne à un produit du panier :
 - Sois prudent : n'associe pas en force. Choisis association « meme » seulement si c'est exactement le même produit (même marque, même variété) ; une autre marque ou une autre variété (« oignons rouges » pour « oignons ») est un autre produit : « aucune » avec produit_index -1, comme dans le doute ou si le format est très différent (une bière à l'unité de 75 cl n'est pas un pack de 6 × 25 cl). Mieux vaut un nouveau produit qu'une association fausse.

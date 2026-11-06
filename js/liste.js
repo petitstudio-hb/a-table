@@ -29,7 +29,7 @@ function afficherListe() {
     ? `<button type="button" class="liste-acompleter" data-completer-liste><span class="txt">${sansContenu.length} produit${sansContenu.length > 1 ? "s" : ""} sans contenu<small>Les compléter un par un (litrage ou grammage)</small></span><span class="liste-chev" aria-hidden="true"></span></button>` : "";
   const puce = (cle, texte, n) => `<button type="button" data-filtre-liste="${cle}" class="${filtreListe === cle ? "on" : ""}" aria-pressed="${filtreListe === cle}">${texte} (${n})</button>`;
   const puces = `<div class="liste-puces" role="group" aria-label="Filtrer la liste">${puce("tous", "Tous", tous.length)}${puce("contenu", "Sans contenu", sansContenu.length)}${puce("marque", "Sans marque", sansMarque.length)}</div>`;
-  zone.innerHTML = `<datalist id="liste-rayons">${rayons.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>` + acompleter + puces
+  zone.innerHTML = `<datalist id="liste-rayons">${rayonsConnus().map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>` + acompleter + puces
     + (actifs.length ? rayons.map((rayon) => `<div class="rayon-liste"><h3 class="rayon-titre-liste">${echapper(rayon)}</h3><ul class="releves">${actifs.filter((i) => PANIER[i].rayon === rayon).map(ligne).join("")}</ul></div>`).join("")
       : `<p class="encart">${requete || filtreListe !== "tous" ? "Aucun produit ne correspond." : "Ta liste est vide."}</p>`);
   afficherMasques();

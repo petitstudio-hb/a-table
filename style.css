@@ -1387,3 +1387,12 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .reglage-titre .fleche-lien { width: 14px; height: 14px; border-width: 4px; color: var(--accent); margin: 0 8px 0 4px; }
 .reglage-titre[aria-expanded="true"] .fleche-lien { margin-bottom: 6px; }
 .interrupteur input, .ligne-case input, .net-ligne input { width: 22px; height: 22px; accent-color: var(--vert); }
+
+/* --- Lot scan (06/11/2026) : retirer une ligne, nouveau rayon, annuler --- */
+.vc-retirer { display: block; width: 100%; margin: 4px 0 2px; padding: 10px; min-height: 44px; border: none; background: none; color: var(--discret); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.vc-rayons .vc-nr { border-style: dashed; }
+.vc-nr-zone { display: flex; gap: 8px; margin: 0 0 12px; }
+.vc-nr-zone input { flex: 1; min-width: 0; margin: 0; }
+.vc-nr-zone .vc-gr { width: auto; min-width: 64px; }
+.vc-toast { position: fixed; left: 12px; right: 12px; bottom: 96px; z-index: 600; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: var(--rayon); background: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.vc-toast button { min-height: 36px; padding: 4px 14px; border: 1.5px solid #fff; background: none; color: #fff; font: inherit; font-weight: 800; border-radius: 999px; cursor: pointer; }
