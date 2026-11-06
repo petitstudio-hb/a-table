@@ -199,13 +199,14 @@ function afficherCourse() {
       const lignes = replie ? "" : produits.map(({ p, i }) => {
         const prix = colonnes.map((m) => (modeCourses ? prixCourse(i, m.id) : prixDe(i, m.id)));
         const connus = prix.filter((x) => x.prix !== null);
-        const mini = connus.length === colonnes.length && colonnes.length > 1 ? Math.min(...prix.map((x) => x.prix)) : null;
-        const unique = mini !== null && prix.filter((x) => Math.abs(x.prix - mini) < 0.005).length === 1;
+        // Le moins cher est en jaune dès que deux magasins au moins ont un prix (06/11 : un magasin sans prix ne bloque plus le jaune).
+        const mini = connus.length >= 2 ? Math.min(...connus.map((x) => x.prix)) : null;
+        const unique = mini !== null && connus.filter((x) => Math.abs(x.prix - mini) < 0.005).length === 1;
         const variante = prix.find((x) => x.variante)?.variante || "";
         const kg = connus.length ? prixAuKilo(p.format, connus[0].prix) : "";
         const cellules = colonnes.map((m, k) => {
           const { prix: q, saisi } = prix[k];
-          const meilleur = unique && Math.abs(q - mini) < 0.005;
+          const meilleur = unique && q !== null && Math.abs(q - mini) < 0.005;
           return `<button type="button" class="cellule lc-prix ${q === null ? "manquant" : ""} ${saisi ? "saisi" : ""}" data-produit="${i}" data-magasin="${m.id}" title="Saisir le prix chez ${echapper(m.nom)}">${q === null ? "+ prix" : `<span class="etiquette ${meilleur ? "" : "simple"}">${euros(q).replace(" €", "")}</span>${prix[k].promo ? `<span class="badge-promo">PROMO</span>` : ""}`}</button>`;
         }).join("");
         return `
