@@ -368,7 +368,9 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   remarque.hidden = !resultat.remarque;
   VerifCartes.demarrer();
   window.verificationEnCours = true;
-  location.hash = "#verif";
+  // Si on a changé d'onglet pendant la lecture, on ne ramène pas de force : le ticket attend sur l'onglet Photo.
+  if (["photo", "verif", ""].includes(vueVisible())) location.hash = "#verif";
+  else notifier("Ticket lu : touche Photo pour le vérifier.");
 }
 
 // Remet à jour l'écran de vérification (cartes) : d'abord la fiche magasin / date / panier, puis les cartes (js/verif-cartes.js).

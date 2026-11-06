@@ -37,8 +37,9 @@ function montrer(vue) {
   if (section) vue = "reglages";
   if (!VUES.includes(vue)) vue = "photo";
   if (vue === "verif" && !window.verificationEnCours) vue = "photo";
+  if (vue === "photo" && window.verificationEnCours) vue = "verif"; // un ticket en cours de vérification est rouvert quand on revient sur Photo, pas perdu (06/11/2026)
   for (const v of VUES) document.querySelector(`#vue-${v}`).hidden = v !== vue;
-  document.querySelectorAll(".onglets a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === vue));
+  document.querySelectorAll(".onglets a").forEach((a) => a.classList.toggle("actif", a.dataset.vue === (vue === "verif" ? "photo" : vue)));
   document.querySelector("#profil-bouton").classList.toggle("actif", VUES_PROFIL.includes(vue));
   fermerProfil();
   if (vue !== "paniers" && typeof fermerPanier === "function") fermerPanier();
