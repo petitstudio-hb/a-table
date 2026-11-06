@@ -270,6 +270,7 @@ function recevoirPhotos(fichiers) {
     return;
   }
   document.querySelector("#photo-sans-cle").hidden = true;
+  if (fichiers.length >= 2) { lireLot([...fichiers]); return; } // plusieurs photos : un seul lot à vérifier (06/11/2026)
   file = [...fichiers].map((f) => ({ fichier: f, type: typeChoisi() }));
   numeroPhoto = 0;
   totalPhotos = file.length;
@@ -362,6 +363,8 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
     // Les lignes sans prix (notes, messages en bas de ticket) ne servent à rien : on les écarte (séance 24).
     lignes: resultat.lignes.filter((l) => l.prix_total > 0 || l.prix_unitaire > 0).map(ligneBrouillon),
   };
+  document.querySelector("#verif-cartes").classList.remove("lot");
+  document.querySelector("#verif-titre").hidden = true;
   document.querySelector("#verif-titre").textContent = `Vérifier ${type === "ticket" ? "le ticket" : "l'étiquette"}${suffixe}`;
   document.querySelector("#verif-image").src = dataUrl;
   const remarque = document.querySelector("#verif-remarque");
@@ -372,6 +375,168 @@ function ouvrirVerification(resultat, dataUrl, type, suffixe) {
   // Si on a changé d'onglet pendant la lecture, on ne ramène pas de force : le ticket attend sur l'onglet Photo.
   if (["photo", "verif", ""].includes(vueVisible())) location.hash = "#verif";
   else notifier("Ticket lu : touche Photo pour le vérifier.");
+}
+
+// ---------- Lot : plusieurs photos lues d'un coup, une seule vérification (maquette validée le 06/11/2026) ----------
+// Les photos sont lues l'une après l'autre ; les lignes de toutes les photos arrivent dans UNE liste de cartes (seules les lignes
+// douteuses posent une question), avec UN bouton « Valider ». Le magasin est lu sur les tickets ; s'il manque (étiquettes de rayon),
+// une seule question groupée est posée. Les prix déjà connus (même produit, magasin, date et prix) ne sont pas enregistrés deux fois.
+
+let lotAutreOuvert = false;
+
+async function lireLot(fichiers) {
+  const lectures = [], erreurs = [];
+  file = [];
+  totalPhotos = fichiers.length;
+  for (let i = 0; i < fichiers.length; i++) {
+    const suffixe = ` (photo ${i + 1} sur ${fichiers.length})`;
+    try {
+      etat("");
+      if (location.hash !== "#photo" && ["photo", ""].includes(vueVisible())) location.hash = "#photo";
+      afficherLecture(null, suffixe);
+      const f = fichiers[i];
+      const estPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
+      const image = estPdf ? await preparerPdf(f) : await preparerImage(f);
+      afficherLecture(estPdf ? null : image.dataUrl, suffixe);
+      lectures.push({ resultat: await lireAvecIA(image.base64, "auto", estPdf ? "application/pdf" : "image/jpeg"), image });
+    } catch (err) {
+      erreurs.push(`Photo ${i + 1} : ${err.message}`);
+    }
+  }
+  if (!lectures.length) { afficherEchec(erreurs[0] || "Aucune photo n'a pu être lue."); return; }
+  revenirPhoto();
+  ouvrirVerificationLot(lectures, erreurs);
+}
+
+function ouvrirVerificationLot(lectures, erreurs) {
+  const groupes = lectures.map(({ resultat }) => {
+    const connu = MAGASINS.some((m) => m.id === resultat.magasin_id);
+    return {
+      type: resultat.type_photo === "etiquette" ? "etiquette" : "ticket",
+      magasin: connu ? resultat.magasin_id : (resultat.magasin_nom ? "__nouveau" : ""),
+      magasinNom: resultat.magasin_nom || "",
+      magasinAdresse: resultat.magasin_adresse || "",
+      date: /^\d{4}-\d{2}-\d{2}$/.test(resultat.date) ? resultat.date : aujourdhui(),
+      sansEnseigne: !connu && !resultat.magasin_nom,
+    };
+  });
+  const lignes = [];
+  lectures.forEach(({ resultat }, gi) => {
+    for (const l of resultat.lignes.filter((x) => x.prix_total > 0 || x.prix_unitaire > 0)) lignes.push({ ...ligneBrouillon(l), groupe: gi });
+  });
+  brouillon = { lot: true, type: "lot", groupes, erreurs: erreurs || [], magasin: "", magasinNom: "", magasinAdresse: "", date: aujourdhui(), panier: "", lignes };
+  lotAutreOuvert = false;
+  document.querySelector("#verif-cartes").classList.add("lot");
+  const titreLot = document.querySelector("#verif-titre");
+  titreLot.textContent = `Vérifier le lot (${groupes.length} photos)`;
+  titreLot.hidden = false;
+  const remarque = document.querySelector("#verif-remarque");
+  remarque.textContent = "";
+  remarque.hidden = true;
+  VerifCartes.demarrer();
+  window.verificationEnCours = true;
+  if (["photo", "verif", ""].includes(vueVisible())) location.hash = "#verif";
+  else notifier("Photos lues : touche Photo pour les vérifier.");
+}
+
+const lotMagasinManquant = () => brouillon.groupes.some((g) => !g.magasin);
+
+// Un prix déjà connu : même produit, même magasin, même date, même prix.
+function estDoublon(l) {
+  const g = brouillon.groupes[l.groupe];
+  if (!g || l.produit < 0 || !g.magasin || g.magasin === "__nouveau") return false;
+  return releves.some((r) => r.produit === l.produit && r.magasin === g.magasin && r.date === g.date && Math.abs(r.prix - l.prix) < 0.005);
+}
+
+// Bilan du lot, question du magasin (si des photos n'en montrent pas) et texte du bouton Valider.
+function majLot() {
+  const zone = document.querySelector("#verif-lot");
+  const lignes = brouillon.lignes.filter((l) => l.prix > 0);
+  const attente = lignes.filter(VerifCartes.enAttente).length;
+  const doublons = lignes.filter((l) => !VerifCartes.enAttente(l) && estDoublon(l)).length;
+  const surs = lignes.length - attente - doublons;
+  const sans = brouillon.groupes.filter((g) => g.sansEnseigne);
+  let html = `<div class="vl-bilan"><div><b>${surs}</b><small>prix sûrs</small></div><div><b>${attente}</b><small>à confirmer</small></div><div><b>${doublons}</b><small>déjà connus</small></div></div>`;
+  if (sans.length) {
+    const choisi = sans[0].magasin;
+    if (choisi) {
+      const nom = choisi === "__nouveau" ? sans[0].magasinNom : nomMagasin(choisi);
+      html += `<p class="vl-q fait">Magasin des ${sans.length} photo${sans.length > 1 ? "s" : ""} sans enseigne : <b>${echapper(nom)}</b> <button type="button" class="lien-discret" data-lot-changer>Changer</button></p>`;
+    } else {
+      html += `<div class="vl-q"><p>${sans.length} photo${sans.length > 1 ? "s" : ""} sans enseigne lisible : quel magasin ?</p><div class="vl-chips">`
+        + MAGASINS.map((m) => `<button type="button" data-lot-mag="${m.id}">${echapper(m.nom)}</button>`).join("")
+        + `<button type="button" data-lot-autre>Autre magasin…</button></div>`
+        + (lotAutreOuvert ? `<div class="vl-autre"><input id="vl-nom" type="text" placeholder="Nom (ex. Lidl)" autocomplete="off"><input id="vl-rue" type="text" placeholder="Rue (facultatif)" autocomplete="off"><button type="button" class="vc-gr" data-lot-autre-ok>OK</button></div>` : "")
+        + `</div>`;
+    }
+  }
+  if (brouillon.erreurs.length) html += `<p class="vl-erreurs">${brouillon.erreurs.length} photo${brouillon.erreurs.length > 1 ? "s" : ""} non lue${brouillon.erreurs.length > 1 ? "s" : ""} : ${echapper(brouillon.erreurs.join(" · "))}</p>`;
+  if (doublons) html += `<p class="vl-note">${doublons} prix identique${doublons > 1 ? "s" : ""} à ceux déjà enregistrés ${doublons > 1 ? "sont ignorés" : "est ignoré"}.</p>`;
+  zone.innerHTML = html;
+  const n = lignes.length - doublons;
+  document.querySelector("#verif-valider").textContent = n > 0 ? `Enregistrer ${n} prix` : "Enregistrer";
+}
+
+function agirLot(e) {
+  const b = e.target.closest("button");
+  if (!b || !brouillon?.lot) return;
+  const sans = brouillon.groupes.filter((g) => g.sansEnseigne);
+  if (b.dataset.lotMag !== undefined) { for (const g of sans) { g.magasin = b.dataset.lotMag; g.magasinNom = ""; g.magasinAdresse = ""; } lotAutreOuvert = false; }
+  else if (b.dataset.lotAutre !== undefined) { lotAutreOuvert = !lotAutreOuvert; }
+  else if (b.dataset.lotAutreOk !== undefined) {
+    const nom = (document.querySelector("#vl-nom")?.value || "").trim();
+    if (!nom) { document.querySelector("#vl-nom")?.focus(); return; }
+    for (const g of sans) { g.magasin = "__nouveau"; g.magasinNom = nom; g.magasinAdresse = (document.querySelector("#vl-rue")?.value || "").trim(); }
+    lotAutreOuvert = false;
+  } else if (b.dataset.lotChanger !== undefined) { for (const g of sans) g.magasin = ""; }
+  else return;
+  VerifCartes.afficher();
+}
+
+function validerLot() {
+  const lignes = brouillon.lignes.filter((l) => l.prix > 0);
+  if (!lignes.length) { alert("Aucune ligne avec un prix valide à enregistrer."); return; }
+  const magasinsCrees = new Map();
+  const idMagasin = (g) => {
+    if (g.magasin !== "__nouveau") return g.magasin;
+    const cle = `${g.magasinNom}|${g.magasinAdresse}`;
+    if (!magasinsCrees.has(cle)) magasinsCrees.set(cle, ajouterMagasin(g.magasinNom, g.magasinAdresse));
+    return magasinsCrees.get(cle);
+  };
+  const nouveaux = new Map(); // un produit créé pendant ce lot (même nom, contenu, marque) n'est créé qu'une fois
+  const base = "t" + Date.now().toString(36);
+  let ajoutes = 0, ignores = 0;
+  for (const l of lignes) {
+    const g = brouillon.groupes[l.groupe];
+    const magasin = idMagasin(g), date = g.date;
+    const marque = (l.marque || "").trim() || nomMagasin(magasin); // sans marque : celle du supermarché (règle de Hugo, 03/11/2026)
+    let produit = l.produit;
+    if (produit < 0) {
+      const cle = sansAccent(`${l.nom}|${l.poids}|${marque}`).toLowerCase();
+      if (!nouveaux.has(cle)) nouveaux.set(cle, ajouterProduit({ nom: l.nom, format: l.poids, rayon: l.rayon, marque }));
+      produit = nouveaux.get(cle);
+    }
+    const prix = Math.round(l.prix * 100) / 100;
+    if (releves.some((r) => r.produit === produit && r.magasin === magasin && r.date === date && Math.abs(r.prix - prix) < 0.005)) { ignores++; continue; }
+    releves.push({
+      produit, magasin, prix, date,
+      promo: Boolean(l.promo),
+      quantite: l.quantite ?? 1,
+      libelle: l.libelle || null,
+      marque,
+      ticket: base + l.groupe,
+      montant: !l.montantModifie && l.prixTotal > 0 ? Math.round(l.prixTotal * 100) / 100 : Math.round(l.prix * (l.quantite ?? 1) * 100) / 100,
+      variante: l.produit >= 0 && l.lien === "variante" && l.variante.trim() ? l.variante.trim() : null,
+      source: g.type,
+      code: null,
+      envoye: false,
+    });
+    ajoutes++;
+  }
+  sauvegarder();
+  toutAfficher();
+  notifier(`${ajoutes} prix enregistré${ajoutes > 1 ? "s" : ""}${ignores ? ` (${ignores} déjà connu${ignores > 1 ? "s" : ""}, ignoré${ignores > 1 ? "s" : ""})` : ""}.`);
+  photoSuivante();
 }
 
 // Remet à jour l'écran de vérification (cartes) : d'abord la fiche magasin / date / panier, puis les cartes (js/verif-cartes.js).
@@ -535,6 +700,7 @@ function majChamp(e) {
 }
 
 function valider() {
+  if (brouillon.lot) { validerLot(); return; }
   const lignes = brouillon.lignes.filter((l) => l.prix > 0);
   if (!lignes.length) {
     alert("Aucune ligne avec un prix valide à enregistrer.");
@@ -634,6 +800,7 @@ function demarrerLecture() {
   document.querySelector("#verif-magasin-adresse").addEventListener("input", (e) => { brouillon.magasinAdresse = e.target.value; });
   document.querySelector("#verif-date").addEventListener("change", (e) => { brouillon.date = e.target.value; });
   document.querySelector("#verif-panier").addEventListener("change", (e) => { brouillon.panier = e.target.value; });
+  document.querySelector("#verif-lot").addEventListener("click", agirLot);
   document.querySelector("#verif-valider").addEventListener("click", (e) => {
     if (e.currentTarget.getAttribute("aria-disabled") === "true") return; // il reste des lignes à confirmer
     valider();
