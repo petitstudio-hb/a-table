@@ -9,6 +9,9 @@ const VerifCartes = (() => {
   let recherche = "";
   let nouveauOuvert = false;
   let rayonChoisi = "";
+  let rayonSaisie = ""; // rayon créé à la main (« + Nouveau rayon »), gardé pour les lignes suivantes du même ticket
+  let nouveauRayonOuvert = false;
+  let retiree = null; // dernière ligne retirée, pour « Annuler »
 
   const zone = () => document.querySelector("#verif-lignes");
   const icone = (nom, classe) => `<svg class="vc-icone ${classe || ""}" aria-hidden="true"><use href="#i-${nom}"/></svg>`;
@@ -96,8 +99,37 @@ const VerifCartes = (() => {
     mode = "cartes";
     recherche = "";
     nouveauOuvert = false;
+    rayonSaisie = "";
+    nouveauRayonOuvert = false;
+    retiree = null;
+    document.querySelector("#vc-toast")?.remove();
     afficher();
     window.scrollTo(0, 0);
+  }
+
+  // Retirer une ligne qu'on ne veut pas (non reconnue, en trop) : elle disparaît du ticket, « Annuler » la remet (lot scan, 06/11/2026).
+  function retirerLigne(k) {
+    const ligne = brouillon.lignes[k];
+    if (!ligne) return;
+    brouillon.lignes.splice(k, 1);
+    retiree = { k, ligne };
+    ouvrirSuivante();
+    afficherCartes();
+    document.querySelector("#vc-toast")?.remove();
+    const t = document.createElement("div");
+    t.id = "vc-toast"; t.className = "vc-toast"; t.setAttribute("role", "status");
+    t.innerHTML = `<span>Ligne retirée</span><button type="button">Annuler</button>`;
+    document.body.append(t);
+    t.querySelector("button").addEventListener("click", () => {
+      if (retiree && brouillon && window.verificationEnCours && mode === "cartes") {
+        brouillon.lignes.splice(Math.min(retiree.k, brouillon.lignes.length), 0, retiree.ligne);
+        retiree = null;
+        ouvrirSuivante();
+        afficherCartes();
+      }
+      t.remove();
+    });
+    setTimeout(() => t.remove(), 6000);
   }
 
   // Après une réponse : la première ligne encore en question s'ouvre, les autres cartes se replient.
@@ -133,7 +165,7 @@ const VerifCartes = (() => {
         const puces = [l.marque, l.poids, l.quantite && l.quantite !== 1 ? `× ${String(l.quantite).replace(".", ",")}` : "", l.rayon, l.promo ? "Promo" : ""].filter(Boolean);
         if (puces.length) corps += `<div class="vc-corps"><div class="vc-puces">${puces.map((p) => `<span>${echapper(p)}</span>`).join("")}</div></div>`;
       }
-      corps += `<details class="vc-corriger" ${l.corriger ? "open" : ""} data-vc-corriger="${k}"><summary>Corriger cette ligne</summary>${htmlLigneVerif(l, k)}</details>`;
+      corps += `<details class="vc-corriger" ${l.corriger ? "open" : ""} data-vc-corriger="${k}"><summary>Corriger cette ligne</summary>${htmlLigneVerif(l, k)}</details><button type="button" class="vc-retirer" data-vc-retirer="${k}">Retirer cette ligne</button>`;
     }
     return `<article class="vc-carte ${dt ? "dt" : "sur"} ${ouvert ? "ouvert" : ""}" data-vc-carte="${k}">
       <button type="button" class="vc-ch" data-vc-tog="${k}" aria-expanded="${ouvert}">
@@ -164,7 +196,7 @@ const VerifCartes = (() => {
   function afficherCartes() {
     remplirFicheVerif();
     enTete();
-    const rayons = [...new Set(produitsActifs().map((i) => PANIER[i].rayon))];
+    const rayons = rayonsConnus();
     const ordre = brouillon.lignes.map((l, k) => [l, k]);
     const tri = [...ordre.filter(([l]) => enAttente(l)), ...ordre.filter(([l]) => !enAttente(l))];
     zone().innerHTML = `<datalist id="verif-rayons">${rayons.map((r) => `<option value="${echapper(r)}">`).join("")}</datalist>`
@@ -184,7 +216,7 @@ const VerifCartes = (() => {
 
   function afficherChoix() {
     const l = brouillon.lignes[indexChoix];
-    const rayons = [...new Set([l.rayon, ...produitsActifs().map((i) => PANIER[i].rayon)].filter(Boolean))].slice(0, 8);
+    const rayons = [...new Set([l.rayon, rayonSaisie, ...rayonsConnus()].filter(Boolean))].slice(0, 12);
     if (!rayonChoisi || !rayons.includes(rayonChoisi)) rayonChoisi = rayons.includes(l.rayon) ? l.rayon : rayons[0];
     document.querySelector("#verif-choix").innerHTML = `
       <div class="vc-choix-tete"><button type="button" class="vc-retour" data-vc-retour aria-label="Retour aux cartes"><span class="vc-chev vc-chev-gauche" aria-hidden="true"></span></button>
@@ -194,7 +226,9 @@ const VerifCartes = (() => {
       <button type="button" class="vc-res nouv ${nouveauOuvert ? "ouvert" : ""}" data-vc-nouveau aria-expanded="${nouveauOuvert}">${icone("plus")}<span class="vc-rn">Nouveau produit</span><span class="vc-chev" aria-hidden="true"></span></button>
       <div class="vc-formc" ${nouveauOuvert ? "" : "hidden"}>
         <label>Nom <input id="vc-nom" type="text" value="${echapper(l.nom || l.libelle || "")}" autocomplete="off"></label>
-        <div class="vc-rayons" role="radiogroup" aria-label="Rayon">${rayons.map((r) => `<button type="button" role="radio" aria-checked="${r === rayonChoisi}" data-vc-rayon="${echapper(r)}" class="${r === rayonChoisi ? "on" : ""}">${icone(pictoRayon(r))}${echapper(r)}</button>`).join("")}</div>
+        <label>Marque (facultatif) <input id="vc-marque" type="text" value="${echapper(l.marque || "")}" placeholder="ex. Lustucru" autocomplete="off"></label>
+        <div class="vc-rayons" role="radiogroup" aria-label="Rayon">${rayons.map((r) => `<button type="button" role="radio" aria-checked="${r === rayonChoisi}" data-vc-rayon="${echapper(r)}" class="${r === rayonChoisi ? "on" : ""}">${icone(pictoRayon(r))}${echapper(r)}</button>`).join("")}<button type="button" class="vc-nr" data-vc-nr>+ Nouveau rayon</button></div>
+        ${nouveauRayonOuvert ? `<div class="vc-nr-zone"><input id="vc-nr" type="text" placeholder="Nom du rayon (ex. Animaux)" autocomplete="off"><button type="button" class="vc-gr" data-vc-nr-ok>OK</button></div>` : ""}
         <button type="button" class="vc-gr plein" data-vc-ajouter>${icone("oui")}Ajouter</button>
       </div>
       <button type="button" class="vc-ign" data-vc-ignorer>Je ne sais pas, ignorer</button>`;
@@ -249,6 +283,8 @@ const VerifCartes = (() => {
       }
       ouvrirSuivante();
       afficherCartes();
+    } else if (d.vcRetirer !== undefined) {
+      retirerLigne(Number(d.vcRetirer));
     } else if (d.vcAutre !== undefined) {
       indexChoix = Number(d.vcAutre);
       mode = "choix";
@@ -266,12 +302,19 @@ const VerifCartes = (() => {
     const l = brouillon.lignes[indexChoix];
     if (d.vcRetour !== undefined) { retourCartes(); return; }
     if (d.vcProduit !== undefined) { l.produit = Number(d.vcProduit); l.avertissement = ""; l.ok = true; retourCartes(); return; }
-    if (d.vcRayon !== undefined) { l.nom = document.querySelector("#vc-nom").value; rayonChoisi = d.vcRayon; afficherChoix(); return; }
-    if (d.vcNouveau !== undefined) { if (nouveauOuvert) l.nom = document.querySelector("#vc-nom").value; nouveauOuvert = !nouveauOuvert; afficherChoix(); return; }
+    const garder = () => { l.nom = document.querySelector("#vc-nom").value; const m = document.querySelector("#vc-marque"); if (m) l.marque = m.value.trim(); };
+    if (d.vcRayon !== undefined) { garder(); rayonChoisi = d.vcRayon; afficherChoix(); return; }
+    if (d.vcNr !== undefined) { garder(); nouveauRayonOuvert = !nouveauRayonOuvert; afficherChoix(); document.querySelector("#vc-nr")?.focus(); return; }
+    if (d.vcNrOk !== undefined) {
+      const v = (document.querySelector("#vc-nr")?.value || "").trim();
+      if (!v) { document.querySelector("#vc-nr")?.focus(); return; }
+      garder(); rayonSaisie = v; rayonChoisi = v; nouveauRayonOuvert = false; afficherChoix(); return;
+    }
+    if (d.vcNouveau !== undefined) { if (nouveauOuvert) garder(); nouveauOuvert = !nouveauOuvert; afficherChoix(); return; }
     if (d.vcAjouter !== undefined) {
       const nom = document.querySelector("#vc-nom").value.trim();
       if (!nom) { document.querySelector("#vc-nom").focus(); return; }
-      l.produit = -1; l.nom = nom; l.rayon = rayonChoisi; l.avertissement = ""; l.ok = true;
+      l.produit = -1; l.nom = nom; l.rayon = rayonChoisi; l.marque = (document.querySelector("#vc-marque")?.value || "").trim(); l.avertissement = ""; l.ok = true;
       retourCartes();
       return;
     }

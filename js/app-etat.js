@@ -217,6 +217,12 @@ function dernierCode(i, magasin) {
   return avecCode.length ? avecCode[avecCode.length - 1].code : null;
 }
 
+// Rayons proposés d'office, même vides (lot scan, 06/11/2026) : « Maison » pour les produits ménagers et d'hygiène (papier toilette, sacs poubelle, mouchoirs…).
+const RAYONS_PAR_DEFAUT = ["Maison"];
+function rayonsConnus(rayons = produitsActifs().map((i) => PANIER[i].rayon)) {
+  return [...new Set([...rayons, ...RAYONS_PAR_DEFAUT])];
+}
+
 // Petit message temporaire en bas de l'écran.
 function notifier(texte) {
   let bulle = document.querySelector("#bulle");
