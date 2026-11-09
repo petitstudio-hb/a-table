@@ -1415,3 +1415,17 @@ html.feuille-prix-ouverte, html.feuille-prix-ouverte body { overflow: hidden; }
 .vl-autre input { flex: 1 1 120px; min-width: 0; padding: 10px 12px; border: 2px solid var(--ligne); background: var(--carte); font: inherit; border-radius: var(--rayon); }
 .vl-autre .vc-gr { width: auto; min-width: 64px; }
 .vl-note, .vl-erreurs { margin: 0 0 12px; padding: 8px 10px; border: 1px dashed var(--ligne); border-radius: var(--rayon); color: var(--discret); font-size: 0.85rem; }
+
+/* --- Produit proche d'un produit connu : formulaire au scan et bandeau « versions » dans Ma course (09/11/2026) --- */
+.vc-autre-format { display: block; width: 100%; margin-top: 8px; min-height: 48px; border: 2px dashed var(--accent); background: none; color: var(--accent); font: inherit; font-weight: 800; border-radius: var(--rayon); cursor: pointer; }
+.vc-af { margin-top: 10px; padding: 10px; border: 2px solid var(--accent); border-radius: var(--rayon); background: var(--carte); text-align: left; }
+.vc-af p { margin: 0 0 8px; }
+.vc-af small { display: block; color: var(--discret); }
+.vc-af label { display: block; margin: 6px 0; font-weight: 600; }
+.vc-af input { width: 100%; margin-top: 4px; padding: 10px 12px; border: 2px solid var(--ligne); background: #fff; font: inherit; font-size: 1.05rem; border-radius: var(--rayon); }
+.vc-af-cmp { padding: 8px 10px; border-radius: var(--rayon); background: var(--vert-fond); }
+.vc-af .vc-gr { width: 100%; margin-top: 8px; }
+.versions { margin: 8px 0 12px; padding: 10px 12px; border: 2px solid var(--accent); border-radius: var(--rayon); background: var(--carte); }
+.versions h3 { margin: 6px 0 4px; font-size: 1rem; }
+.versions h3:first-child { margin-top: 0; }
+.vers-l { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px dashed var(--ligne); }

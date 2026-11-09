@@ -144,6 +144,26 @@ const VerifCartes = (() => {
 
   // ---------- Cartes ----------
 
+  // « Même produit, autre contenu ou marque » : le produit scanné ressemble à un produit connu (emmental 100 g d'une autre marque,
+  // alors qu'on a déjà 200 g). On l'ajoute comme produit à part, mais comparé au kilo (maquette validée le 09/11/2026).
+  const meilleurPrix = (i) => { const p = MAGASINS.map((m) => prixDe(i, m.id).prix).filter((x) => x !== null); return p.length ? Math.min(...p) : null; };
+  function comparaisonKg(l, p, poids) {
+    const a = contenance(poids), b = contenance(p.format), prixConnu = meilleurPrix(l.propose);
+    if (!a || !b || a.type !== b.type || !(l.prix > 0) || prixConnu === null) return "Indique le contenu pour comparer au kilo.";
+    const kgA = (l.prix / a.qte) * 1000, kgB = (prixConnu / b.qte) * 1000, unite = a.type === "g" ? "kg" : "L";
+    const ecart = Math.round((kgA / kgB - 1) * 100);
+    const verdict = Math.abs(ecart) < 1 ? "au même prix" : `<b>${Math.abs(ecart)} % ${ecart > 0 ? "plus chère" : "moins chère"}</b>`;
+    return `Au ${unite === "kg" ? "kilo" : "litre"} : <b>${euros(kgA)}/${unite}</b> · ${echapper(p.nom)} ${echapper(p.format)}${p.marque ? ` (${echapper(p.marque)})` : ""} : <b>${euros(kgB)}/${unite}</b><br>Cette version est ${verdict}.`;
+  }
+  function formAutreFormat(l, k) {
+    const p = PANIER[l.propose];
+    return `<div class="vc-af"><p><b>${echapper(p.nom)}</b><small>Tu as déjà : ${echapper(p.format || "contenu à préciser")}${p.marque ? ` · ${echapper(p.marque)}` : ""}</small></p>
+      <label>Contenu acheté <input type="text" data-vc-af-poids value="${echapper(l.poids || "")}" placeholder="100 g, 1 L…" autocomplete="off"></label>
+      <label>Marque <input type="text" data-vc-af-marque value="${echapper(l.marque || "")}" placeholder="ex. Lustucru" autocomplete="off"></label>
+      <p class="vc-af-cmp" data-vc-af-cmp>${comparaisonKg(l, p, l.poids)}</p>
+      <button type="button" class="vc-gr plein" data-vc-af-ok="${k}">Ajouter à ma liste et comparer</button></div>`;
+  }
+
   function carte(l, k) {
     const dt = enAttente(l);
     const ouvert = Boolean(l.ouvert);
@@ -156,7 +176,8 @@ const VerifCartes = (() => {
           : `Nouveau produit : <b>${echapper(l.nom || l.libelle || "sans nom")}</b> ?`;
         corps += `<div class="vc-corps vc-q">${icone(pictoRayon(l.propose >= 0 ? PANIER[l.propose].rayon : l.rayon), "vc-gros")}
           <p>${question}${l.propose < 0 ? '<span class="vc-nouveau">nouveau</span>' : ""}</p>
-          <div class="vc-duo"><button type="button" class="vc-gr" data-vc-oui="${k}">${icone("oui")}Oui</button><button type="button" class="vc-gr" data-vc-autre="${k}">${icone("autre")}Autre produit</button></div></div>`;
+          <div class="vc-duo"><button type="button" class="vc-gr" data-vc-oui="${k}">${icone("oui")}Oui</button><button type="button" class="vc-gr" data-vc-autre="${k}">${icone("autre")}Autre produit</button></div>
+          ${l.propose >= 0 ? (l.autreFormat ? formAutreFormat(l, k) : `<button type="button" class="vc-autre-format" data-vc-af="${k}">Même produit, autre contenu ou marque</button>`) : ""}</div>`;
       } else if (q) {
         const suggestions = q === "contenu" ? suggestionsContenu(l) : suggestionsMarque(l);
         const gros = icone(pictoRayon(l.rayon), "vc-gros");
@@ -287,6 +308,19 @@ const VerifCartes = (() => {
       }
       ouvrirSuivante();
       afficherCartes();
+    } else if (d.vcAf !== undefined) {
+      brouillon.lignes[Number(d.vcAf)].autreFormat = true;
+      afficherCartes();
+    } else if (d.vcAfOk !== undefined) {
+      const k = Number(d.vcAfOk), l = brouillon.lignes[k], noeud = b.closest(".vc-af");
+      const poids = noeud.querySelector("[data-vc-af-poids]").value.trim();
+      if (!poids) { noeud.querySelector("[data-vc-af-poids]").focus(); return; }
+      const p = PANIER[l.propose];
+      l.produit = -1; l.nom = p.nom; l.rayon = p.rayon; l.poids = poids; l.marque = noeud.querySelector("[data-vc-af-marque]").value.trim();
+      l.avertissement = ""; l.suggestion = -1; l.propose = -1; l.autreFormat = false; l.ok = true;
+      ouvrirSuivante();
+      afficherCartes();
+      notifier(`Ajouté : ${l.nom} ${l.poids}${l.marque ? ` (${l.marque})` : ""}, comparé à ${p.format || "la version déjà connue"}.`);
     } else if (d.vcRetirer !== undefined) {
       retirerLigne(Number(d.vcRetirer));
     } else if (d.vcAutre !== undefined) {
@@ -346,6 +380,11 @@ const VerifCartes = (() => {
   function brancher() {
     zone().addEventListener("click", agirCartes);
     zone().addEventListener("change", apresCorrection);
+    zone().addEventListener("input", (e) => {
+      if (!e.target.matches?.("[data-vc-af-poids]")) return;
+      const carte = e.target.closest(".vc-carte"), l = brouillon.lignes[Number(carte.dataset.vcCarte)];
+      carte.querySelector("[data-vc-af-cmp]").innerHTML = comparaisonKg(l, PANIER[l.propose], e.target.value);
+    });
     zone().addEventListener("keydown", (e) => {
       if (e.key === "Enter" && e.target.matches?.(".vc-champ-q")) { e.preventDefault(); e.target.closest(".vc-saisie-q").querySelector(".vc-ok-q").click(); }
     });
