@@ -42,7 +42,10 @@ const VerifCartes = (() => {
   // Une ligne est « en attente » tant que son identité n'est pas confirmée, ou qu'il reste une question de contenu / marque (maquette Q2 validée le 03/11/2026).
   const enAttente = (l) => (l.dt && !l.ok) || Boolean(questionDe(l));
   const identiteEnAttente = (l) => l.dt && !l.ok;
-  const marqueMagasin = () => (brouillon.magasin === "__nouveau" ? (brouillon.magasinNom || "") : nomMagasin(brouillon.magasin)) || "";
+  const marqueMagasin = (l) => {
+    const g = brouillon.lot && l ? brouillon.groupes[l.groupe] : brouillon; // un lot : le magasin de la photo de la ligne
+    return (g.magasin === "__nouveau" ? (g.magasinNom || "") : g.magasin ? nomMagasin(g.magasin) : "") || "";
+  };
 
   // Pour un nouveau produit confirmé, on demande le contenu (litrage ou grammage) puis la marque, s'ils n'ont pas été lus.
   // « Je ne sais pas » les passe : ils restent vides et apparaissent comme avant (« contenu à préciser » dans Ma course).
@@ -95,7 +98,7 @@ const VerifCartes = (() => {
     }
     const premiere = brouillon.lignes.find(enAttente);
     if (premiere) premiere.ouvert = true;
-    document.querySelector("#verif-detail").open = brouillon.magasin === "__nouveau" || brouillon.lignes.length === 0;
+    document.querySelector("#verif-detail").open = !brouillon.lot && (brouillon.magasin === "__nouveau" || brouillon.lignes.length === 0);
     mode = "cartes";
     recherche = "";
     nouveauOuvert = false;
@@ -177,7 +180,7 @@ const VerifCartes = (() => {
   }
 
   function enTete() {
-    const mag = brouillon.magasin === "__nouveau" ? (brouillon.magasinNom || "Nouveau magasin") : nomMagasin(brouillon.magasin);
+    const mag = brouillon.lot ? `Lot de ${brouillon.groupes.length} photos` : brouillon.magasin === "__nouveau" ? (brouillon.magasinNom || "Nouveau magasin") : nomMagasin(brouillon.magasin);
     const [a, m, j] = (brouillon.date || "").split("-");
     const { somme } = resume();
     document.querySelector("#verif-mag-nom").textContent = mag || "Magasin";
@@ -189,8 +192,9 @@ const VerifCartes = (() => {
     pastille.setAttribute("aria-label", `${attente} ligne${attente > 1 ? "s" : ""} à vérifier`);
     const valider = document.querySelector("#verif-valider");
     const { n } = resume();
-    valider.setAttribute("aria-disabled", String(attente > 0 || n === 0));
+    valider.setAttribute("aria-disabled", String(attente > 0 || n === 0 || Boolean(brouillon.lot && lotMagasinManquant())));
     valider.textContent = n ? `Valider (${n} produit${n > 1 ? "s" : ""})` : "Valider";
+    if (brouillon.lot) majLot(); // bilan du lot, question du magasin, texte du bouton
   }
 
   function afficherCartes() {
@@ -274,7 +278,7 @@ const VerifCartes = (() => {
       const k = Number(d.vcReponse ?? d.vcOkQ ?? d.vcSansmarque ?? d.vcPasser);
       const l = brouillon.lignes[k];
       if (d.vcPasser !== undefined) { l.contenuPasse = true; l.marquePasse = true; }
-      else if (d.vcSansmarque !== undefined) { l.marquePasse = true; l.marque = marqueMagasin(); } // pas de marque : celle du supermarché (règle de Hugo)
+      else if (d.vcSansmarque !== undefined) { l.marquePasse = true; l.marque = marqueMagasin(l); } // pas de marque : celle du supermarché (règle de Hugo)
       else {
         const genre = d.vcGenre;
         const valeur = (d.vcReponse !== undefined ? d.vcValeur : (b.closest(".vc-saisie-q")?.querySelector("input")?.value || "")).trim();
@@ -362,5 +366,5 @@ const VerifCartes = (() => {
   }
   brancher();
 
-  return { demarrer, afficher, classerLigne, restantes: () => brouillon.lignes.filter(enAttente).length };
+  return { demarrer, afficher, classerLigne, enAttente, restantes: () => brouillon.lignes.filter(enAttente).length };
 })();
