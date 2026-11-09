@@ -145,7 +145,8 @@ function viderCabas() {
   sauvegarder();
   calculer();
 }
-document.querySelector("#fin-scanner").addEventListener("click", () => { viderCabas(); location.hash = "#photo"; });
+// « Scanner mon ticket » : on va sur l'onglet Photo ET on ouvre tout de suite le choix photo de l'iPhone (photothèque, appareil, fichier), dans le même geste (maquette validée le 09/11/2026).
+document.querySelector("#fin-scanner").addEventListener("click", () => { viderCabas(); location.hash = "#photo"; document.querySelector("#photo-import").click(); });
 document.querySelector("#fin-terminer").addEventListener("click", () => { viderCabas(); notifier("Courses terminées. Le cabas est vidé."); });
 
 majCourses();
