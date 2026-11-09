@@ -146,6 +146,35 @@ function afficherChoixMagasins() {
 // Classement replié : seul le moins cher se voit, les autres se déplient d'un toucher (maquette validée le 30/10/2026, option K3).
 let classementOuvert = false;
 
+// Produits de même nom mais de contenu ou de marque différents (emmental 100 g et 200 g) : comparés au kilo ou au litre,
+// le moins cher en jaune (maquette validée le 09/11/2026). Seulement quand au moins deux versions ont un prix et un contenu lisible.
+function majVersions() {
+  const zone = document.querySelector("#course-versions");
+  if (!zone) return;
+  const groupes = new Map();
+  for (const i of produitsActifs()) {
+    const cle = sansAccent(PANIER[i].nom).toLowerCase().trim();
+    if (!groupes.has(cle)) groupes.set(cle, []);
+    groupes.get(cle).push(i);
+  }
+  const blocs = [];
+  for (const ids of groupes.values()) {
+    const versions = ids.map((i) => {
+      const c = contenance(PANIER[i].format);
+      const prix = MAGASINS.map((m) => prixDe(i, m.id).prix).filter((p) => p !== null);
+      return c && prix.length ? { i, kg: (Math.min(...prix) / c.qte) * 1000, type: c.type } : null;
+    }).filter(Boolean);
+    if (versions.length < 2 || new Set(versions.map((v) => v.type)).size > 1) continue;
+    const mini = Math.min(...versions.map((v) => v.kg));
+    const uniq = versions.filter((v) => Math.abs(v.kg - mini) < 0.005).length === 1;
+    const unite = versions[0].type === "g" ? "kg" : "L";
+    blocs.push(`<h3>${echapper(PANIER[versions[0].i].nom)} : ${versions.length} versions</h3>`
+      + versions.map((v) => `<div class="vers-l"><span>${echapper(PANIER[v.i].format)}${PANIER[v.i].marque ? ` · ${echapper(PANIER[v.i].marque)}` : ""}</span><span class="etiquette ${uniq && Math.abs(v.kg - mini) < 0.005 ? "" : "simple"}">${euros(v.kg)}/${unite}</span></div>`).join(""));
+  }
+  zone.innerHTML = blocs.slice(0, 3).join("");
+  zone.hidden = modeCourses || !blocs.length;
+}
+
 // Classement des magasins pour le panier, puis la liste avec une colonne de prix par magasin choisi dans le classement.
 function afficherCourse() {
   const mags = visibles();
@@ -155,6 +184,7 @@ function afficherCourse() {
     sauvegarder();
   }
   const colonnes = magasinsCompares(mags);
+  majVersions();
   const classement = document.querySelector("#classement");
   const liste = document.querySelector("#liste-course");
   document.querySelector("#vue-course").classList.toggle("mode-courses", modeCourses);
